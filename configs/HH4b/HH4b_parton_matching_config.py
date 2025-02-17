@@ -11,7 +11,7 @@ from pocket_coffea.parameters import defaults
 
 from workflow import HH4bbQuarkMatchingProcessor
 
-from configs.HH4b_common.custom_cuts_common import hh4b_presel, hh4b_presel_tight, hh4b_4b_region, hh4b_2b_region, hh4b_signal_region, hh4b_control_region, run2_signal_region, run2_control_region
+from configs.HH4b_common.custom_cuts_common import hh4b_presel, hh4b_presel_tight, hh4b_4b_region, hh4b_2b_region, hh4b_signal_region, hh4b_control_region, signal_region_run2, control_region_run2
 from configs.HH4b_common.configurator_options import get_variables_dict, get_columns_list, DEFAULT_COLUMNS
 
 
@@ -42,27 +42,30 @@ parameters = defaults.merge_parameters_from_files(
     update=True,
 )
 
-SPANET_MODEL = (
-    ""
-    # "/work/tharte/datasets/mass_sculpting_data/hh4b_5jets_e300_s160_btag.onnx"
-)
+onnx_model_dict={
+    "SPANET_MODEL": "params/out_hh4b_5jets_ATLAS_ptreg_c0_lr1e4_wp0_noklininp_oc_300e_kl3p5.onnx",
+    "VBF_GGF_DNN_MODEL":"",
+    # "VBF_GGF_DNN_MODEL":"/t3home/rcereghetti/ML_pytorch/out/20241212_223142_SemitTightPtLearningRateConstant/models/model_28.onnx",
+    "BKG_MORPHING_DNN_MODEL": "/pnfs/psi.ch/cms/trivcat/store/user/mmalucch/keras_models_morphing/average_model_from_keras.onnx",
+    "SIG_BKG_DNN_MODEL": "/pnfs/psi.ch/cms/trivcat/store/user/mmalucch/keras_models_SvsB/model_fold0.onnx",
+}
 
-VBF_GGF_DNN_MODEL="/t3home/rcereghetti/ML_pytorch/out/20241212_223142_SemitTightPtLearningRateConstant/models/model_28.onnx"
-BKG_MORPHING_DNN_MODEL="/pnfs/psi.ch/cms/trivcat/store/user/mmalucch/keras_models_morphing/average_model_from_keras.onnx"
+print(onnx_model_dict)
+
 
 workflow_options = {
         "parton_jet_min_dR": 0.4,
         "max_num_jets": 5,
         "which_bquark": "last",
-        "classification": CLASSIFICATION,  # HERE
-        "SPANET_MODEL": SPANET_MODEL,
-        "BKG_MORPHING_DNN_MODEL": "",
-        "VBF_GGF_DNN_MODEL": "",
+        "classification": CLASSIFICATION, 
         "tight_cuts": TIGHT_CUTS,
         "fifth_jet": "pt",
         "random_pt": RANDOM_PT,
         "rand_type": 0.3
     }
+workflow_options.update(
+    onnx_model_dict
+)
 if SAVE_CHUNK:
     workflow_options["dump_columns_as_arrays_per_chunk"] = "root://t3dcachedb03.psi.ch:1094//pnfs/psi.ch/cms/trivcat/store/user/tharte/HH4b/training_samples/GluGlutoHHto4B_spanet_loose_03_17"
     # workflow_options["dump_columns_as_arrays_per_chunk"] = "root://t3dcachedb03.psi.ch:1094//pnfs/psi.ch/cms/trivcat/store/user/tharte/HH4b/ntuples/DATA_JetMET_JMENano_btag_ordering"
@@ -129,16 +132,16 @@ cfg = Configurator(
         hh4b_presel if TIGHT_CUTS is False else hh4b_presel_tight
     ],
     categories={
-        "4b_region": [hh4b_4b_region],  # HERE
-        "4b_signal_region": [hh4b_4b_region, hh4b_signal_region],  # HERE
-        "4b_control_region": [hh4b_4b_region, hh4b_control_region],  # HERE
-        "4b_signal_region_run2": [hh4b_4b_region, run2_signal_region],  # HERE
-        "4b_control_region_run2": [hh4b_4b_region, run2_control_region],  # HERE
+        "4b_region": [hh4b_4b_region],  
+        "4b_signal_region": [hh4b_4b_region, hh4b_signal_region],  
+        "4b_control_region": [hh4b_4b_region, hh4b_control_region],  
+        "4b_signal_region_run2": [hh4b_4b_region, signal_region_run2],  
+        "4b_control_region_run2": [hh4b_4b_region, control_region_run2],  
         "2b_region": [hh4b_2b_region],
-        "2b_signal_region": [hh4b_2b_region, hh4b_signal_region],  # HERE
-        "2b_control_region": [hh4b_2b_region, hh4b_control_region],  # HERE
-        "2b_signal_region_run2": [hh4b_2b_region, run2_signal_region],  # HERE
-        "2b_control_region_run2": [hh4b_2b_region, run2_control_region],  # HERE
+        "2b_signal_region": [hh4b_2b_region, hh4b_signal_region],  
+        "2b_control_region": [hh4b_2b_region, hh4b_control_region],  
+        "2b_signal_region_run2": [hh4b_2b_region, signal_region_run2],  
+        "2b_control_region_run2": [hh4b_2b_region, control_region_run2],  
     },
     weights={
         "common": {

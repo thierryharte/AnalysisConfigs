@@ -9,7 +9,10 @@ from pocket_coffea.workflows.base import BaseProcessorABC
 from pocket_coffea.lib.deltaR_matching import object_matching
 
 from .custom_object_preselection_common import lepton_selection, jet_selection_nopu
-from .dnn_input_variables import dnn_input_variables
+from .dnn_input_variables import (
+    bkg_morphing_dnn_input_variables,
+    sig_bkg_dnn_input_variables,
+)
 
 from utils.parton_matching_function import get_parton_last_copy
 from utils.spanet_evaluation_functions import get_pairing_information, get_best_pairings
@@ -18,6 +21,7 @@ from utils.reconstruct_higgs_candidates import (
     reconstruct_higgs_from_provenance,
     reconstruct_higgs_from_idx,
     run2_matching_algorithm,
+    get_jets_no_higgs_from_idx,
 )
 from utils.inference_session_onnx import get_model_session
 from utils.dnn_evaluation_functions import get_dnn_prediction
@@ -29,12 +33,14 @@ class HH4bCommonProcessor(BaseProcessorABC):
         self.dr_min = self.workflow_options["parton_jet_min_dR"]
         self.max_num_jets = self.workflow_options["max_num_jets"]
         self.which_bquark = self.workflow_options["which_bquark"]
-        self.SPANET_MODEL = self.workflow_options["SPANET_MODEL"]
-        self.BKG_MORPHING_DNN_MODEL = self.workflow_options["BKG_MORPHING_DNN_MODEL"]
-        self.VBF_GGF_DNN_MODEL = self.workflow_options["VBF_GGF_DNN_MODEL"]
         self.fifth_jet = self.workflow_options["fifth_jet"]
         self.tight_cuts = self.workflow_options["tight_cuts"]
         self.classification = self.workflow_options["classification"]
+        # onnx models
+        self.SPANET = self.workflow_options["SPANET"]
+        self.BKG_MORPHING_DNN = self.workflow_options["BKG_MORPHING_DNN"]
+        self.SIG_BKG_DNN = self.workflow_options["SIG_BKG_DNN"]
+        self.VBF_GGF_DNN = self.workflow_options["VBF_GGF_DNN"]
 
     def apply_object_preselection(self, variation):
         self.events["Jet"] = ak.with_field(
@@ -68,7 +74,7 @@ class HH4bCommonProcessor(BaseProcessorABC):
         self.events["JetGood"] = self.events.Jet
 
         self.events["JetGood"] = jet_selection_nopu(
-            self.events, "Jet", self.params, tight_cuts=self.tight_cuts
+            self.events, "JetGood", self.params, tight_cuts=self.tight_cuts
         )
 
         self.events["ElectronGood"] = lepton_selection(
@@ -403,7 +409,36 @@ class HH4bCommonProcessor(BaseProcessorABC):
 
         return ak.flatten(np.sqrt(sigma_hbbCand_A**2 + sigma_hbbCand_B**2))
 
-    def define_bkg_morphing_variables(self):
+    def get_jets_no_higgs(self, jet_higgs_idx_per_event):
+        jet_offsets = np.concatenate(
+            [
+                [0],
+                np.cumsum(
+                    ak.to_numpy(ak.num(self.events.Jet, axis=1), allow_missing=True)
+                ),
+            ]
+        )
+        local_index_all = ak.local_index(self.events.Jet, axis=1)
+        jets_index_all = ak.to_numpy(
+            ak.flatten(local_index_all + jet_offsets[:-1]), allow_missing=True
+        )
+        jets_from_higgs_idx = ak.to_numpy(
+            ak.flatten(jet_higgs_idx_per_event + jet_offsets[:-1]),
+            allow_missing=False,
+        )
+        jets_no_higgs_idx = get_jets_no_higgs_from_idx(
+            jets_index_all, jets_from_higgs_idx
+        )
+        jets_no_higgs_idx_unflat = (
+            ak.unflatten(jets_no_higgs_idx, ak.num(self.events.Jet, axis=1))
+            - jet_offsets[:-1]
+        )
+        jets_not_from_higgs = self.events.Jet[jets_no_higgs_idx_unflat >= 0]
+        return jets_not_from_higgs
+
+    def define_dnn_variables(
+        self, higgs1, higgs2, jets_from_higgs, jet_higgs_idx_per_event, sb_variables
+    ):
         ########################
         # ADDITIONAL VARIABLES #
         ########################
@@ -412,6 +447,18 @@ class HH4bCommonProcessor(BaseProcessorABC):
         self.events["HT"] = ak.sum(self.events.JetGood.pt, axis=1)
 
         self.events["era"] = ak.ones_like(self.events.HT)
+
+        self.events["JetNotFromHiggs"] = self.get_jets_no_higgs(jet_higgs_idx_per_event)
+
+        self.params.object_preselection.update(
+            {"JetNotFromHiggs": self.params.object_preselection["JetGood"]}
+        )
+
+        self.events["JetNotFromHiggs"] = jet_selection_nopu(
+            self.events, "JetNotFromHiggs", self.params, tight_cuts=self.tight_cuts
+        )
+
+        add_jet1pt = ak.pad_none(self.events.JetNotFromHiggs, 1, clip=True)[:, 0]
 
         # Minimum ∆R ( jj ) among all possible pairings of the leading b-tagged jets
         # Maximum ∆R( jj ) among all possible pairings of the leading b-tagged jets
@@ -432,40 +479,47 @@ class HH4bCommonProcessor(BaseProcessorABC):
         self.events["dR_min"] = ak.min(dR, axis=1)
         self.events["dR_max"] = ak.max(dR, axis=1)
 
+        sigma_over_higgs1_reco_mass = (
+            self.get_sigma_mbb(
+                jets_from_higgs[:, 0],
+                jets_from_higgs[:, 1],
+            )
+            / higgs1.mass
+        )
+        sigma_over_higgs2_reco_mass = (
+            self.get_sigma_mbb(
+                jets_from_higgs[:, 2],
+                jets_from_higgs[:, 3],
+            )
+            / higgs2.mass
+        )
+
         # Leading-pT H candidate pT , η, φ, and mass
         # Subleading-pT H candidate pT , η, φ, and mass
         # Angular separation (∆R) between b jets for each H candidate
-        self.events["HiggsLeading"] = ak.with_field(
-            self.events.HiggsLeading,
-            self.events["JetGoodFromHiggsOrdered"][:, 0].delta_r(
-                self.events["JetGoodFromHiggsOrdered"][:, 1]
-            ),
+        higgs1 = ak.with_field(
+            higgs1,
+            jets_from_higgs[:, 0].delta_r(jets_from_higgs[:, 1]),
             "dR",
         )
-        self.events["HiggsSubLeading"] = ak.with_field(
-            self.events.HiggsSubLeading,
-            self.events["JetGoodFromHiggsOrdered"][:, 2].delta_r(
-                self.events["JetGoodFromHiggsOrdered"][:, 3]
-            ),
+        higgs2 = ak.with_field(
+            higgs2,
+            jets_from_higgs[:, 2].delta_r(jets_from_higgs[:, 3]),
             "dR",
         )
 
         # helicity | cos θ | for each H candidate
-        self.events["HiggsLeading"] = ak.with_field(
-            self.events.HiggsLeading,
-            abs(
-                self.HelicityCosTheta(
-                    self.events.HiggsLeading, self.events.JetGoodFromHiggsOrdered[:, 0]
-                )
-            ),
+        higgs1 = ak.with_field(
+            higgs1,
+            abs(self.HelicityCosTheta(higgs1, jets_from_higgs[:, 0])),
             "helicityCosTheta",
         )
-        self.events["HiggsSubLeading"] = ak.with_field(
-            self.events.HiggsSubLeading,
+        higgs2 = ak.with_field(
+            higgs2,
             abs(
                 self.HelicityCosTheta(
-                    self.events.HiggsSubLeading,
-                    self.events.JetGoodFromHiggsOrdered[:, 2],
+                    higgs2,
+                    jets_from_higgs[:, 2],
                 )
             ),
             "helicityCosTheta",
@@ -473,51 +527,102 @@ class HH4bCommonProcessor(BaseProcessorABC):
 
         # di-Higgs system
         # pT , η, and mass of HH system
-        self.events["HH"] = add_fields(
-            self.events.HiggsLeading + self.events.HiggsSubLeading,
-        )
+        hh = add_fields(higgs1 + higgs2)
 
         # | cos θ ∗ | of HH system
-        self.events["HH"] = ak.with_field(
-            self.events.HH,
-            self.Costhetastar_CS(self.events.HiggsLeading, self.events.HH),
+        hh = ak.with_field(
+            hh,
+            self.Costhetastar_CS(higgs1, hh),
             "Costhetastar_CS",
         )
 
         # Angular separation (∆R, ∆η, ∆φ) between H candidates
-        self.events["HH"] = ak.with_field(
-            self.events.HH,
-            self.events.HiggsLeading.delta_r(self.events.HiggsSubLeading),
+        hh = ak.with_field(
+            hh,
+            higgs1.delta_r(higgs2),
             "dR",
         )
-        self.events["HH"] = ak.with_field(
-            self.events.HH,
-            abs(self.events.HiggsLeading.eta - self.events.HiggsSubLeading.eta),
+        hh = ak.with_field(
+            hh,
+            abs(higgs1.eta - higgs2.eta),
             "dEta",
         )
-        self.events["HH"] = ak.with_field(
-            self.events.HH,
-            self.events.HiggsLeading.delta_phi(self.events.HiggsSubLeading),
+        hh = ak.with_field(
+            hh,
+            higgs1.delta_phi(higgs2),
             "dPhi",
         )
 
-        self.events["sigma_over_higgs1_reco_mass"] = (
-            self.get_sigma_mbb(
-                self.events.JetGoodFromHiggsOrdered[:, 0],
-                self.events.JetGoodFromHiggsOrdered[:, 1],
+        if sb_variables:
+            # dPhi
+            higgs1 = ak.with_field(
+                higgs1,
+                jets_from_higgs[:, 0].delta_phi(jets_from_higgs[:, 1]),
+                "dPhi",
             )
-            / self.events.HiggsLeading.mass
-        )
-        self.events["sigma_over_higgs2_reco_mass"] = (
-            self.get_sigma_mbb(
-                self.events.JetGoodFromHiggsOrdered[:, 2],
-                self.events.JetGoodFromHiggsOrdered[:, 3],
+            higgs2 = ak.with_field(
+                higgs2,
+                jets_from_higgs[:, 2].delta_phi(jets_from_higgs[:, 3]),
+                "dPhi",
             )
-            / self.events.HiggsSubLeading.mass
+
+            # dEta
+            higgs1 = ak.with_field(
+                higgs1,
+                abs(jets_from_higgs[:, 0].eta - jets_from_higgs[:, 1].eta),
+                "dEta",
+            )
+            higgs2 = ak.with_field(
+                higgs2,
+                abs(jets_from_higgs[:, 2].eta - jets_from_higgs[:, 3].eta),
+                "dEta",
+            )
+
+            # add jet and higgs1
+            add_jet1pt = ak.with_field(
+                add_jet1pt,
+                abs(add_jet1pt.eta - higgs1.eta),
+                "LeadingHiggs_dEta",
+            )
+            add_jet1pt = ak.with_field(
+                add_jet1pt,
+                add_jet1pt.delta_phi(higgs1),
+                "LeadingHiggs_dPhi",
+            )
+            add_jet1pt = ak.with_field(
+                add_jet1pt,
+                (add_jet1pt + higgs1).mass,
+                "LeadingHiggs_mass",
+            )
+
+            # add jet and higgs2
+            add_jet1pt = ak.with_field(
+                add_jet1pt,
+                abs(add_jet1pt.eta - higgs2.eta),
+                "SubLeadingHiggs_dEta",
+            )
+            add_jet1pt = ak.with_field(
+                add_jet1pt,
+                add_jet1pt.delta_phi(higgs2),
+                "SubLeadingHiggs_dPhi",
+            )
+            add_jet1pt = ak.with_field(
+                add_jet1pt,
+                (add_jet1pt + higgs2).mass,
+                "SubLeadingHiggs_mass",
+            )
+
+        return (
+            higgs1,
+            higgs2,
+            hh,
+            add_jet1pt,
+            sigma_over_higgs1_reco_mass,
+            sigma_over_higgs2_reco_mass,
         )
 
     def process_extra_after_presel(self, variation):  # -> ak.Array:
-        if self._isMC and not self.SPANET_MODEL:
+        if self._isMC and not self.SPANET:
             # do truth matching to get b-jet from Higgs
             self.get_jet_higgs_provenance(which_bquark=self.which_bquark)
             self.events["nbQuarkHiggsMatched"] = ak.num(
@@ -532,7 +637,7 @@ class HH4bCommonProcessor(BaseProcessorABC):
                 self.events["JetGoodFromHiggsOrdered"],
             ) = reconstruct_higgs_from_provenance(self.events.JetGoodMatched)
 
-            self.matched_jet_higgs_idx_not_none = self.events.JetGoodMatched.index[
+            matched_jet_higgs_idx_not_none = self.events.JetGoodMatched.index[
                 ~ak.is_none(self.events.JetGoodMatched.index, axis=1)
             ]
         else:
@@ -540,7 +645,7 @@ class HH4bCommonProcessor(BaseProcessorABC):
             self.dummy_provenance()
 
             model_session_SPANET, input_name_SPANET, output_name_SPANET = (
-                get_model_session(self.SPANET_MODEL, "SPANET")
+                get_model_session(self.SPANET, "SPANET")
             )
 
             # compute the pairing information using the SPANET model
@@ -570,47 +675,109 @@ class HH4bCommonProcessor(BaseProcessorABC):
                 self.events["JetGoodFromHiggsOrdered"],
             ) = reconstruct_higgs_from_idx(self.events.JetGood, pairing_predictions)
 
-            self.matched_jet_higgs_idx_not_none = (
-                self.events.JetGoodFromHiggsOrdered.index
-            )
-
-        self.events["nJetGoodHiggsMatched"] = ak.num(
-            self.events.JetGoodHiggsMatched, axis=1
-        )
-        self.events["nJetGoodMatched"] = ak.num(self.events.JetGoodMatched, axis=1)
-
+            matched_jet_higgs_idx_not_none = self.events.JetGoodFromHiggsOrdered.index
+        
+        # reconstruct the higgs candidates for Run2 method
         (
             self.events["delta_dhh"],
             self.events["HiggsLeadingRun2"],
             self.events["HiggsSubLeadingRun2"],
             self.events["JetGoodFromHiggsOrderedRun2"],
         ) = run2_matching_algorithm(self.events["JetGoodHiggs"])
-        
+
+        matched_jet_higgs_idx_not_noneRun2 = (
+            self.events.JetGoodFromHiggsOrderedRun2.index
+        )
+
+        self.events["nJetGoodHiggsMatched"] = ak.num(
+            self.events.JetGoodHiggsMatched, axis=1
+        )
+        self.events["nJetGoodMatched"] = ak.num(self.events.JetGoodMatched, axis=1)
+
         # Define distance parameter for selection:
-        self.events["Rhh"] = np.sqrt((self.events.HiggsLeading.mass - 125)**2+(self.events.HiggsSubLeading.mass - 120)**2)
-        self.events["Rhh_Run2"] = np.sqrt((self.events.HiggsLeadingRun2.mass - 125)**2+(self.events.HiggsSubLeadingRun2.mass - 120)**2)
+        self.events["Rhh"] = np.sqrt(
+            (self.events.HiggsLeading.mass - 125) ** 2
+            + (self.events.HiggsSubLeading.mass - 120) ** 2
+        )
+        self.events["Rhh_Run2"] = np.sqrt(
+            (self.events.HiggsLeadingRun2.mass - 125) ** 2
+            + (self.events.HiggsSubLeadingRun2.mass - 120) ** 2
+        )
 
-
-        if self.VBF_GGF_DNN_MODEL:
+        if self.VBF_GGF_DNN:
             (
                 model_session_VBF_GGF_DNN,
                 input_name_VBF_GGF_DNN,
                 output_name_VBF_GGF_DNN,
-            ) = get_model_session(self.VBF_GGF_DNN_MODEL, "VBF_GGF_DNN")
+            ) = get_model_session(self.VBF_GGF_DNN, "VBF_GGF_DNN")
 
-        if self.BKG_MORPHING_DNN_MODEL and not self._isMC:
+        if (self.BKG_MORPHING_DNN and not self._isMC) or self.SIG_BKG_DNN:
+            (
+                self.events["HiggsLeading"],
+                self.events["HiggsSubLeading"],
+                self.events["HH"],
+                self.events["add_jet1pt"],
+                self.events["sigma_over_higgs1_reco_mass"],
+                self.events["sigma_over_higgs2_reco_mass"],
+            ) = self.define_dnn_variables(
+                self.events.HiggsLeading,
+                self.events.HiggsSubLeading,
+                self.events.JetGoodFromHiggsOrdered,
+                matched_jet_higgs_idx_not_none,
+                sb_variables=True if self.SIG_BKG_DNN else False,
+            )
+            (
+                self.events["HiggsLeadingRun2"],
+                self.events["HiggsSubLeadingRun2"],
+                self.events["HHRun2"],
+                self.events["add_jet1ptRun2"],
+                self.events["sigma_over_higgs1_reco_massRun2"],
+                self.events["sigma_over_higgs2_reco_massRun2"],
+            ) = self.define_dnn_variables(
+                self.events.HiggsLeadingRun2,
+                self.events.HiggsSubLeadingRun2,
+                self.events.JetGoodFromHiggsOrderedRun2,
+                matched_jet_higgs_idx_not_noneRun2,
+                sb_variables=True if self.SIG_BKG_DNN else False,
+            )
+
+        if self.BKG_MORPHING_DNN and not self._isMC:
             (
                 model_session_BKG_MORPHING_DNN,
                 input_name_BKG_MORPHING_DNN,
                 output_name_BKG_MORPHING_DNN,
-            ) = get_model_session(self.BKG_MORPHING_DNN_MODEL, "BKG_MORPHING_DNN")
-
-            self.define_bkg_morphing_variables()
+            ) = get_model_session(self.BKG_MORPHING_DNN, "BKG_MORPHING_DNN")
 
             self.events["bkg_morphing_dnn_weight"] = get_dnn_prediction(
                 model_session_BKG_MORPHING_DNN,
                 input_name_BKG_MORPHING_DNN,
                 output_name_BKG_MORPHING_DNN,
                 self.events,
-                dnn_input_variables,
+                bkg_morphing_dnn_input_variables,
+            )[0]
+
+            self.events["bkg_morphing_dnn_weightRun2"] = get_dnn_prediction(
+                model_session_BKG_MORPHING_DNN,
+                input_name_BKG_MORPHING_DNN,
+                output_name_BKG_MORPHING_DNN,
+                self.events,
+                bkg_morphing_dnn_input_variables,
+                run2=True,
+            )[0]
+
+        if self.SIG_BKG_DNN:
+            (
+                model_session_SIG_BKG_DNN,
+                input_name_SIG_BKG_DNN,
+                output_name_SIG_BKG_DNN,
+            ) = get_model_session(self.SIG_BKG_DNN, "SIG_BKG_DNN")
+
+            self.events["sig_bkg_dnn_score"] = ak.flatten(
+                get_dnn_prediction(
+                    model_session_SIG_BKG_DNN,
+                    input_name_SIG_BKG_DNN,
+                    output_name_SIG_BKG_DNN,
+                    self.events,
+                    sig_bkg_dnn_input_variables,
+                )[0]
             )
