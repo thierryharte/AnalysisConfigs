@@ -1,13 +1,22 @@
 import sys
-from utils.variables_helpers import jet_hists_dict, create_HistConf
+from collections import defaultdict
 
 from pocket_coffea.lib.columns_manager import ColOut
 from pocket_coffea.parameters.histograms import jet_hists, count_hist, parton_hists
 from pocket_coffea.lib.hist_manager import HistConf, Axis
 
 from utils.variables_helpers import jet_hists_dict, create_HistConf
+from utils.variables_helpers import jet_hists_dict, create_HistConf
 
-variables_dict_default = {
+variables_dict_jets = {
+    **jet_hists(coll="JetGoodFromHiggsOrdered", pos=0),
+    **jet_hists(coll="JetGoodFromHiggsOrdered", pos=1),
+    **jet_hists(coll="JetGoodFromHiggsOrdered", pos=2),
+    **jet_hists(coll="JetGoodFromHiggsOrdered", pos=3),
+    **jet_hists(coll="JetGoodFromHiggsOrderedRun2", pos=0),
+    **jet_hists(coll="JetGoodFromHiggsOrderedRun2", pos=1),
+    **jet_hists(coll="JetGoodFromHiggsOrderedRun2", pos=2),
+    **jet_hists(coll="JetGoodFromHiggsOrderedRun2", pos=3),
     # **count_hist(coll="JetGood", bins=10, start=0, stop=10),
     # **count_hist(coll="JetGoodHiggs", bins=10, start=0, stop=10),
     # **count_hist(coll="ElectronGood", bins=3, start=0, stop=3),
@@ -24,10 +33,6 @@ variables_dict_default = {
     # **jet_hists(coll="JetGoodHiggsPtOrder", pos=1),
     # **jet_hists(coll="JetGoodHiggsPtOrder", pos=2),
     # **jet_hists(coll="JetGoodHiggsPtOrder", pos=3),
-    **jet_hists(coll="JetGoodFromHiggsOrdered", pos=0),
-    **jet_hists(coll="JetGoodFromHiggsOrdered", pos=1),
-    **jet_hists(coll="JetGoodFromHiggsOrdered", pos=2),
-    **jet_hists(coll="JetGoodFromHiggsOrdered", pos=3),
     # **parton_hists(coll="bQuarkHiggsMatched", pos=0),
     # **parton_hists(coll="bQuarkHiggsMatched", pos=1),
     # **parton_hists(coll="bQuarkHiggsMatched", pos=2),
@@ -983,11 +988,11 @@ variable_dict_bkg_morphing = {
 variables_dict={}
 
 def get_variables_dict(
-    DEFAULT=True, CLASSIFICATION=False, RANDOM_PT=False, VBF_VARIABLES=False, BKG_MORPHING=False
+    JETS=True, CLASSIFICATION=False, RANDOM_PT=False, VBF_VARIABLES=False, BKG_MORPHING=False
 ):
     """Function to create the variable dictionary for the PocketCoffea Configurator()."""
-    if DEFAULT:
-        variables_dict.update(variables_dict_default)
+    if JETS:
+        variables_dict.update(variables_dict_jets)
     if CLASSIFICATION:
         variables_dict.update(variables_dict_higgs_mass)
     if RANDOM_PT:
@@ -1019,6 +1024,38 @@ def get_columns_list(
     :param: flatten: bool: whether to flatten the columns or not.
     """
     columns = []
-    for collection, params in columns_dict.items():
-        columns.append(ColOut(collection, params, flatten))
+    for collection, attributes in columns_dict.items():
+        columns.append(ColOut(collection, attributes, flatten))
     return columns
+
+def create_DNN_columns_list(run2, flatten, dnn_input_variables):
+    """Create the columns of the DNN input variables
+    """
+    column_dict = defaultdict(set)
+    for x, y in dnn_input_variables.values():
+        if run2:
+            if x != "events":
+                column_dict[x.split(":")[0] + "Run2"].add(y)
+        else:    
+            column_dict[x.split(":")[0]].add(y)
+    if run2:
+        column_dict.update(
+            {
+                "events": set(
+                    (
+                        "era",
+                        "HT",
+                        "dR_min",
+                        "dR_max",
+                        "sigma_over_higgs1_reco_massRun2",
+                        "sigma_over_higgs2_reco_massRun2",
+                    )
+                )
+            }
+        )
+    column_dict={
+        x:list(y) for x,y in column_dict.items()
+    }
+    column_list = get_columns_list(column_dict, flatten)
+    
+    return column_list
