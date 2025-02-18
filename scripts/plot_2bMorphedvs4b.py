@@ -19,23 +19,27 @@ parser.add_argument(
     "-o", "--output", type=str, help="Output directory", default="plots_2bVS4b"
 )
 parser.add_argument(
-    "-n", "--normalisation", type=str, help="Type of normalisation (num_events, sum_weights, const_frac)", default="num_events"
+    "-n",
+    "--normalisation",
+    type=str,
+    help="Type of normalisation (num_events, sum_weights, const_frac)",
+    default="num_events",
 )
 parser.add_argument("-w", "--workers", type=int, default=8, help="Number of workers")
 parser.add_argument(
     "-l", "--linear", action="store_true", help="Linear scale", default=False
 )
-
-
 args = parser.parse_args()
 
+
+NORMALIZE_WEIGHTS = True
 
 # Using the `input_dir` argument, read the default config and coffea files (if not set with argparse):
 input_dir = args.input
 cfg = os.path.join(input_dir, "parameters_dump.yaml")
 inputfile = os.path.join(input_dir, "output_all.coffea")
 log_scale = not args.linear
-outputdir = os.path.join(input_dir, args.output)+f"_{args.normalisation}"
+outputdir = os.path.join(input_dir, args.output) + f"_{args.normalisation}"
 
 cat_dict = {
     "CR": ["4b_control_region", "2b_control_region_preW", "2b_control_region_postW"],
@@ -54,6 +58,37 @@ cat_dict = {
 
 
 color_list = ["black", "red", "blue"]
+
+
+def plot_weights(weights_list, suffix):
+    fig, ax = plt.subplots()
+    for i, weights in enumerate(weights_list):
+        ax.hist(
+            weights,
+            bins=np.logspace(-3, 2, 100),
+            histtype="step",
+            label="weights_"
+            + str(i)
+            + "\nmean: {:.2f}\nstd: {:.2f}".format(np.mean(weights), np.std(weights)),
+        )
+        # ax.text(
+        #     0.75,
+        #     0.95 - 0.2 * i,
+        #     "mean: {:.2f}\nstd: {:.2f}".format(
+        #         np.mean(weights), np.std(weights)
+        #     ),
+        #     horizontalalignment="left",
+        #     verticalalignment="top",
+        #     transform=ax.transAxes,
+        #     # ha="center",
+        # )
+    ax.set_xscale("log")
+    ax.set_yscale("log")
+    ax.legend()
+    ax.set_xlabel("weights")
+    ax.set_ylabel("Events")
+    fig.savefig(os.path.join(outputdir, f"weights_{suffix}.png"))
+    plt.close(fig)
 
 
 def plot_single_var_from_hist(
@@ -207,23 +242,40 @@ def plot_single_var_from_columns(
         sharex=True,
         gridspec_kw={"height_ratios": [2.5, 1]},
     )
+    weights_plotted = False
     for i, cat in enumerate(cat_list):
 
         weights = col_cat[cat]["weight"]
+        weights_num = col_cat[cat_list[0]]["weight"]
+
+        # renormalize the weights
+        if NORMALIZE_WEIGHTS and "Run2" not in cat and "2b" in cat and "postW" in cat:
+            mean_weight = np.mean(weights)
+            # mean_weight = np.std(weights)
+            # std_weight = np.std(weights)
+            std_weight = np.mean(weights)
+            # std_weight = 1.
+            
+            print(
+                f"Normalizing weights for {cat} with mean {mean_weight} and std {std_weight}"
+            )
+            original_weights = weights
+            weights = (weights - mean_weight) / std_weight + 1.0
+            print(f"New mean: {np.mean(weights)} and std: {np.std(weights)}")
+            if not weights_plotted:
+                plot_weights([original_weights, weights], f"{cat}_normalized")
+                weights_plotted = True
+
+        col_num = col_cat[cat_list[0]][var]
+
         mask_w = weights > -1
         weights = weights[mask_w]
         col = col_cat[cat][var][mask_w]
 
-        # if "Run2" in cat:
-        #     norm_factor = (num_4b_run2 / num_2b_run2) if "2b" in cat else 1
-        # else:
-        #     norm_factor = (num_4b / num_2b) if "2b" in cat else 1
-        # norm_factor = 1 / weights.sum()
-
         if norm_factor_dict:
             norm_factor = norm_factor_dict[cat]
         else:
-            norm_factor = col_cat[cat_list[0]]["weight"].sum() / weights.sum()
+            norm_factor = weights_num.sum() / weights.sum()
 
         print(
             f"Plotting from columns {var} for {cat} with norm {norm_factor} and weights sum {weights.sum()}"
@@ -257,12 +309,9 @@ def plot_single_var_from_columns(
             )
 
         # draw the ratio
-        col_den = col_cat[cat_list[0]][var]
-        weights_den = col_cat[cat_list[0]]["weight"]
-
         h_den = h
         h_num, bins = np.histogram(
-            col_den, bins=30, weights=weights_den, range=range_4b
+            col_num, bins=30, weights=weights_num, range=range_4b
         )
         ratio = h_num / h_den
         err_num = np.sqrt(h_num)
@@ -359,39 +408,15 @@ if __name__ == "__main__":
                 col = accumulator["columns"][sample][dataset][category]
                 for k in col.keys():
                     col[k] = col[k].value
-    if True:
-        sample = list(accumulator["columns"].keys())[0]
-        dataset = list(accumulator["columns"][sample].keys())[0]
-        for category in accumulator["columns"][sample][dataset].keys():
 
-            col = accumulator["columns"][sample][dataset][category]
+    # plot the weights
+    sample = list(accumulator["columns"].keys())[0]
+    dataset = list(accumulator["columns"][sample].keys())[0]
+    for category in accumulator["columns"][sample][dataset].keys():
+        col = accumulator["columns"][sample][dataset][category]
+        weights = col["weight"]
 
-            # print(col["events_bkg_morphing_dnn_weightRun2"])
-            # print(col["weight"])
-
-            # assert np.allclose(
-            #     col["events_bkg_morphing_dnn_weightRun2"],
-            #     col["weight"],
-            #     rtol=1e-03,
-            #     atol=1e-05,
-            # )
-
-            fig, ax = plt.subplots()
-            ax.hist(col["weight"], bins=100, histtype="step", label="weight")
-            ax.text(
-                0.75,
-                0.9,
-                "mean: {:.2f}\nstd: {:.2f}".format(
-                    np.mean(col["weight"]), np.std(col["weight"])
-                ),
-                horizontalalignment="left",
-                verticalalignment="top",
-                transform=ax.transAxes,
-                # ha="center",
-            )
-            ax.set_xscale("log")
-            ax.set_yscale("log")
-            fig.savefig(os.path.join(outputdir, f"weights_{category}.png"))
+        plot_weights([weights], category)
 
     # Get the normalization factors
     num_4b_CR = accumulator["cutflow"]["4b_control_region"][
@@ -419,8 +444,6 @@ if __name__ == "__main__":
         "DATA_JetMET_JMENano_2022_postEE_EraE"
     ]["DATA_JetMET_JMENano_skimmed"]
 
-    
-    
     norm_factor_dict = {
         "4b_control_region": 1,
         "2b_control_region_preW": num_4b_CR / num_2b_CR,
@@ -435,17 +458,18 @@ if __name__ == "__main__":
         "2b_signal_region_preWRun2": num_4b_CRRun2 / (num_2b_CRRun2),
         "2b_signal_region_postWRun2": num_4b_CRRun2 / (num_2b_CRRun2),
     }
-    if args.normalisation== "sum_weights":
+    if args.normalisation == "sum_weights":
         norm_factor_dict = None
-    elif args.normalisation== "const_frac":
-        norm_factor_dict = {k: (0.018824706 if "2b" in k else 1.) for k in norm_factor_dict.keys() }
-    elif args.normalisation== "num_events":
+    elif args.normalisation == "const_frac":
+        norm_factor_dict = {
+            k: (0.018824706 if "2b" in k else 1.0) for k in norm_factor_dict.keys()
+        }
+    elif args.normalisation == "num_events":
         pass
     else:
         raise ValueError(f"Normalisation type {args.normalisation} not recognised")
-        
+
     print("norm_factor_dict", norm_factor_dict)
-    
 
     plot_from_hist(accumulator, norm_factor_dict)
     plot_from_columns(accumulator, norm_factor_dict)

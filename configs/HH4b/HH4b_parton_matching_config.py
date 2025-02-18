@@ -72,7 +72,7 @@ if SAVE_CHUNK:
     # workflow_options["dump_columns_as_arrays_per_chunk"] = "root://t3dcachedb03.psi.ch:1094//pnfs/psi.ch/cms/trivcat/store/user/tharte/HH4b/ntuples/DATA_JetMET_JMENano_no_btag"
 
 
-variables_dict = get_variables_dict(CLASSIFICATION, RANDOM_PT, False)
+variables_dict = get_variables_dict(True, CLASSIFICATION, RANDOM_PT, False)
 
 column_dict = DEFAULT_COLUMNS
 event_cols = []

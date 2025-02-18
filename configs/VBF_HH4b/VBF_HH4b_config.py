@@ -1,5 +1,6 @@
 import os
 import sys
+from collections import defaultdict
 
 from pocket_coffea.utils.configurator import Configurator
 from pocket_coffea.lib.cut_functions import (
@@ -32,7 +33,10 @@ from configs.HH4b_common.custom_weights import (
 from configs.HH4b_common.configurator_options import (
     get_variables_dict,
     get_columns_list,
+    create_DNN_columns_list,
 )
+from configs.HH4b_common.dnn_input_variables import bkg_morphing_dnn_input_variables
+
 
 localdir = os.path.dirname(os.path.abspath(__file__))
 
@@ -53,10 +57,10 @@ parameters = defaults.merge_parameters_from_files(
 )
 
 
-onnx_model_dict={
+onnx_model_dict = {
     "SPANET": "/work/tharte/datasets/mass_sculpting_data/hh4b_5jets_e300_s100_ptvary_wide_loose_btag.onnx",
     # "SPANET": "params/out_hh4b_5jets_ATLAS_ptreg_c0_lr1e4_wp0_noklininp_oc_300e_kl3p5.onnx",
-    "VBF_GGF_DNN":"",
+    "VBF_GGF_DNN": "",
     # "VBF_GGF_DNN":"/t3home/rcereghetti/ML_pytorch/out/20241212_223142_SemitTightPtLearningRateConstant/models/model_28.onnx",
     "BKG_MORPHING_DNN": "/pnfs/psi.ch/cms/trivcat/store/user/mmalucch/keras_models_morphing/average_model_from_keras.onnx",
     "SIG_BKG_DNN": "",
@@ -86,9 +90,7 @@ workflow_options = {
     "donotscale_sumgenweights": True,
     "semi_tight_vbf": SEMI_TIGHT_VBF,
 }
-workflow_options.update(
-    onnx_model_dict
-)
+workflow_options.update(onnx_model_dict)
 
 if SAVE_CHUNK:
     # workflow_options["dump_columns_as_arrays_per_chunk"] = "root://t3dcachedb03.psi.ch:1094//pnfs/psi.ch/cms/trivcat/store/user/tharte/HH4b/training_samples/GluGlutoHHto4B_spanet_loose_03_17"
@@ -101,24 +103,12 @@ variables_dict = get_variables_dict(
     VBF_VARIABLES=False,
     BKG_MORPHING=True if onnx_model_dict["BKG_MORPHING_DNN"] else False,
 )
+# variables_dict={}
 
-columns_dict = {
-    "HiggsLeading": ["pt", "mass", "dR"],
-    "HiggsSubLeading": ["pt", "mass", "dR"],
-    "HH": ["mass"],
-    "events": ["dR_min", "dR_max", "bkg_morphing_dnn_weight"],
-}
 
-column_list = get_columns_list(columns_dict, not SAVE_CHUNK)
+column_list=create_DNN_columns_list(False, not SAVE_CHUNK, bkg_morphing_dnn_input_variables)
+column_listRun2=create_DNN_columns_list(True, not SAVE_CHUNK, bkg_morphing_dnn_input_variables)
 
-columns_dictRun2 = {
-    "HiggsLeadingRun2": ["pt", "mass", "dR"],
-    "HiggsSubLeadingRun2": ["pt", "mass", "dR"],
-    "HHRun2": ["mass"],
-    "events": ["dR_min", "dR_max", "bkg_morphing_dnn_weightRun2"],
-}
-
-column_listRun2 = get_columns_list(columns_dictRun2, not SAVE_CHUNK)
 
 preselection = (
     [vbf_hh4b_presel if TIGHT_CUTS is False else vbf_hh4b_presel_tight]
@@ -192,7 +182,7 @@ cfg = Configurator(
         # **{f"4b_VBF_0{i}qvg_generalSelection_region": [hh4b_4b_region, VBF_generalSelection_region, qvg_regions[f"qvg_0{i}_region"]] for i in range(5, 10)},
     },
     weights_classes=common_weights
-    + [bkg_morphing_dnn_weight, bkg_morphing_dnn_weightRun2],  
+    + [bkg_morphing_dnn_weight, bkg_morphing_dnn_weightRun2],
     weights={
         "common": {
             "inclusive": [
