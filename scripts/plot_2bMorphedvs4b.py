@@ -5,6 +5,7 @@ from matplotlib import pyplot as plt
 from coffea.util import load
 from omegaconf import OmegaConf
 import numpy as np
+import awkward as ak
 from pocket_coffea.utils.plot_utils import PlotManager
 import argparse
 import mplhep as hep
@@ -29,18 +30,26 @@ parser.add_argument("-w", "--workers", type=int, default=8, help="Number of work
 parser.add_argument(
     "-l", "--linear", action="store_true", help="Linear scale", default=False
 )
+parser.add_argument(
+    "-d", "--density", action="store_true", help="Normalize plots to 1", default=False
+)
 args = parser.parse_args()
 
 
-NORMALIZE_WEIGHTS = True
+NORMALIZE_WEIGHTS = False
+PAD_VALUE = -999
 
-# Using the `input_dir` argument, read the default config and coffea files (if not set with argparse):
+
 input_dir = args.input
 cfg = os.path.join(input_dir, "parameters_dump.yaml")
 inputfile = os.path.join(input_dir, "output_all.coffea")
 log_scale = not args.linear
 outputdir = os.path.join(input_dir, args.output) + f"_{args.normalisation}"
 
+
+# To mix categories with Run2 and SPANet, put first the Run2 category
+# because first the name of the variables is try with the Run2 string
+# and after without it
 cat_dict = {
     "CR": ["4b_control_region", "2b_control_region_preW", "2b_control_region_postW"],
     "CRRun2": [
@@ -54,6 +63,7 @@ cat_dict = {
         "2b_signal_region_preWRun2",
         "2b_signal_region_postWRun2",
     ],
+    "CR_SPANetRun2": ["2b_control_region_preWRun2", "2b_control_region_preW"],
 }
 
 
@@ -71,17 +81,6 @@ def plot_weights(weights_list, suffix):
             + str(i)
             + "\nmean: {:.2f}\nstd: {:.2f}".format(np.mean(weights), np.std(weights)),
         )
-        # ax.text(
-        #     0.75,
-        #     0.95 - 0.2 * i,
-        #     "mean: {:.2f}\nstd: {:.2f}".format(
-        #         np.mean(weights), np.std(weights)
-        #     ),
-        #     horizontalalignment="left",
-        #     verticalalignment="top",
-        #     transform=ax.transAxes,
-        #     # ha="center",
-        # )
     ax.set_xscale("log")
     ax.set_yscale("log")
     ax.legend()
@@ -233,7 +232,7 @@ def plot_from_hist(accumulator, norm_factor_dict=None):
 
 
 def plot_single_var_from_columns(
-    var, col_cat, cat_list, dir_cat, norm_factor_dict=None
+    var, col_dict, weight_dict, cat_list, dir_cat, norm_factor_dict=None
 ):
     fig, (ax, ax_ratio) = plt.subplots(
         2,
@@ -243,90 +242,102 @@ def plot_single_var_from_columns(
         gridspec_kw={"height_ratios": [2.5, 1]},
     )
     weights_plotted = False
+    print(var)
+    range_4b = (0, 0)
+
     for i, cat in enumerate(cat_list):
 
-        weights = col_cat[cat]["weight"]
-        weights_num = col_cat[cat_list[0]]["weight"]
+        weights_den = weight_dict[cat]
+        weights_num = weight_dict[cat_list[0]]
+
+        col_den = col_dict[cat]
+        col_num = col_dict[cat_list[0]]
 
         # renormalize the weights
-        if NORMALIZE_WEIGHTS and "Run2" not in cat and "2b" in cat and "postW" in cat:
-            mean_weight = np.mean(weights)
+        if NORMALIZE_WEIGHTS and "Run2" not in cat and i != 0 and "postW" in cat:
+            mean_weight = np.mean(weights_den)
             # mean_weight = np.std(weights)
             # std_weight = np.std(weights)
-            std_weight = np.mean(weights)
+            std_weight = np.mean(weights_den)
             # std_weight = 1.
-            
+
             print(
                 f"Normalizing weights for {cat} with mean {mean_weight} and std {std_weight}"
             )
-            original_weights = weights
-            weights = (weights - mean_weight) / std_weight + 1.0
-            print(f"New mean: {np.mean(weights)} and std: {np.std(weights)}")
+            original_weights = weights_den
+            weights_den = (weights_den - mean_weight) / std_weight + 1.0
+            print(f"New mean: {np.mean(weights_den)} and std: {np.std(weights_den)}")
             if not weights_plotted:
-                plot_weights([original_weights, weights], f"{cat}_normalized")
+                plot_weights([original_weights, weights_den], f"{cat}_normalized")
                 weights_plotted = True
 
-        col_num = col_cat[cat_list[0]][var]
+        # mask_w = weights > -1
+        # weights = weights[mask_w]
 
-        mask_w = weights > -1
-        weights = weights[mask_w]
-        col = col_cat[cat][var][mask_w]
+        # remove padded values
+        weights_den = weights_den[col_den != PAD_VALUE]
+        weights_num = weights_num[col_num != PAD_VALUE]
+        col_den = col_den[col_den != PAD_VALUE]
+        col_num = col_num[col_num != PAD_VALUE]
 
         if norm_factor_dict:
             norm_factor = norm_factor_dict[cat]
+            norm_factor_num=norm_factor_dict[cat_list[0]]
         else:
-            norm_factor = weights_num.sum() / weights.sum()
-
+            norm_factor = weights_num.sum() / weights_den.sum()
+            norm_factor_num = 1.0
         print(
-            f"Plotting from columns {var} for {cat} with norm {norm_factor} and weights sum {weights.sum()}"
+            f"Plotting from columns {var} for {cat} with norm {norm_factor} and weights sum {weights_den.sum()}"
         )
 
-        range_4b = (np.min(col), np.max(col)) if "4b" in cat else range_4b
-        weights = weights[(col > range_4b[0]) & (col < range_4b[1])]
-        col = col[(col > range_4b[0]) & (col < range_4b[1])]
+        range_4b = (np.min(col_den), np.max(col_den)) if i == 0 else range_4b
+        mask_range4b = (col_den > range_4b[0]) & (col_den < range_4b[1])
+        weights_den = weights_den[mask_range4b]
+        col_den = col_den[mask_range4b]
 
-        h, bins = np.histogram(
-            col, bins=30, weights=weights * norm_factor, range=range_4b
+        print(f"weights_den {weights_den}", type(weights_den))
+        print(f"weights_num {weights_num}")
+        print(f"col_num {col_num}", type(col_num))
+        print(f"col_den {col_den}")
+
+        h_den, bins = np.histogram(
+            col_den, bins=30, weights=weights_den * norm_factor, range=range_4b
         )
         bins_center = (bins[1:] + bins[:-1]) / 2
-        if "4b" in cat:
-            ax.errorbar(
-                bins_center,
-                h,
-                yerr=np.sqrt(h),
-                label=cat,
-                color=color_list[i],
-                fmt=".",
-            )
-        else:
-            ax.hist(
-                col,
-                bins=30,
-                histtype="step",
-                label=cat,
-                weights=weights * norm_factor,
-                color=color_list[i],
-            )
-
         # draw the ratio
-        h_den = h
         h_num, bins = np.histogram(
-            col_num, bins=30, weights=weights_num, range=range_4b
+            col_num, bins=30, weights=weights_num * norm_factor_num, range=range_4b
         )
+
         ratio = h_num / h_den
         err_num = np.sqrt(h_num)
         err_den = np.sqrt(h_den)
         ratio_err = np.sqrt((err_num / h_den) ** 2 + (h_num * err_den / h_den**2) ** 2)
-        if "4b" not in cat:
-            ax_ratio.errorbar(
+        print("ratio_err", ratio_err)
+        if args.density:
+            h_den, bins = np.histogram(
+                col_den,
+                bins=30,
+                weights=weights_den * norm_factor,
+                range=range_4b,
+                density=True,
+            )
+            h_num, bins = np.histogram(
+                col_num,
+                bins=30,
+                weights=weights_num * norm_factor_num,
+                range=range_4b,
+                density=True,
+            )
+        if i == 0:
+            ax.errorbar(
                 bins_center,
-                ratio,
-                yerr=ratio_err,
-                fmt=".",
+                h_den,
+                yerr=np.sqrt(h_den) if not args.density else 0,
                 label=cat,
                 color=color_list[i],
+                fmt=".",
             )
-        else:
             ax_ratio.axhline(y=1, color=color_list[i], linestyle="--")
             ax_ratio.fill_between(
                 bins_center,
@@ -335,6 +346,28 @@ def plot_single_var_from_columns(
                 color="grey",
                 alpha=0.5,
             )
+        else:
+            ax.hist(
+                col_den,
+                bins=30,
+                histtype="step",
+                label=cat,
+                weights=weights_den * norm_factor,
+                color=color_list[i],
+                range=range_4b,
+                density=args.density,
+            )
+            ax_ratio.errorbar(
+                bins_center,
+                ratio,
+                yerr=ratio_err,
+                fmt=".",
+                label=cat,
+                color=color_list[i],
+            )
+
+        del col_den, col_num
+
     ax.legend(loc="upper right")
     ax.set_yscale("log" if log_scale else "linear")
     hep.cms.lumitext(r"22EE Era E, 6 $fb^{-1}$, (13.6 TeV)", ax=ax)
@@ -347,8 +380,13 @@ def plot_single_var_from_columns(
     ax.grid()
     ax_ratio.grid()
     ax_ratio.set_ylim(0.5, 1.5)
+    print("ax.get_ylim()[1]", ax.get_ylim()[1])
     ax.set_ylim(
-        top=1.5 * ax.get_ylim()[1] if not log_scale else ax.get_ylim()[1] ** 1.5
+        top=(
+            1.3 * ax.get_ylim()[1]
+            if not log_scale
+            else ax.get_ylim()[1] ** (1.3 if not args.density else -1.3)
+        )
     )
     fig.savefig(
         os.path.join(dir_cat, f"{var}.png"),
@@ -365,12 +403,71 @@ def plot_from_columns(accumulator, norm_factor_dict=None):
         dir_cat = f"{outputdir}/{cats_name}_columns"
         if not os.path.exists(dir_cat):
             os.makedirs(dir_cat)
-        vars = col_cat[cat_list[0]].keys()
+        vars_tot = col_cat[cat_list[0]].keys()
+        vars = []
+        # vars_tot = [v for v in vars_tot if "add" in v or "weight"  in v]
+        col_dict = {}
+        for v in vars_tot:
+            if "_N" in v:
+                continue
+            v_pref = v.split("_")[0]
+            if v_pref + "_N" in vars_tot:
+                N = col_cat[cat_list[0]][v_pref + "_N"].value[0]
+                try:
+                    assert (col_cat[cat_list[0]][v_pref + "_N"].value == N).all()
+                except AssertionError:
+                    print(
+                        f"Variables {v_pref} have different N values: {col_cat[cat_list[0]][v_pref + '_N'].value}"
+                    )
+                    sys.exit(1)
+
+                for idx in range(N):
+                    col_dict[f"{v}_{idx}"] = {}
+                    vars.append(f"{v}_{idx}")
+                    for cat in cat_list:
+                        print(v, cat)
+                        try:
+                            col_dict[f"{v}_{idx}"][cat] = col_cat[cat][v].value[
+                                np.arange(len(col_cat[cat][v].value)) % N == idx
+                            ]
+                        except KeyError:
+                            col_dict[f"{v}_{idx}"][cat] = col_cat[cat][
+                                v.replace("Run2", "")
+                            ].value[
+                                np.arange(
+                                    len(col_cat[cat][v.replace("Run2", "")].value)
+                                )
+                                % N
+                                == idx
+                            ]
+            else:
+                col_dict[v] = {}
+                if v != "weight":
+                    vars.append(v)
+                for cat in cat_list:
+                    # swap the dict keys
+                    print(v, cat)
+                    try:
+                        col_dict[v][cat] = col_cat[cat][v].value
+                    except KeyError:
+                        col_dict[v][cat] = col_cat[cat][v.replace("Run2", "")].value
+        print(col_dict)
         with Pool(args.workers) as p:
             p.starmap(
                 plot_single_var_from_columns,
-                [(var, col_cat, cat_list, dir_cat, norm_factor_dict) for var in vars],
+                [
+                    (
+                        var,
+                        col_dict[var],
+                        col_dict["weight"],
+                        cat_list,
+                        dir_cat,
+                        norm_factor_dict,
+                    )
+                    for var in vars
+                ],
             )
+        del col_dict
 
 
 if __name__ == "__main__":
@@ -402,61 +499,57 @@ if __name__ == "__main__":
     if not os.path.exists(outputdir):
         os.makedirs(outputdir)
 
-    for sample in accumulator["columns"].keys():
-        for dataset in accumulator["columns"][sample].keys():
-            for category in accumulator["columns"][sample][dataset].keys():
-                col = accumulator["columns"][sample][dataset][category]
-                for k in col.keys():
-                    col[k] = col[k].value
 
     # plot the weights
     sample = list(accumulator["columns"].keys())[0]
     dataset = list(accumulator["columns"][sample].keys())[0]
     for category in accumulator["columns"][sample][dataset].keys():
-        col = accumulator["columns"][sample][dataset][category]
-        weights = col["weight"]
-
+        weights = accumulator["columns"][sample][dataset][category]["weight"].value
         plot_weights([weights], category)
 
+
+    num_ev_dict={}
     # Get the normalization factors
-    num_4b_CR = accumulator["cutflow"]["4b_control_region"][
+    num_ev_dict["num_4b_CR"] = accumulator["cutflow"]["4b_control_region"][
         "DATA_JetMET_JMENano_2022_postEE_EraE"
     ]["DATA_JetMET_JMENano_skimmed"]
-    num_2b_CR = accumulator["cutflow"]["2b_control_region_preW"][
+    num_ev_dict["num_2b_CR"] = accumulator["cutflow"]["2b_control_region_preW"][
         "DATA_JetMET_JMENano_2022_postEE_EraE"
     ]["DATA_JetMET_JMENano_skimmed"]
-    num_4b_SR = accumulator["cutflow"]["4b_signal_region"][
+    num_ev_dict["num_4b_SR"] = accumulator["cutflow"]["4b_signal_region"][
         "DATA_JetMET_JMENano_2022_postEE_EraE"
     ]["DATA_JetMET_JMENano_skimmed"]
-    num_2b_SR = accumulator["cutflow"]["2b_signal_region_preW"][
+    num_ev_dict["num_2b_SR"] = accumulator["cutflow"]["2b_signal_region_preW"][
         "DATA_JetMET_JMENano_2022_postEE_EraE"
     ]["DATA_JetMET_JMENano_skimmed"]
-    num_4b_CRRun2 = accumulator["cutflow"]["4b_control_regionRun2"][
+    num_ev_dict["num_4b_CRRun2"] = accumulator["cutflow"]["4b_control_regionRun2"][
         "DATA_JetMET_JMENano_2022_postEE_EraE"
     ]["DATA_JetMET_JMENano_skimmed"]
-    num_2b_CRRun2 = accumulator["cutflow"]["2b_control_region_preWRun2"][
+    num_ev_dict["num_2b_CRRun2"] = accumulator["cutflow"]["2b_control_region_preWRun2"][
         "DATA_JetMET_JMENano_2022_postEE_EraE"
     ]["DATA_JetMET_JMENano_skimmed"]
-    num_4b_SRRun2 = accumulator["cutflow"]["4b_signal_regionRun2"][
+    num_ev_dict["num_4b_SRRun2"] = accumulator["cutflow"]["4b_signal_regionRun2"][
         "DATA_JetMET_JMENano_2022_postEE_EraE"
     ]["DATA_JetMET_JMENano_skimmed"]
-    num_2b_SRRun2 = accumulator["cutflow"]["2b_signal_region_preWRun2"][
+    num_ev_dict["num_2b_SRRun2"] = accumulator["cutflow"]["2b_signal_region_preWRun2"][
         "DATA_JetMET_JMENano_2022_postEE_EraE"
     ]["DATA_JetMET_JMENano_skimmed"]
+    
+    print("num_ev_dict", num_ev_dict)
 
     norm_factor_dict = {
         "4b_control_region": 1,
-        "2b_control_region_preW": num_4b_CR / num_2b_CR,
-        "2b_control_region_postW": num_4b_CR / num_2b_CR,
+        "2b_control_region_preW": num_ev_dict["num_4b_CR"] / num_ev_dict["num_2b_CR"],
+        "2b_control_region_postW": num_ev_dict["num_4b_CR"] / num_ev_dict["num_2b_CR"],
         "4b_signal_region": 1,
-        "2b_signal_region_preW": num_4b_CR / (num_2b_CR),
-        "2b_signal_region_postW": num_4b_CR / (num_2b_CR),
+        "2b_signal_region_preW": num_ev_dict["num_4b_CR"] / (num_ev_dict["num_2b_CR"]),
+        "2b_signal_region_postW": num_ev_dict["num_4b_CR"] / (num_ev_dict["num_2b_CR"]),
         "4b_control_regionRun2": 1,
-        "2b_control_region_preWRun2": num_4b_CRRun2 / num_2b_CRRun2,
-        "2b_control_region_postWRun2": num_4b_CRRun2 / num_2b_CRRun2,
+        "2b_control_region_preWRun2": num_ev_dict["num_4b_CRRun2"] / num_ev_dict["num_2b_CRRun2"],
+        "2b_control_region_postWRun2": num_ev_dict["num_4b_CRRun2"] / num_ev_dict["num_2b_CRRun2"],
         "4b_signal_regionRun2": 1,
-        "2b_signal_region_preWRun2": num_4b_CRRun2 / (num_2b_CRRun2),
-        "2b_signal_region_postWRun2": num_4b_CRRun2 / (num_2b_CRRun2),
+        "2b_signal_region_preWRun2": num_ev_dict["num_4b_CRRun2"] / (num_ev_dict["num_2b_CRRun2"]),
+        "2b_signal_region_postWRun2": num_ev_dict["num_4b_CRRun2"] / (num_ev_dict["num_2b_CRRun2"]),
     }
     if args.normalisation == "sum_weights":
         norm_factor_dict = None
@@ -471,7 +564,7 @@ if __name__ == "__main__":
 
     print("norm_factor_dict", norm_factor_dict)
 
-    plot_from_hist(accumulator, norm_factor_dict)
+    # plot_from_hist(accumulator, norm_factor_dict)
     plot_from_columns(accumulator, norm_factor_dict)
 
     print(f"\nPlots saved in {outputdir}")
