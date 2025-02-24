@@ -748,22 +748,26 @@ class HH4bCommonProcessor(BaseProcessorABC):
                 output_name_BKG_MORPHING_DNN,
             ) = get_model_session(self.BKG_MORPHING_DNN, "BKG_MORPHING_DNN")
 
-            self.events["bkg_morphing_dnn_weight"] = get_dnn_prediction(
-                model_session_BKG_MORPHING_DNN,
-                input_name_BKG_MORPHING_DNN,
-                output_name_BKG_MORPHING_DNN,
-                self.events,
-                bkg_morphing_dnn_input_variables,
-            )[0]
+            self.events["bkg_morphing_dnn_weight"] = ak.flatten(
+                get_dnn_prediction(
+                    model_session_BKG_MORPHING_DNN,
+                    input_name_BKG_MORPHING_DNN,
+                    output_name_BKG_MORPHING_DNN,
+                    self.events,
+                    bkg_morphing_dnn_input_variables,
+                )[0]
+            )
 
-            self.events["bkg_morphing_dnn_weightRun2"] = get_dnn_prediction(
-                model_session_BKG_MORPHING_DNN,
-                input_name_BKG_MORPHING_DNN,
-                output_name_BKG_MORPHING_DNN,
-                self.events,
-                bkg_morphing_dnn_input_variables,
-                run2=True,
-            )[0]
+            self.events["bkg_morphing_dnn_weightRun2"] = ak.flatten(
+                get_dnn_prediction(
+                    model_session_BKG_MORPHING_DNN,
+                    input_name_BKG_MORPHING_DNN,
+                    output_name_BKG_MORPHING_DNN,
+                    self.events,
+                    bkg_morphing_dnn_input_variables,
+                    run2=True,
+                )[0]
+            )
 
         if self.SIG_BKG_DNN:
             (
