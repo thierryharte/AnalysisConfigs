@@ -47,8 +47,7 @@ class HH4bCommonProcessor(BaseProcessorABC):
             self.events.Jet,
             ak.where(
                 self.events.Jet.PNetRegPtRawCorr > 0,
-                self.events.Jet.pt
-                * (1 - self.events.Jet.rawFactor)
+                self.events.Jet.pt_raw
                 * self.events.Jet.PNetRegPtRawCorr
                 * self.events.Jet.PNetRegPtRawCorrNeutrino,
                 self.events.Jet.pt,
@@ -59,8 +58,7 @@ class HH4bCommonProcessor(BaseProcessorABC):
             self.events.Jet,
             ak.where(
                 self.events.Jet.PNetRegPtRawCorr > 0,
-                self.events.Jet.mass
-                * (1 - self.events.Jet.rawFactor)
+                self.events.Jet.mass_raw
                 * self.events.Jet.PNetRegPtRawCorr
                 * self.events.Jet.PNetRegPtRawCorrNeutrino,
                 self.events.Jet.mass,
