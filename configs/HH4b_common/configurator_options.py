@@ -985,10 +985,15 @@ variable_dict_bkg_morphing = {
     ),
 }
 
-variables_dict={}
+variables_dict = {}
+
 
 def get_variables_dict(
-    JETS=True, CLASSIFICATION=False, RANDOM_PT=False, VBF_VARIABLES=False, BKG_MORPHING=False
+    JETS=True,
+    CLASSIFICATION=False,
+    RANDOM_PT=False,
+    VBF_VARIABLES=False,
+    BKG_MORPHING=False,
 ):
     """Function to create the variable dictionary for the PocketCoffea Configurator()."""
     if JETS:
@@ -1028,15 +1033,15 @@ def get_columns_list(
         columns.append(ColOut(collection, attributes, flatten))
     return columns
 
-def create_DNN_columns_list(run2, flatten, dnn_input_variables):
-    """Create the columns of the DNN input variables
-    """
+
+def create_DNN_columns_list(run2, flatten, dnn_input_variables, btag=False):
+    """Create the columns of the DNN input variables"""
     column_dict = defaultdict(set)
     for x, y in dnn_input_variables.values():
         if run2:
             if x != "events":
                 column_dict[x.split(":")[0] + "Run2"].add(y)
-        else:    
+        else:
             column_dict[x.split(":")[0]].add(y)
     if run2:
         column_dict.update(
@@ -1053,9 +1058,11 @@ def create_DNN_columns_list(run2, flatten, dnn_input_variables):
                 )
             }
         )
-    column_dict={
-        x:list(y) for x,y in column_dict.items()
-    }
+    column_dict = {x: list(y) for x, y in column_dict.items()}
+    if btag:
+        column_dict[f"JetGoodFromHiggsOrdered{'Run2' if run2 else ''}"].append(
+            "btagPNetB"
+        )
     column_list = get_columns_list(column_dict, flatten)
-    
+
     return column_list
