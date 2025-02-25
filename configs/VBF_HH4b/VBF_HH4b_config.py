@@ -52,7 +52,6 @@ parameters = defaults.merge_parameters_from_files(
     f"{localdir}/params/object_preselection.yaml",
     f"{localdir}/params/triggers.yaml",
     f"{localdir}/params/jets_calibration.yaml",
-    # f"{localdir}/params/plotting_style.yaml",
     update=True,
 )
 
@@ -62,7 +61,8 @@ onnx_model_dict = {
     # "SPANET": "params/out_hh4b_5jets_ATLAS_ptreg_c0_lr1e4_wp0_noklininp_oc_300e_kl3p5.onnx",
     "VBF_GGF_DNN": "",
     # "VBF_GGF_DNN":"/t3home/rcereghetti/ML_pytorch/out/20241212_223142_SemitTightPtLearningRateConstant/models/model_28.onnx",
-    "BKG_MORPHING_DNN": "/pnfs/psi.ch/cms/trivcat/store/user/mmalucch/keras_models_morphing/average_model_from_keras.onnx",
+    "BKG_MORPHING_DNN": "/work/tharte/datasets/ML_pytorch/out/batch01/best_models/output/average_model_from_onnx.onnx", # thierry's model
+    # "BKG_MORPHING_DNN": "/pnfs/psi.ch/cms/trivcat/store/user/mmalucch/keras_models_morphing/average_model_from_keras.onnx", # soumya's model
     "SIG_BKG_DNN": "",
     # "SIG_BKG_DNN": "/pnfs/psi.ch/cms/trivcat/store/user/mmalucch/keras_models_SvsB/model_fold0.onnx",
 }
@@ -106,9 +106,8 @@ variables_dict = get_variables_dict(
 # variables_dict={}
 
 
-column_list=create_DNN_columns_list(False, not SAVE_CHUNK, bkg_morphing_dnn_input_variables)
-column_listRun2=create_DNN_columns_list(True, not SAVE_CHUNK, bkg_morphing_dnn_input_variables)
-
+column_list=create_DNN_columns_list(False, not SAVE_CHUNK, bkg_morphing_dnn_input_variables, btag=True)
+column_listRun2=create_DNN_columns_list(True, not SAVE_CHUNK, bkg_morphing_dnn_input_variables, btag=True)
 
 preselection = (
     [vbf_hh4b_presel if TIGHT_CUTS is False else vbf_hh4b_presel_tight]
