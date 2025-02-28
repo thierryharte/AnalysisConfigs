@@ -1,15 +1,32 @@
 import spox.opset.ai.onnx.v17 as op
 from spox import argument, build, inline, Tensor
-import tensorflow as tf
 import os
-import tf2onnx
 import onnx
 import numpy as np
 import argparse
 import onnxruntime as ort
 import uproot
+import sys
 
-parser = argparse.ArgumentParser(description="Convert keras model to onnx")
+import io
+import torch
+import torch.nn as nn
+
+sys.path.append("../../ML_pytorch/models/")
+from DNN_reweight_model import DNN
+
+class TorchModelRatio(nn.Module):
+    def __init__(self, base_model):
+        super().__init__()
+        self.base_model = base_model
+
+    def forward(self, x):
+        output = self.base_model(x)
+        ratio = output / (1 - output)
+        return ratio
+
+
+parser = argparse.ArgumentParser(description="Convert keras or pytorch model to onnx")
 parser.add_argument("-i", "--input", type=str, required=True, help="Input directory")
 parser.add_argument(
     "-ar",
@@ -18,8 +35,17 @@ parser.add_argument(
     default=False,
     help="Perform the average between the models in the directory of the ratios of the outputs",
 )
+parser.add_argument(
+    "-mt",
+    "--model_type",
+    default="keras",
+    help="Parameter to determine, what type of model is being converted (pytorch or keras)",
+)
 args = parser.parse_args()
 
+if args.model_type == "keras":
+    import tensorflow as tf
+    import tf2onnx
 
 columns = [
     "era",
@@ -176,48 +202,147 @@ def compare_output_onnx_keras(onnx_model_name, keras_model):
 if __name__ == "__main__":
     main_dir = args.input
     # "/pnfs/psi.ch/cms/trivcat/store/user/mmalucch/keras_models_morphing"
-
-    keras_files = [x for x in os.listdir(main_dir) if x.endswith(".keras")]
+    
+    if args.model_type == "keras":
+        filending = ".keras"
+    if args.model_type == "pytorch":
+        filending = ".pt"
+    if args.model_type == "onnx":
+        filending = ".onnx"
+    
+    model_files = [x for x in os.listdir(main_dir) if x.endswith(filending)]
+    print(model_files)
     print("Lenght of input", len(columns))
 
     if args.average_ratio:
-        print(f"Processing {keras_files[0]}")
+        print(f"Processing {model_files[0]}")
 
         tot_len = 1
-
-        model = tf.keras.models.load_model(os.path.join(main_dir, keras_files[0]))
-        model_ratio = tf.keras.models.Model(
-            inputs=model.input, outputs=model.output[:, 1] / model.output[:, 0]
-        )
-
-        onnx_model_ratio_sum, _ = tf2onnx.convert.from_keras(
-            model_ratio,
-            input_signature=[
-                tf.TensorSpec(shape=(None, len(columns)), dtype=tf.float32)
-            ],
-        )
-
-        b = argument(Tensor(np.float32, ("N", len(columns))))
-
-        for keras_file in keras_files[1:]:
-            tot_len += 1
-            print(f"\n\nAdding {keras_file}")
-            model_add = tf.keras.models.load_model(os.path.join(main_dir, keras_file))
-            model_ratio_add = tf.keras.models.Model(
-                inputs=model_add.input,
-                outputs=model_add.output[:, 1] / model_add.output[:, 0],
+        
+        if args.model_type == "keras":
+            model = tf.keras.models.load_model(os.path.join(main_dir, model_files[0]))
+            model_ratio = tf.keras.models.Model(
+                inputs=model.input, outputs=model.output[:, 1] / model.output[:, 0]
             )
 
-            onnx_model_ratio_add, _ = tf2onnx.convert.from_keras(
-                model_ratio_add,
+            onnx_model_ratio_sum, _ = tf2onnx.convert.from_keras(
+                model_ratio,
                 input_signature=[
                     tf.TensorSpec(shape=(None, len(columns)), dtype=tf.float32)
                 ],
             )
+            j
+            b = argument(Tensor(np.float32, ("N", len(columns))))
+        
+        elif args.model_type == "pytorch":
+            map_location=torch.device('cpu')
+            print(os.path.join(main_dir, model_files[0]))
+            model = torch.load(os.path.join(main_dir, model_files[0]),map_location)
+            
+            input_size = 45
+            model = DNN(input_size)
+            model.load_state_dict(model_dict)
+            model.eval()
 
+            model_ratio = TorchModelRatio(model)
+            model_ratio.eval()
+            input_shape = model.linear_relu_stack[0].in_features
+           
+            print(input_shape)
+            dummy_input = torch.randn(1,input_shape)
+            
+            stream = io.BytesIO()
+            torch.onnx.export(
+                model_ratio,
+                dummy_input,
+                stream,
+                verbose=True,
+                export_params=True,
+                opset_version=13,
+                input_names=["InputVariables"],
+                output_names=["Sigmoid"],
+                dynamic_axes={
+                    "InputVariables": {0: "batch_size"},
+                    "Sigmoid": {0: "batch_size"},
+                },
+            )
+            stream.seek(0)
+            onnx_model_ratio_sum = onnx.load(stream)
+            
+            b = argument(Tensor(np.float32, ("N", input_shape)))
+
+        elif args.model_type == "onnx":
+            input_shape = 45
+            onnx_model_ratio_sum = onnx.load(os.path.join(main_dir, model_files[0]))
+            b = argument(Tensor(np.float32, ("N", input_shape)))
+            
+            # To take the ratio of the first model too.
+            (r,) = inline(onnx_model_ratio_sum)(b).values()
+            r = op.div(r,op.sub(op.const(1.0,dtype="float32"),r))
+
+            onnx_model_ratio_sum = build({"args_0": b}, {"sum_w": r})
+
+
+
+        for model_file in model_files[1:]:
+            tot_len += 1
+            print(f"\n\nAdding {model_file}")
+            if args.model_type == "keras":
+                model_add = tf.keras.models.load_model(os.path.join(main_dir, model_file))
+                model_ratio_add = tf.keras.models.Model(
+                    inputs=model_add.input,
+                    outputs=model_add.output[:,0] / 1-model_add.output[:,1],
+                )
+
+                onnx_model_ratio_add, _ = tf2onnx.convert.from_keras(
+                    model_ratio_add,
+                    input_signature=[
+                        tf.TensorSpec(shape=(None, len(columns)), dtype=tf.float32)
+                    ],
+                )
+            elif args.model_type == "pytorch":
+                map_location=torch.device('cpu') 
+
+                print(os.path.join(main_dir, model_files[0]))
+                model_add = torch.load(os.path.join(main_dir, model_files[0]),map_location)
+
+                model_ratio_add = TorchModelRatio(model_add)
+               
+                model_ratio_add.eval()
+                model_add.eval()
+                input_shape = model_add.linear_relu_stack[0].in_features
+                print(dir(model_add))
+                print(dir(model_add.sigmoid))
+
+                print(input_shape)
+                dummy_input = torch.randn(1,input_shape)
+                
+                stream = io.BytesIO()
+                torch.onnx.export(
+                    model_ratio_add,
+                    dummy_input,
+                    stream,
+                    verbose=True,
+                    export_params=True,
+                    opset_version=13,
+                    input_names=["InputVariables"],
+                    output_names=["Sigmoid"],
+                    dynamic_axes={
+                        "InputVariables": {0: "batch_size"},
+                        "Sigmoid": {0: "batch_size"},
+                    },
+                )
+                stream.seek(0)
+                onnx_model_ratio_add = onnx.load(stream)
+
+            elif args.model_type == "onnx":
+                onnx_model_ratio_add = onnx.load(os.path.join(main_dir, model_files[0]))
+            
             print(b)
             (r,) = inline(onnx_model_ratio_sum)(b).values()
             (r1,) = inline(onnx_model_ratio_add)(b).values()
+            if args.model_type == "onnx":
+                r1 = op.div(r1,op.sub(op.const(1.0,dtype="float32"),r1))
             print(r)
             print(r1)
 
@@ -229,15 +354,15 @@ if __name__ == "__main__":
         (r_sum,) = inline(onnx_model_ratio_sum)(b).values()
         a = op.div(r_sum, op.constant(value_float=tot_len))
 
-        onnx_model_final = build({"args_0": b}, {"avg_w": a})
-        onnx_model_name = f"{main_dir}/average_model_from_keras.onnx"
+        onnx_model_final = build({"args_0": b}, {"avg_w": op.transpose(a)})
+        onnx_model_name = f"{main_dir}/output/average_model_from_{args.model_type}.onnx"
         save_onnx_model(onnx_model_final, onnx_model_name)
 
     else:
-        for keras_file in keras_files:
-            print(f"Processing {keras_file}")
-            model = tf.keras.models.load_model(os.path.join(main_dir, keras_file))
-            onnx_model_name = f"{main_dir}/{keras_file.replace('.keras', '.onnx')}"
+        for model_file in model_files:
+            print(f"Processing {model_file}")
+            model = tf.keras.models.load_model(os.path.join(main_dir, model_file))
+            onnx_model_name = f"{main_dir}/{model_file.replace('.keras', '.onnx')}"
 
             input_signature = tf.TensorSpec(
                 shape=(None, len(columns)), dtype=tf.float32

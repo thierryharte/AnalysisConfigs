@@ -95,6 +95,18 @@ class HH4bCommonProcessor(BaseProcessorABC):
             )
             del jets5plus
             del jets5plus_pt
+    
+    def apply_preselection(self, variation):
+        '''
+        Workaround to have the possibility for preselections depending on samples
+        Needs correct implementation in the config file to create a dict of all required samples.
+        The keys can then be set as samples and the values are the cuts for the respective sample
+        '''
+        self._preselections_temp = self._preselections
+        if isinstance(self._preselections, dict):
+            self._preselections = self._preselections_temp[self._sample]
+        super().apply_preselection(self,variation)
+        self._preselections = self._preselections_temp
 
     def get_jet_higgs_provenance(self, which_bquark):  # -> ak.Array:
         # Select b-quarks at Gen level, coming from H->bb decay

@@ -19,8 +19,48 @@
             }
         ]
     },
-    "DATA_JetMET_JMENano": {
-        "sample": "DATA_JetMET_JMENano",
+    "DATA_JetMET_JMENano_C": {
+        "sample": "DATA_JetMET_JMENano_C",
+        "json_output": "datasets/DATA_JetMET.json",
+        "files": [
+            {
+                "das_names": [
+                    "/JetMET/Run2022C-JMENano12p5-v1/NANOAOD"
+                ],
+                "metadata": {
+                    "year": "2022_preEE",
+                    "isMC": false,
+                    "primaryDataset": "JetMET",
+                    "era": "C"
+                },
+                "das_parents_names": [
+                    "/JetMET/Run2022C-22Sep2023-v1/MINIAOD"
+                ]
+            }
+        ]
+    },
+    "DATA_JetMET_JMENano_D": {
+        "sample": "DATA_JetMET_JMENano_D",
+        "json_output": "datasets/DATA_JetMET.json",
+        "files": [
+            {
+                "das_names": [
+                    "/JetMET/Run2022D-JMENano12p5-v1/NANOAOD"
+                ],
+                "metadata": {
+                    "year": "2022_preEE",
+                    "isMC": false,
+                    "primaryDataset": "JetMET",
+                    "era": "D"
+                },
+                "das_parents_names": [
+                    "/JetMET/Run2022D-22Sep2023-v1/MINIAOD"
+                ]
+            }
+        ]
+    },
+    "DATA_JetMET_JMENano_E": {
+        "sample": "DATA_JetMET_JMENano_E",
         "json_output": "datasets/DATA_JetMET.json",
         "files": [
             {
@@ -35,6 +75,170 @@
                 },
                 "das_parents_names": [
                     "/JetMET/Run2022E-22Sep2023-v1/MINIAOD"
+                ]
+            }
+        ]
+    },
+    "DATA_JetMET_JMENano_F": {
+        "sample": "DATA_JetMET_JMENano_F",
+        "json_output": "datasets/DATA_JetMET.json",
+        "files": [
+            {
+                "das_names": [
+                    "/JetMET/Run2022F-JMENano12p5-v1/NANOAOD"
+                ],
+                "metadata": {
+                    "year": "2022_postEE",
+                    "isMC": false,
+                    "primaryDataset": "JetMET",
+                    "era": "F"
+                },
+                "das_parents_names": [
+                    "/JetMET/Run2022F-22Sep2023-v2/MINIAOD"
+                ]
+            }
+        ]
+    },
+    "DATA_JetMET_JMENano_G": {
+        "sample": "DATA_JetMET_JMENano_G",
+        "json_output": "datasets/DATA_JetMET.json",
+        "files": [
+            {
+                "das_names": [
+                    "/JetMET/Run2022G-JMENano12p5-v1/NANOAOD"
+                ],
+                "metadata": {
+                    "year": "2022_postEE",
+                    "isMC": false,
+                    "primaryDataset": "JetMET",
+                    "era": "G"
+                },
+                "das_parents_names": [
+                    "/JetMET/Run2022G-22Sep2023-v2/MINIAOD"
+                ]
+            }
+        ]
+    },
+    "DATA_JetMET_JMENano_2023_Cv1": {
+        "sample": "DATA_JetMET_JMENano_2023_Cv1",
+        "json_output": "datasets/DATA_JetMET.json",
+        "files": [
+            {
+                "das_names": [
+                    "/JetMET0/Run2023C-JMENano12p5_v1-v2/NANOAOD",
+                    "/JetMET1/Run2023C-JMENano12p5_v1-v2/NANOAOD"
+                ],
+                "metadata": {
+                    "year": "2023_preBPix",
+                    "isMC": false,
+                    "primaryDataset": "JetMET",
+                    "era": "Cv1"
+                },
+                "das_parents_names": [
+                    "/JetMET0/Run2023C-22Sep2023_v1-v1/MINIAOD",
+                    "/JetMET1/Run2023C-22Sep2023_v1-v1/MINIAOD"
+                ]
+            }
+        ]
+    },
+    "DATA_JetMET_JMENano_2023_Cv2": {
+        "sample": "DATA_JetMET_JMENano_2023_Cv2",
+        "json_output": "datasets/DATA_JetMET.json",
+        "files": [
+            {
+                "das_names": [
+                    "/JetMET0/Run2023C-JMENano12p5_v2-v1/NANOAOD",
+                    "/JetMET1/Run2023C-JMENano12p5_v2-v1/NANOAOD"
+                ],
+                "metadata": {
+                    "year": "2023_preBPix",
+                    "isMC": false,
+                    "primaryDataset": "JetMET",
+                    "era": "Cv2"
+                },
+                "das_parents_names": [
+                    "/JetMET0/Run2023C-22Sep2023_v2-v1/MINIAOD",
+                    "/JetMET1/Run2023C-22Sep2023_v2-v1/MINIAOD"
+                ]
+            }
+        ]
+    },
+    "DATA_ParkingHH_2023_Cv3": {
+        "sample": "DATA_ParkingHH_2023_Cv3",
+        "json_output": "datasets/DATA_ParkingHH.json",
+        "files": [
+            {
+                "das_names": [
+                    "/ParkingHH/Run2023C-22Sep2023_v3-v1/NANOAOD"
+                ],
+                "metadata": {
+                    "year": "2023_preBPix",
+                    "isMC": false,
+                    "primaryDataset": "ParkingHH",
+                    "era": "Cv3"
+                },
+                "das_parents_names": [
+                    "/ParkingHH/Run2023C-PromptReco-v3/AOD"
+                ]
+            }
+        ]
+    },
+    "DATA_ParkingHH_2023_Cv4": {
+        "sample": "DATA_ParkingHH_2023_Cv4",
+        "json_output": "datasets/DATA_ParkingHH.json",
+        "files": [
+            {
+                "das_names": [
+                    "/ParkingHH/Run2023C-22Sep2023_v4-v1/NANOAOD"
+                ],
+                "metadata": {
+                    "year": "2023_preBPix",
+                    "isMC": false,
+                    "primaryDataset": "ParkingHH",
+                    "era": "Cv4"
+                },
+                "das_parents_names": [
+                    "/ParkingHH/Run2023C-PromptReco-v4/AOD"
+                ]
+            }
+        ]
+    },
+    "DATA_ParkingHH_2023_Dv1": {
+        "sample": "DATA_ParkingHH_2023_Dv1",
+        "json_output": "datasets/DATA_ParkingHH.json",
+        "files": [
+            {
+                "das_names": [
+                    "/ParkingHH/Run2023D-22Sep2023_v1-v1/NANOAOD"
+                ],
+                "metadata": {
+                    "year": "2023_postBPix",
+                    "isMC": false,
+                    "primaryDataset": "ParkingHH",
+                    "era": "Dv1"
+                },
+                "das_parents_names": [
+                    "/ParkingHH/Run2023D-PromptReco-v1/AOD"
+                ]
+            }
+        ]
+    },
+    "DATA_ParkingHH_2023_Dv2": {
+        "sample": "DATA_ParkingHH_2023_Dv2",
+        "json_output": "datasets/DATA_ParkingHH.json",
+        "files": [
+            {
+                "das_names": [
+                    "/ParkingHH/Run2023D-22Sep2023_v2-v1/NANOAOD"
+                ],
+                "metadata": {
+                    "year": "2023_postBPix",
+                    "isMC": false,
+                    "primaryDataset": "ParkingHH",
+                    "era": "Dv2"
+                },
+                "das_parents_names": [
+                    "/ParkingHH/Run2023D-PromptReco-v2/AOD"
                 ]
             }
         ]
