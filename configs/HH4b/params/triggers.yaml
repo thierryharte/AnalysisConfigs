@@ -2,3 +2,12 @@ HLT_triggers:
   "2022_postEE":
     JetMET:
        - QuadPFJet70_50_40_35_PFBTagParticleNet_2BTagSum0p65
+  "2022_preEE":
+    JetMET:
+       - QuadPFJet70_50_40_35_PFBTagParticleNet_2BTagSum0p65
+  "2023_preBPix":
+    JetMET:
+       - QuadPFJet70_50_40_35_PFBTagParticleNet_2BTagSum0p65
+  "2023_postBPix":
+    JetMET:
+       - QuadPFJet70_50_40_35_PFBTagParticleNet_2BTagSum0p65
