@@ -6,14 +6,13 @@ import numpy as np
 from pocket_coffea.workflows.base import BaseProcessorABC
 from pocket_coffea.utils.configurator import Configurator
 from pocket_coffea.lib.jets import jet_correction, met_correction_after_jec
-
 from pocket_coffea.lib.deltaR_matching import object_matching, deltaR_matching_nonunique
 
-from workflow import QCDBaseProcessor
-from custom_cut_functions import jet_selection_nopu
+from configs.jme.workflow import QCDBaseProcessor
+from configs.jme.custom_cut_functions import jet_selection_nopu
 
 
-class METProcessor(QCDBaseProcessor):
+class METProcessor(BaseProcessorABC):
     def __init__(self, cfg: Configurator):
         super().__init__(cfg)
         self.only_physisical_jet = self.workflow_options["only_physisical_jet"]
@@ -200,8 +199,8 @@ class METProcessor(QCDBaseProcessor):
             | (abs(self.events.GenPart.pdgId) == 14)
             | (abs(self.events.GenPart.pdgId) == 16)
         ]
-        self.events["GenJetPlusNeutrino"] = self.add_neutrinos_to_genjets(
-            self.events["GenJetGood"], neutrinos
+        self.events["GenJetPlusNeutrino"] = QCDBaseProcessor.add_neutrinos_to_genjets(
+            self, self.events["GenJetGood"], neutrinos
         )
 
         GenMETPlusNeutrino = met_correction_after_jec(
@@ -221,4 +220,7 @@ class METProcessor(QCDBaseProcessor):
 
     def process_extra_after_presel(self, variation) -> ak.Array:
         # super().process_extra_after_presel(variation)
+        pass
+    
+    def count_objects(self, variation):
         pass
