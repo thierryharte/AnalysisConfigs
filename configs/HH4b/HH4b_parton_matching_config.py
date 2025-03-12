@@ -44,6 +44,8 @@ CLASSIFICATION = False
 TIGHT_CUTS = False
 RANDOM_PT = False
 SAVE_CHUNK = False
+DNN_VARIABLES = True
+RUN2 = True
 
 print("CLASSIFICATION ", CLASSIFICATION)
 print("TIGHT_CUTS ", TIGHT_CUTS)
@@ -85,7 +87,9 @@ workflow_options = {
         "tight_cuts": TIGHT_CUTS,
         "fifth_jet": "pt",
         "random_pt": RANDOM_PT,
-        "rand_type": 0.3
+        "rand_type": 0.3,
+        "DNN_VARIABLES": DNN_VARIABLES,
+        "RUN2": RUN2
     }
 workflow_options.update(
     onnx_model_dict
@@ -111,20 +115,50 @@ if RANDOM_PT:
 column_list=create_DNN_columns_list(False, not SAVE_CHUNK, bkg_morphing_dnn_input_variables)
 column_listRun2=create_DNN_columns_list(True, not SAVE_CHUNK, bkg_morphing_dnn_input_variables)
 
-sample_dict = {
-        #"DATA_JetMET_JMENano_C" : [hh4b_presel if TIGHT_CUTS is False else hh4b_presel_tight]
-        #"DATA_JetMET_JMENano_D" : [hh4b_presel if TIGHT_CUTS is False else hh4b_presel_tight]
-        #"DATA_JetMET_JMENano_E" : [hh4b_presel if TIGHT_CUTS is False else hh4b_presel_tight]
-        "DATA_JetMET_JMENano_F" : [hh4b_presel if TIGHT_CUTS is False else hh4b_presel_tight]
-        "DATA_JetMET_JMENano_G" : [hh4b_presel if TIGHT_CUTS is False else hh4b_presel_tight]
-        "DATA_JetMET_JMENano_2023_Cv1" : [hh4b_presel if TIGHT_CUTS is False else hh4b_presel_tight]
-        "DATA_JetMET_JMENano_2023_Cv2" : [hh4b_presel if TIGHT_CUTS is False else hh4b_presel_tight]
-        # "DATA_ParkingHH_2023_Cv3" : [hh4b_presel if TIGHT_CUTS is False else hh4b_presel_tight]
-        # "DATA_ParkingHH_2023_Cv4" : [hh4b_presel if TIGHT_CUTS is False else hh4b_presel_tight]
-        # "DATA_ParkingHH_2023_Dv1" : [hh4b_presel if TIGHT_CUTS is False else hh4b_presel_tight]
-        # "DATA_ParkingHH_2023_Dv2" : [hh4b_presel if TIGHT_CUTS is False else hh4b_presel_tight]
+# Define categories based on what parameters are activated
+categories_dict = {
+        "4b_control_region": [hh4b_4b_region, hh4b_control_region],
+        "2b_control_region_preW": [hh4b_2b_region, hh4b_control_region],
+        #
+        "4b_signal_region": [hh4b_4b_region, hh4b_signal_region],
+        "2b_signal_region_preW": [hh4b_2b_region, hh4b_signal_region],
+    }
+print(type(categories_dict))
+if onnx_model_dict["BKG_MORPHING_DNN"]:
+    categories_reweight = {
+        "2b_control_region_postW": [hh4b_2b_region, hh4b_control_region],
+        "2b_signal_region_postW": [hh4b_2b_region, hh4b_signal_region],
         }
-        
+    categories_dict |= categories_reweight
+if RUN2:
+    categories_run2 = {
+        "4b_control_regionRun2": [hh4b_4b_region, control_region_run2],
+        "2b_control_region_preWRun2": [hh4b_2b_region, control_region_run2],
+        "4b_signal_regionRun2": [hh4b_4b_region, signal_region_run2],
+        "2b_signal_region_preWRun2": [hh4b_2b_region, signal_region_run2],
+        }
+    if onnx_model_dict["BKG_MORPHING_DNN"]:
+        categories_reweight = {
+            "2b_control_region_postWRun2": [hh4b_2b_region, control_region_run2],
+            "2b_signal_region_postWRun2": [hh4b_2b_region, signal_region_run2],
+            }
+        categories_dict |= categories_reweight
+    categories_dict |= categories_run2
+
+
+weight_dict = {}
+column_dict = {}
+for key in categories_dict.keys():
+    if "postW" in key:
+        if "Run2" in key:
+            weight_dict[key] = "bkg_morphing_dnn_weight" 
+        else:
+            weight_dict[key] = "bkg_morphing_dnn_weightRun2"
+    if "Run2" in key:
+        column_dict[key] = column_listRun2
+    else:
+        column_dict[key] = column_list
+
 cfg = Configurator(
     # save_skimmed_files="root://t3dcachedb03.psi.ch:1094//pnfs/psi.ch/cms/trivcat/store/user/tharte/HH4b/ntuples/DATA_JetMET_2022_2023_skimmed",
     parameters=parameters,
@@ -140,7 +174,21 @@ cfg = Configurator(
             f"{localdir}/datasets/DATA_JetMET.json",
         ],
         "filter": {
-            "samples": sample_dict.keys(),
+            "samples": (
+                [
+                    "DATA_JetMET_JMENano_C_skimmed",
+                    "DATA_JetMET_JMENano_D_skimmed",
+                    "DATA_JetMET_JMENano_E_skimmed",
+                    "DATA_JetMET_JMENano_F_skimmed",
+                    "DATA_JetMET_JMENano_G_skimmed",
+                    # "DATA_JetMET_JMENano_2023_Cv1_skimmed",
+                    # "DATA_JetMET_JMENano_2023_Cv2_skimmed",
+                    # "DATA_ParkingHH_2023_Cv3",
+                    # "DATA_ParkingHH_2023_Cv4",
+                    # "DATA_ParkingHH_2023_Dv1",
+                    # "DATA_ParkingHH_2023_Dv2",
+                ]
+            ),
             "samples_exclude": [],
             "year": year,
         },
@@ -151,22 +199,10 @@ cfg = Configurator(
     skim=[
         get_HLTsel(primaryDatasets=["JetMET"]),
     ],
-    preselections=sample_dict,
-    categories={
-        "4b_control_region": [hh4b_4b_region, hh4b_control_region],
-        "2b_control_region_preW": [hh4b_2b_region, hh4b_control_region],
-        "2b_control_region_postW": [hh4b_2b_region, hh4b_control_region],
-        "4b_control_regionRun2": [hh4b_4b_region, control_region_run2],
-        "2b_control_region_preWRun2": [hh4b_2b_region, control_region_run2],
-        "2b_control_region_postWRun2": [hh4b_2b_region, control_region_run2],
-        #
-        "4b_signal_region": [hh4b_4b_region, hh4b_signal_region],
-        "2b_signal_region_preW": [hh4b_2b_region, hh4b_signal_region],
-        "2b_signal_region_postW": [hh4b_2b_region, hh4b_signal_region],
-        "4b_signal_regionRun2": [hh4b_4b_region, signal_region_run2],
-        "2b_signal_region_preWRun2": [hh4b_2b_region, signal_region_run2],
-        "2b_signal_region_postWRun2": [hh4b_2b_region, signal_region_run2],
-    },
+    preselections=[
+        hh4b_presel if TIGHT_CUTS is False else hh4b_presel_tight
+    ],
+    categories=categories_dict,
     weights_classes=common_weights
     + [bkg_morphing_dnn_weight, bkg_morphing_dnn_weightRun2],
     weights={
@@ -176,109 +212,9 @@ cfg = Configurator(
                 "lumi",
                 "XS",
             ],
-            "bycategory": {},
+            "bycategory": weight_dict
         },
-        "bysample": {
-             #"DATA_JetMET_JMENano_C": {
-             #    "inclusive": [],
-             #    "bycategory": {
-             #        "2b_control_region_postW": ["bkg_morphing_dnn_weight"],
-             #        "2b_control_region_postWRun2": ["bkg_morphing_dnn_weightRun2"],
-             #        "2b_signal_region_postW": ["bkg_morphing_dnn_weight"],
-             #        "2b_signal_region_postWRun2": ["bkg_morphing_dnn_weightRun2"],
-             #    },
-             #},
-             #"DATA_JetMET_JMENano_D": {
-             #    "inclusive": [],
-             #    "bycategory": {
-             #        "2b_control_region_postW": ["bkg_morphing_dnn_weight"],
-             #        "2b_control_region_postWRun2": ["bkg_morphing_dnn_weightRun2"],
-             #        "2b_signal_region_postW": ["bkg_morphing_dnn_weight"],
-             #        "2b_signal_region_postWRun2": ["bkg_morphing_dnn_weightRun2"],
-             #    },
-             #},
-             #"DATA_JetMET_JMENano_E": {
-             #    "inclusive": [],
-             #    "bycategory": {
-             #        "2b_control_region_postW": ["bkg_morphing_dnn_weight"],
-             #        "2b_control_region_postWRun2": ["bkg_morphing_dnn_weightRun2"],
-             #        "2b_signal_region_postW": ["bkg_morphing_dnn_weight"],
-             #        "2b_signal_region_postWRun2": ["bkg_morphing_dnn_weightRun2"],
-             #    },
-             #},
-             "DATA_JetMET_JMENano_F": {
-                 "inclusive": [],
-                 "bycategory": {
-                     "2b_control_region_postW": ["bkg_morphing_dnn_weight"],
-                     "2b_control_region_postWRun2": ["bkg_morphing_dnn_weightRun2"],
-                     "2b_signal_region_postW": ["bkg_morphing_dnn_weight"],
-                     "2b_signal_region_postWRun2": ["bkg_morphing_dnn_weightRun2"],
-                 },
-             },
-             "DATA_JetMET_JMENano_G": {
-                 "inclusive": [],
-                 "bycategory": {
-                     "2b_control_region_postW": ["bkg_morphing_dnn_weight"],
-                     "2b_control_region_postWRun2": ["bkg_morphing_dnn_weightRun2"],
-                     "2b_signal_region_postW": ["bkg_morphing_dnn_weight"],
-                     "2b_signal_region_postWRun2": ["bkg_morphing_dnn_weightRun2"],
-                 },
-             },
-             "DATA_JetMET_JMENano_2023_Cv1": {
-                 "inclusive": [],
-                 "bycategory": {
-                     "2b_control_region_postW": ["bkg_morphing_dnn_weight"],
-                     "2b_control_region_postWRun2": ["bkg_morphing_dnn_weightRun2"],
-                     "2b_signal_region_postW": ["bkg_morphing_dnn_weight"],
-                     "2b_signal_region_postWRun2": ["bkg_morphing_dnn_weightRun2"],
-                 },
-             },
-             "DATA_JetMET_JMENano_2023_Cv2": {
-                 "inclusive": [],
-                 "bycategory": {
-                     "2b_control_region_postW": ["bkg_morphing_dnn_weight"],
-                     "2b_control_region_postWRun2": ["bkg_morphing_dnn_weightRun2"],
-                     "2b_signal_region_postW": ["bkg_morphing_dnn_weight"],
-                     "2b_signal_region_postWRun2": ["bkg_morphing_dnn_weightRun2"],
-                 },
-             },
-             # "DATA_ParkingHH_2023_Cv3": {
-             #     "inclusive": [],
-             #     "bycategory": {
-             #         "2b_control_region_postW": ["bkg_morphing_dnn_weight"],
-             #         "2b_control_region_postWRun2": ["bkg_morphing_dnn_weightRun2"],
-             #         "2b_signal_region_postW": ["bkg_morphing_dnn_weight"],
-             #         "2b_signal_region_postWRun2": ["bkg_morphing_dnn_weightRun2"],
-             #     },
-             # },
-             # "DATA_ParkingHH_2023_Cv4": {
-             #     "inclusive": [],
-             #     "bycategory": {
-             #         "2b_control_region_postW": ["bkg_morphing_dnn_weight"],
-             #         "2b_control_region_postWRun2": ["bkg_morphing_dnn_weightRun2"],
-             #         "2b_signal_region_postW": ["bkg_morphing_dnn_weight"],
-             #         "2b_signal_region_postWRun2": ["bkg_morphing_dnn_weightRun2"],
-             #     },
-             # },
-             # "DATA_ParkingHH_2023_Dv1": {
-             #     "inclusive": [],
-             #     "bycategory": {
-             #         "2b_control_region_postW": ["bkg_morphing_dnn_weight"],
-             #         "2b_control_region_postWRun2": ["bkg_morphing_dnn_weightRun2"],
-             #         "2b_signal_region_postW": ["bkg_morphing_dnn_weight"],
-             #         "2b_signal_region_postWRun2": ["bkg_morphing_dnn_weightRun2"],
-             #     },
-             # },
-             # "DATA_ParkingHH_2023_Dv2": {
-             #     "inclusive": [],
-             #     "bycategory": {
-             #         "2b_control_region_postW": ["bkg_morphing_dnn_weight"],
-             #         "2b_control_region_postWRun2": ["bkg_morphing_dnn_weightRun2"],
-             #         "2b_signal_region_postW": ["bkg_morphing_dnn_weight"],
-             #         "2b_signal_region_postWRun2": ["bkg_morphing_dnn_weightRun2"],
-             #     },
-             # },
-        },
+        "bysample": {}
     },
     variations={
         "weights": {
@@ -293,20 +229,7 @@ cfg = Configurator(
     columns={
         "common": {
             "inclusive": [],
-            "bycategory": {
-                "4b_control_region": column_list,
-                "2b_control_region_preW": column_list,
-                "2b_control_region_postW": column_list,
-                "4b_control_regionRun2": column_listRun2,
-                "2b_control_region_preWRun2": column_listRun2,
-                "2b_control_region_postWRun2": column_listRun2,
-                "4b_signal_region": column_list,
-                "2b_signal_region_preW": column_list,
-                "2b_signal_region_postW": column_list,
-                "4b_signal_regionRun2": column_listRun2,
-                "2b_signal_region_preWRun2": column_listRun2,
-                "2b_signal_region_postWRun2": column_listRun2,
-            },
+            "bycategory": column_dict,
         },
         "bysample": {
         },

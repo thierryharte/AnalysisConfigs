@@ -231,7 +231,6 @@ if __name__ == "__main__":
                     tf.TensorSpec(shape=(None, len(columns)), dtype=tf.float32)
                 ],
             )
-            j
             b = argument(Tensor(np.float32, ("N", len(columns))))
         
         elif args.model_type == "pytorch":
@@ -303,8 +302,8 @@ if __name__ == "__main__":
             elif args.model_type == "pytorch":
                 map_location=torch.device('cpu') 
 
-                print(os.path.join(main_dir, model_files[0]))
-                model_add = torch.load(os.path.join(main_dir, model_files[0]),map_location)
+                print(os.path.join(main_dir, model_file))
+                model_add = torch.load(os.path.join(main_dir, model_file),map_location)
 
                 model_ratio_add = TorchModelRatio(model_add)
                
@@ -336,7 +335,7 @@ if __name__ == "__main__":
                 onnx_model_ratio_add = onnx.load(stream)
 
             elif args.model_type == "onnx":
-                onnx_model_ratio_add = onnx.load(os.path.join(main_dir, model_files[0]))
+                onnx_model_ratio_add = onnx.load(os.path.join(main_dir, model_file))
             
             print(b)
             (r,) = inline(onnx_model_ratio_sum)(b).values()
@@ -354,7 +353,7 @@ if __name__ == "__main__":
         (r_sum,) = inline(onnx_model_ratio_sum)(b).values()
         a = op.div(r_sum, op.constant(value_float=tot_len))
 
-        onnx_model_final = build({"args_0": b}, {"avg_w": op.transpose(a)})
+        onnx_model_final = build({"args_0": b}, {"avg_w": a})
         onnx_model_name = f"{main_dir}/output/average_model_from_{args.model_type}.onnx"
         save_onnx_model(onnx_model_final, onnx_model_name)
 
