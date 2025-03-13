@@ -16,6 +16,20 @@ hh4b_presel = Cut(
     function=cuts_f.hh4b_presel_cuts,
 )
 
+hh4b_presel_parking = Cut(
+    name="hh4b_presel_parking",
+    params={
+        "njet": 4,
+        "pt_jet0": 35,
+        "pt_jet1": 35,
+        "pt_jet2": 35,
+        "pt_jet3": 30,
+        "mean_pnet_jet": 0.55,
+        "tight_cuts": False,
+    },
+    function=cuts_f.hh4b_presel_cuts,
+)
+
 hh4b_presel_tight = Cut(
     name="hh4b_presel_tight",
     params={

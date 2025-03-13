@@ -4,5 +4,6 @@ mem-per-worker: "17GB"
 disk-per-worker: "1GB"
 queue: "long"
 walltime: "2-00:00:00"
-chunksize: 400000
+chunksize: 200000
 retries: 2
+  # tree-reduction: 5
