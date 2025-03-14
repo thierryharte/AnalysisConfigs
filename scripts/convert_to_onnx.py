@@ -8,7 +8,6 @@ import onnxruntime as ort
 import uproot
 import sys
 
-
 parser = argparse.ArgumentParser(description="Convert keras to onnx or average models")
 parser.add_argument("-i", "--input", type=str, required=True, help="Input directory")
 parser.add_argument(
