@@ -8,25 +8,8 @@ import onnxruntime as ort
 import uproot
 import sys
 
-import io
-import torch
-import torch.nn as nn
 
-sys.path.append("../../ML_pytorch/models/")
-from DNN_reweight_model import DNN
-
-class TorchModelRatio(nn.Module):
-    def __init__(self, base_model):
-        super().__init__()
-        self.base_model = base_model
-
-    def forward(self, x):
-        output = self.base_model(x)
-        ratio = output / (1 - output)
-        return ratio
-
-
-parser = argparse.ArgumentParser(description="Convert keras or pytorch model to onnx")
+parser = argparse.ArgumentParser(description="Convert keras to onnx or average models")
 parser.add_argument("-i", "--input", type=str, required=True, help="Input directory")
 parser.add_argument(
     "-ar",
@@ -39,7 +22,7 @@ parser.add_argument(
     "-mt",
     "--model_type",
     default="keras",
-    help="Parameter to determine, what type of model is being converted (pytorch or keras)",
+    help="Parameter to determine, what type of model is being converted (onnx or keras)",
 )
 args = parser.parse_args()
 
@@ -47,7 +30,7 @@ if args.model_type == "keras":
     import tensorflow as tf
     import tf2onnx
 
-columns = [
+bkg_morphing_dnn_input_variables = [
     "era",
     "higgs1_reco_pt",
     "higgs1_reco_eta",
@@ -95,7 +78,7 @@ columns = [
     "sigma_over_higgs2_reco_mass",
 ]
 
-columns = [
+sig_bkg_dnn_input_variables = [
     "era",
     "HT",
     "hh_vec_mass",
@@ -152,6 +135,7 @@ columns = [
     "sigma_over_higgs2_reco_mass",
 ]
 
+columns=bkg_morphing_dnn_input_variables
 
 def save_onnx_model(onnx_model_final, onnx_model_name):
     if os.path.exists(onnx_model_name):
@@ -205,8 +189,6 @@ if __name__ == "__main__":
     
     if args.model_type == "keras":
         filending = ".keras"
-    if args.model_type == "pytorch":
-        filending = ".pt"
     if args.model_type == "onnx":
         filending = ".onnx"
     
@@ -232,46 +214,9 @@ if __name__ == "__main__":
                 ],
             )
             b = argument(Tensor(np.float32, ("N", len(columns))))
-        
-        elif args.model_type == "pytorch":
-            map_location=torch.device('cpu')
-            print(os.path.join(main_dir, model_files[0]))
-            model = torch.load(os.path.join(main_dir, model_files[0]),map_location)
             
-            input_size = 45
-            model = DNN(input_size)
-            model.load_state_dict(model_dict)
-            model.eval()
-
-            model_ratio = TorchModelRatio(model)
-            model_ratio.eval()
-            input_shape = model.linear_relu_stack[0].in_features
-           
-            print(input_shape)
-            dummy_input = torch.randn(1,input_shape)
-            
-            stream = io.BytesIO()
-            torch.onnx.export(
-                model_ratio,
-                dummy_input,
-                stream,
-                verbose=True,
-                export_params=True,
-                opset_version=13,
-                input_names=["InputVariables"],
-                output_names=["Sigmoid"],
-                dynamic_axes={
-                    "InputVariables": {0: "batch_size"},
-                    "Sigmoid": {0: "batch_size"},
-                },
-            )
-            stream.seek(0)
-            onnx_model_ratio_sum = onnx.load(stream)
-            
-            b = argument(Tensor(np.float32, ("N", input_shape)))
-
         elif args.model_type == "onnx":
-            input_shape = 45
+            input_shape = len(columns)
             onnx_model_ratio_sum = onnx.load(os.path.join(main_dir, model_files[0]))
             b = argument(Tensor(np.float32, ("N", input_shape)))
             
@@ -299,41 +244,7 @@ if __name__ == "__main__":
                         tf.TensorSpec(shape=(None, len(columns)), dtype=tf.float32)
                     ],
                 )
-            elif args.model_type == "pytorch":
-                map_location=torch.device('cpu') 
-
-                print(os.path.join(main_dir, model_file))
-                model_add = torch.load(os.path.join(main_dir, model_file),map_location)
-
-                model_ratio_add = TorchModelRatio(model_add)
-               
-                model_ratio_add.eval()
-                model_add.eval()
-                input_shape = model_add.linear_relu_stack[0].in_features
-                print(dir(model_add))
-                print(dir(model_add.sigmoid))
-
-                print(input_shape)
-                dummy_input = torch.randn(1,input_shape)
                 
-                stream = io.BytesIO()
-                torch.onnx.export(
-                    model_ratio_add,
-                    dummy_input,
-                    stream,
-                    verbose=True,
-                    export_params=True,
-                    opset_version=13,
-                    input_names=["InputVariables"],
-                    output_names=["Sigmoid"],
-                    dynamic_axes={
-                        "InputVariables": {0: "batch_size"},
-                        "Sigmoid": {0: "batch_size"},
-                    },
-                )
-                stream.seek(0)
-                onnx_model_ratio_add = onnx.load(stream)
-
             elif args.model_type == "onnx":
                 onnx_model_ratio_add = onnx.load(os.path.join(main_dir, model_file))
             
