@@ -59,6 +59,7 @@ class HH4bCommonProcessor(BaseProcessorABC):
 
         self.DNN_VARIABLES = self.workflow_options["DNN_VARIABLES"]
         self.RUN2 = self.workflow_options["RUN2"]
+        self.pad_value = self.workflow_options["pad_value"]
 
     def apply_object_preselection(self, variation):
         self.events["Jet"] = ak.with_field(
@@ -793,6 +794,7 @@ class HH4bCommonProcessor(BaseProcessorABC):
                         output_name_BKG_MORPHING_DNN,
                         self.events,
                         bkg_morphing_dnn_input_variables,
+                        pad_value=self.pad_value,
                     )[0],
                     axis=None,
                 )
@@ -805,11 +807,11 @@ class HH4bCommonProcessor(BaseProcessorABC):
                         output_name_BKG_MORPHING_DNN,
                         self.events,
                         bkg_morphing_dnn_input_variables,
+                        pad_value=self.pad_value,
                         run2=True,
                     )[0],
                     axis=None,
                 )
-                # print(self.events["bkg_morphing_dnn_weightRun2"])
 
         if self.SIG_BKG_DNN:
             (
@@ -825,6 +827,7 @@ class HH4bCommonProcessor(BaseProcessorABC):
                     output_name_SIG_BKG_DNN,
                     self.events,
                     sig_bkg_dnn_input_variables,
+                    pad_value=self.pad_value,
                 )[0],
                 axis=None,
             )

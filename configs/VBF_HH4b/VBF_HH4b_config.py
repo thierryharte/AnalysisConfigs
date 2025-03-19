@@ -35,7 +35,10 @@ from configs.HH4b_common.configurator_options import (
     get_columns_list,
     create_DNN_columns_list,
 )
-from configs.HH4b_common.dnn_input_variables import bkg_morphing_dnn_input_variables
+from configs.HH4b_common.dnn_input_variables import (
+    bkg_morphing_dnn_input_variables,
+    bkg_morphing_dnn_input_variables_altOrder,
+)
 
 
 localdir = os.path.dirname(os.path.abspath(__file__))
@@ -61,7 +64,8 @@ onnx_model_dict = {
     # "SPANET": "params/out_hh4b_5jets_ATLAS_ptreg_c0_lr1e4_wp0_noklininp_oc_300e_kl3p5.onnx",
     "VBF_GGF_DNN": "",
     # "VBF_GGF_DNN":"/t3home/rcereghetti/ML_pytorch/out/20241212_223142_SemitTightPtLearningRateConstant/models/model_28.onnx",
-    "BKG_MORPHING_DNN": "/work/tharte/datasets/ML_pytorch/out/test_multiple_coffea/state_dict/model_40_state_dict.onnx", # thierry's model trained on 22C-22D-22E
+    "BKG_MORPHING_DNN": "/work/tharte/datasets/ML_pytorch/out/AN_1e-2_noDropout_e20lrdrop95/state_dict/ratio/average_model_from_onnx.onnx",
+    # "BKG_MORPHING_DNN": "/work/tharte/datasets/ML_pytorch/out/test_multiple_coffea/state_dict/model_40_state_dict.onnx", # thierry's model trained on 22C-22D-22E
     # "BKG_MORPHING_DNN": "/work/tharte/datasets/ML_pytorch/out/batch01/best_models/output/average_model_from_onnx.onnx", # thierry's model trained on 22E
     # "BKG_MORPHING_DNN": "/pnfs/psi.ch/cms/trivcat/store/user/mmalucch/keras_models_morphing/average_model_from_keras.onnx", # soumya's model
     "SIG_BKG_DNN": "",
@@ -78,6 +82,9 @@ CLASSIFICATION = False
 SAVE_CHUNK = False
 VBF_PRESEL = False
 SEMI_TIGHT_VBF = True
+DNN_VARIABLES = True
+RUN2 = True
+
 
 workflow_options = {
     "parton_jet_min_dR": 0.4,
@@ -90,6 +97,9 @@ workflow_options = {
     "vbf_presel": VBF_PRESEL,
     "donotscale_sumgenweights": True,
     "semi_tight_vbf": SEMI_TIGHT_VBF,
+    "DNN_VARIABLES": DNN_VARIABLES,
+    "RUN2": RUN2,
+    "pad_value":-999.0,
 }
 workflow_options.update(onnx_model_dict)
 
@@ -106,9 +116,14 @@ variables_dict = get_variables_dict(
 )
 # variables_dict={}
 
+print("bkg_morphing_dnn_input_variables", bkg_morphing_dnn_input_variables)
 
-column_list=create_DNN_columns_list(False, not SAVE_CHUNK, bkg_morphing_dnn_input_variables, btag=True)
-column_listRun2=create_DNN_columns_list(True, not SAVE_CHUNK, bkg_morphing_dnn_input_variables, btag=True)
+column_list = create_DNN_columns_list(
+    False, not SAVE_CHUNK, bkg_morphing_dnn_input_variables, btag=True
+)
+column_listRun2 = create_DNN_columns_list(
+    True, not SAVE_CHUNK, bkg_morphing_dnn_input_variables, btag=True
+)
 
 preselection = (
     [vbf_hh4b_presel if TIGHT_CUTS is False else vbf_hh4b_presel_tight]

@@ -89,7 +89,8 @@ workflow_options = {
         "random_pt": RANDOM_PT,
         "rand_type": 0.3,
         "DNN_VARIABLES": DNN_VARIABLES,
-        "RUN2": RUN2
+        "RUN2": RUN2,
+        "pad_value":-999.0,
     }
 workflow_options.update(
     onnx_model_dict
