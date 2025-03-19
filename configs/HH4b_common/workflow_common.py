@@ -12,6 +12,7 @@ from .custom_object_preselection_common import lepton_selection, jet_selection_n
 from .dnn_input_variables import (
     bkg_morphing_dnn_input_variables,
     sig_bkg_dnn_input_variables,
+    bkg_morphing_dnn_input_variables_altOrder
 )
 
 from utils.parton_matching_function import get_parton_last_copy
@@ -27,18 +28,19 @@ from utils.inference_session_onnx import get_model_session
 from utils.dnn_evaluation_functions import get_dnn_prediction
 
 era_dict = {
-        "2022_preEE_C" : 0,
-        "2022_preEE_D" : 1,
-        "2022_postEE_E" : 2,
-        "2022_postEE_F" : 3,
-        "2022_postEE_G" : 4,
-        "2023_preBPix_Cv1" : 5,
-        "2023_preBPix_Cv2" : 6,
-        "2023_preBPix_Cv3" : 7,
-        "2023_preBPix_Cv4" : 8,
-        "2023_postBPix_Dv1" : 9,
-        "2023_postBPix_Dv2" : 10,
-        }
+    "2022_preEE_C": 0,
+    "2022_preEE_D": 1,
+    "2022_postEE_E": 2,
+    "2022_postEE_F": 3,
+    "2022_postEE_G": 4,
+    "2023_preBPix_Cv1": 5,
+    "2023_preBPix_Cv2": 6,
+    "2023_preBPix_Cv3": 7,
+    "2023_preBPix_Cv4": 8,
+    "2023_postBPix_Dv1": 9,
+    "2023_postBPix_Dv2": 10,
+}
+
 
 class HH4bCommonProcessor(BaseProcessorABC):
     def __init__(self, cfg) -> None:
@@ -111,17 +113,17 @@ class HH4bCommonProcessor(BaseProcessorABC):
             )
             del jets5plus
             del jets5plus_pt
-    
+
     def apply_preselection(self, variation):
-        '''
+        """
         Workaround to have the possibility for preselections depending on samples
         Needs correct implementation in the config file to create a dict of all required samples.
         The keys can then be set as samples and the values are the cuts for the respective sample
-        '''
+        """
         self._preselections_temp = self._preselections
         if isinstance(self._preselections, dict):
             self._preselections = self._preselections_temp[self._sample]
-        super().apply_preselection(self,variation)
+        super().apply_preselection(self, variation)
         self._preselections = self._preselections_temp
 
     def get_jet_higgs_provenance(self, which_bquark):  # -> ak.Array:
@@ -471,9 +473,10 @@ class HH4bCommonProcessor(BaseProcessorABC):
 
         # HT : scalar sum of all jets with pT > 25 GeV inside | η | < 2.5
         self.events["HT"] = ak.sum(self.events.JetGood.pt, axis=1)
-      
 
-        self.events["era"] = ak.full_like(self.events.HT, era_dict[f"{self._year}_{self._era}"])
+        self.events["era"] = ak.full_like(
+            self.events.HT, era_dict[f"{self._year}_{self._era}"]
+        )
 
         self.events["JetNotFromHiggs"] = self.get_jets_no_higgs(jet_higgs_idx_per_event)
 
@@ -667,7 +670,7 @@ class HH4bCommonProcessor(BaseProcessorABC):
             matched_jet_higgs_idx_not_none = self.events.JetGoodMatched.index[
                 ~ak.is_none(self.events.JetGoodMatched.index, axis=1)
             ]
-            
+
             # Define distance parameter for selection:
             self.events["Rhh"] = np.sqrt(
                 (self.events.HiggsLeading.mass - 125) ** 2
@@ -714,7 +717,7 @@ class HH4bCommonProcessor(BaseProcessorABC):
                 (self.events.HiggsLeading.mass - 125) ** 2
                 + (self.events.HiggsSubLeading.mass - 120) ** 2
             )
-        
+
         # reconstruct the higgs candidates for Run2 method'
         if self.RUN2:
             (
@@ -736,7 +739,6 @@ class HH4bCommonProcessor(BaseProcessorABC):
             self.events.JetGoodHiggsMatched, axis=1
         )
         self.events["nJetGoodMatched"] = ak.num(self.events.JetGoodMatched, axis=1)
-
 
         if self.VBF_GGF_DNN:
             (
@@ -782,7 +784,7 @@ class HH4bCommonProcessor(BaseProcessorABC):
                 input_name_BKG_MORPHING_DNN,
                 output_name_BKG_MORPHING_DNN,
             ) = get_model_session(self.BKG_MORPHING_DNN, "BKG_MORPHING_DNN")
-            
+
             if self.SPANET:
                 self.events["bkg_morphing_dnn_weight"] = ak.flatten(
                     get_dnn_prediction(
@@ -791,7 +793,8 @@ class HH4bCommonProcessor(BaseProcessorABC):
                         output_name_BKG_MORPHING_DNN,
                         self.events,
                         bkg_morphing_dnn_input_variables,
-                    )[0]
+                    )[0],
+                    axis=None,
                 )
 
             if self.RUN2:
@@ -803,8 +806,10 @@ class HH4bCommonProcessor(BaseProcessorABC):
                         self.events,
                         bkg_morphing_dnn_input_variables,
                         run2=True,
-                    )[0]
+                    )[0],
+                    axis=None,
                 )
+                # print(self.events["bkg_morphing_dnn_weightRun2"])
 
         if self.SIG_BKG_DNN:
             (
@@ -820,5 +825,6 @@ class HH4bCommonProcessor(BaseProcessorABC):
                     output_name_SIG_BKG_DNN,
                     self.events,
                     sig_bkg_dnn_input_variables,
-                )[0]
+                )[0],
+                axis=None,
             )
