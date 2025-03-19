@@ -15,7 +15,7 @@ hep.style.use("CMS")
 
 
 parser = argparse.ArgumentParser(description="Plot 2b morphed vs 4b data")
-parser.add_argument("-i", "--input", type=str, required=True, help="Input directory")
+parser.add_argument("-i", "--input", type=str, required=True, help="Input coffea file")
 parser.add_argument(
     "-o", "--output", type=str, help="Output directory", default="plots_2bVS4b"
 )
@@ -23,7 +23,7 @@ parser.add_argument(
     "-n",
     "--normalisation",
     type=str,
-    help="Type of normalisation (num_events, sum_weights, const_frac)",
+    help="Type of normalisation (num_events, sum_weights)",
     default="sum_weights",
 )
 parser.add_argument("-w", "--workers", type=int, default=8, help="Number of workers")
@@ -40,9 +40,9 @@ NORMALIZE_WEIGHTS = False
 PAD_VALUE = -999
 
 
-input_dir = args.input
+inputfile = args.input
+input_dir = os.path.dirname(args.input)
 cfg = os.path.join(input_dir, "parameters_dump.yaml")
-inputfile = os.path.join(input_dir, "output_all.coffea")
 log_scale = not args.linear
 outputdir = os.path.join(input_dir, args.output) + f"_{args.normalisation}"
 
@@ -54,8 +54,8 @@ cat_dict = {
     # "CR": ["4b_control_region", "2b_control_region_preW", "2b_control_region_postW"],
     "CRRun2": [
         "4b_control_regionRun2",
-        "2b_control_region_preWRun2",
         "2b_control_region_postWRun2",
+        "2b_control_region_preWRun2",
     ],
     # "SR": ["4b_signal_region", "2b_signal_region_preW", "2b_signal_region_postW"],
     # "SRRun2": [
@@ -67,7 +67,7 @@ cat_dict = {
 }
 
 
-color_list = ["black", "red", "blue"]
+color_list = [("black",), ("blue", "dodgerblue"), ("red",)]
 
 
 def plot_weights(weights_list, suffix):
@@ -134,7 +134,7 @@ def plot_single_var_from_hist(
                 h.values(),
                 yerr=np.sqrt(h.values()),
                 label=cat,
-                color=color_list[i],
+                color=color_list[i][0],
                 fmt=".",
             )
         else:
@@ -143,7 +143,7 @@ def plot_single_var_from_hist(
                 np.append(h_den.values(), h_den.values()[-1]),
                 where="post",
                 label=cat,
-                color=color_list[i],
+                color=color_list[i][0],
             )
 
         if "4b" not in cat:
@@ -153,10 +153,10 @@ def plot_single_var_from_hist(
                 yerr=ratio_err,
                 fmt=".",
                 label=cat,
-                color=color_list[i],
+                color=color_list[i][0],
             )
         else:
-            ax_ratio.axhline(y=1, color=color_list[i], linestyle="--")
+            ax_ratio.axhline(y=1, color=color_list[i][0], linestyle="--")
             ax_ratio.fill_between(
                 h.axes[0].centers,
                 1 - ratio_err,
@@ -172,7 +172,8 @@ def plot_single_var_from_hist(
     )
     ax_ratio.set_ylim(0.5, 1.5)
 
-    hep.cms.lumitext(r"22EE Era E, 6 $fb^{-1}$, (13.6 TeV)", ax=ax)
+    hep.cms.lumitext("(13.6 TeV)", ax=ax)
+    # hep.cms.lumitext(r"22EE Era E, 6 $fb^{-1}$, (13.6 TeV)", ax=ax)
     hep.cms.text(text="Preliminary", ax=ax)
     ax.grid()
     ax_ratio.grid()
@@ -282,7 +283,7 @@ def plot_single_var_from_columns(
 
         if norm_factor_dict:
             norm_factor = norm_factor_dict[cat]
-            norm_factor_num=norm_factor_dict[cat_list[0]]
+            norm_factor_num = norm_factor_dict[cat_list[0]]
         else:
             norm_factor = weights_num.sum() / weights_den.sum()
             norm_factor_num = 1.0
@@ -335,10 +336,10 @@ def plot_single_var_from_columns(
                 h_den,
                 yerr=np.sqrt(h_den) if not args.density else 0,
                 label=cat,
-                color=color_list[i],
+                color=color_list[i][0],
                 fmt=".",
             )
-            ax_ratio.axhline(y=1, color=color_list[i], linestyle="--")
+            ax_ratio.axhline(y=1, color=color_list[i][0], linestyle="--")
             ax_ratio.fill_between(
                 bins_center,
                 1 - ratio_err,
@@ -347,13 +348,18 @@ def plot_single_var_from_columns(
                 alpha=0.5,
             )
         else:
+            
+            print("color_list[i][0]", i, color_list[i])
             ax.hist(
                 col_den,
                 bins=30,
                 histtype="step",
                 label=cat,
                 weights=weights_den * norm_factor,
-                color=color_list[i],
+                edgecolor=color_list[i][0],
+                facecolor=color_list[i][1] if len(color_list[i]) > 1 else None,
+                fill=True if len(color_list[i]) > 1 else False,
+                alpha=0.5,
                 range=range_4b,
                 density=args.density,
             )
@@ -363,7 +369,7 @@ def plot_single_var_from_columns(
                 yerr=ratio_err,
                 fmt=".",
                 label=cat,
-                color=color_list[i],
+                color=color_list[i][0],
             )
 
         del col_den, col_num
@@ -499,7 +505,6 @@ if __name__ == "__main__":
     if not os.path.exists(outputdir):
         os.makedirs(outputdir)
 
-
     # plot the weights
     sample = list(accumulator["columns"].keys())[0]
     dataset = list(accumulator["columns"][sample].keys())[0]
@@ -507,58 +512,60 @@ if __name__ == "__main__":
         weights = accumulator["columns"][sample][dataset][category]["weight"].value
         plot_weights([weights], category)
 
-
-    num_ev_dict={}
-    # Get the normalization factors
-    num_ev_dict["num_4b_CR"] = accumulator["cutflow"]["4b_control_region"][
-        "DATA_JetMET_JMENano_2022_postEE_EraE"
-    ]["DATA_JetMET_JMENano_skimmed"]
-    num_ev_dict["num_2b_CR"] = accumulator["cutflow"]["2b_control_region_preW"][
-        "DATA_JetMET_JMENano_2022_postEE_EraE"
-    ]["DATA_JetMET_JMENano_skimmed"]
-    num_ev_dict["num_4b_SR"] = accumulator["cutflow"]["4b_signal_region"][
-        "DATA_JetMET_JMENano_2022_postEE_EraE"
-    ]["DATA_JetMET_JMENano_skimmed"]
-    num_ev_dict["num_2b_SR"] = accumulator["cutflow"]["2b_signal_region_preW"][
-        "DATA_JetMET_JMENano_2022_postEE_EraE"
-    ]["DATA_JetMET_JMENano_skimmed"]
-    num_ev_dict["num_4b_CRRun2"] = accumulator["cutflow"]["4b_control_regionRun2"][
-        "DATA_JetMET_JMENano_2022_postEE_EraE"
-    ]["DATA_JetMET_JMENano_skimmed"]
-    num_ev_dict["num_2b_CRRun2"] = accumulator["cutflow"]["2b_control_region_preWRun2"][
-        "DATA_JetMET_JMENano_2022_postEE_EraE"
-    ]["DATA_JetMET_JMENano_skimmed"]
-    num_ev_dict["num_4b_SRRun2"] = accumulator["cutflow"]["4b_signal_regionRun2"][
-        "DATA_JetMET_JMENano_2022_postEE_EraE"
-    ]["DATA_JetMET_JMENano_skimmed"]
-    num_ev_dict["num_2b_SRRun2"] = accumulator["cutflow"]["2b_signal_region_preWRun2"][
-        "DATA_JetMET_JMENano_2022_postEE_EraE"
-    ]["DATA_JetMET_JMENano_skimmed"]
-    
-    print("num_ev_dict", num_ev_dict)
-
-    norm_factor_dict = {
-        "4b_control_region": 1,
-        "2b_control_region_preW": num_ev_dict["num_4b_CR"] / num_ev_dict["num_2b_CR"],
-        "2b_control_region_postW": num_ev_dict["num_4b_CR"] / num_ev_dict["num_2b_CR"],
-        "4b_signal_region": 1,
-        "2b_signal_region_preW": num_ev_dict["num_4b_CR"] / (num_ev_dict["num_2b_CR"]),
-        "2b_signal_region_postW": num_ev_dict["num_4b_CR"] / (num_ev_dict["num_2b_CR"]),
-        "4b_control_regionRun2": 1,
-        "2b_control_region_preWRun2": num_ev_dict["num_4b_CRRun2"] / num_ev_dict["num_2b_CRRun2"],
-        "2b_control_region_postWRun2": num_ev_dict["num_4b_CRRun2"] / num_ev_dict["num_2b_CRRun2"],
-        "4b_signal_regionRun2": 1,
-        "2b_signal_region_preWRun2": num_ev_dict["num_4b_CRRun2"] / (num_ev_dict["num_2b_CRRun2"]),
-        "2b_signal_region_postWRun2": num_ev_dict["num_4b_CRRun2"] / (num_ev_dict["num_2b_CRRun2"]),
-    }
     if args.normalisation == "sum_weights":
         norm_factor_dict = None
-    elif args.normalisation == "const_frac":
-        norm_factor_dict = {
-            k: (0.018824706 if "2b" in k else 1.0) for k in norm_factor_dict.keys()
-        }
     elif args.normalisation == "num_events":
-        pass
+        num_ev_dict = {}
+        # Get the normalization factors
+        num_ev_dict["num_4b_CR"] = accumulator["cutflow"]["4b_control_region"][
+            "DATA_JetMET_JMENano_2022_postEE_EraE"
+        ]["DATA_JetMET_JMENano_skimmed"]
+        num_ev_dict["num_2b_CR"] = accumulator["cutflow"]["2b_control_region_preW"][
+            "DATA_JetMET_JMENano_2022_postEE_EraE"
+        ]["DATA_JetMET_JMENano_skimmed"]
+        num_ev_dict["num_4b_SR"] = accumulator["cutflow"]["4b_signal_region"][
+            "DATA_JetMET_JMENano_2022_postEE_EraE"
+        ]["DATA_JetMET_JMENano_skimmed"]
+        num_ev_dict["num_2b_SR"] = accumulator["cutflow"]["2b_signal_region_preW"][
+            "DATA_JetMET_JMENano_2022_postEE_EraE"
+        ]["DATA_JetMET_JMENano_skimmed"]
+        num_ev_dict["num_4b_CRRun2"] = accumulator["cutflow"]["4b_control_regionRun2"][
+            "DATA_JetMET_JMENano_2022_postEE_EraE"
+        ]["DATA_JetMET_JMENano_skimmed"]
+        num_ev_dict["num_2b_CRRun2"] = accumulator["cutflow"][
+            "2b_control_region_preWRun2"
+        ]["DATA_JetMET_JMENano_2022_postEE_EraE"]["DATA_JetMET_JMENano_skimmed"]
+        num_ev_dict["num_4b_SRRun2"] = accumulator["cutflow"]["4b_signal_regionRun2"][
+            "DATA_JetMET_JMENano_2022_postEE_EraE"
+        ]["DATA_JetMET_JMENano_skimmed"]
+        num_ev_dict["num_2b_SRRun2"] = accumulator["cutflow"][
+            "2b_signal_region_preWRun2"
+        ]["DATA_JetMET_JMENano_2022_postEE_EraE"]["DATA_JetMET_JMENano_skimmed"]
+
+        print("num_ev_dict", num_ev_dict)
+
+        norm_factor_dict = {
+            "4b_control_region": 1,
+            "2b_control_region_preW": num_ev_dict["num_4b_CR"]
+            / num_ev_dict["num_2b_CR"],
+            "2b_control_region_postW": num_ev_dict["num_4b_CR"]
+            / num_ev_dict["num_2b_CR"],
+            "4b_signal_region": 1,
+            "2b_signal_region_preW": num_ev_dict["num_4b_CR"]
+            / (num_ev_dict["num_2b_CR"]),
+            "2b_signal_region_postW": num_ev_dict["num_4b_CR"]
+            / (num_ev_dict["num_2b_CR"]),
+            "4b_control_regionRun2": 1,
+            "2b_control_region_preWRun2": num_ev_dict["num_4b_CRRun2"]
+            / num_ev_dict["num_2b_CRRun2"],
+            "2b_control_region_postWRun2": num_ev_dict["num_4b_CRRun2"]
+            / num_ev_dict["num_2b_CRRun2"],
+            "4b_signal_regionRun2": 1,
+            "2b_signal_region_preWRun2": num_ev_dict["num_4b_CRRun2"]
+            / (num_ev_dict["num_2b_CRRun2"]),
+            "2b_signal_region_postWRun2": num_ev_dict["num_4b_CRRun2"]
+            / (num_ev_dict["num_2b_CRRun2"]),
+        }
     else:
         raise ValueError(f"Normalisation type {args.normalisation} not recognised")
 
