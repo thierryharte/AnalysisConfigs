@@ -67,18 +67,35 @@ parameters = defaults.merge_parameters_from_files(
 
 onnx_model_dict={
     "SPANET": "/work/tharte/datasets/mass_sculpting_data/hh4b_5jets_e300_s100_ptvary_wide_loose_btag.onnx",
+    #"SPANET": "",
     # "SPANET": "params/out_hh4b_5jets_ATLAS_ptreg_c0_lr1e4_wp0_noklininp_oc_300e_kl3p5.onnx",
     "VBF_GGF_DNN": "",
     # "VBF_GGF_DNN":"/t3home/rcereghetti/ML_pytorch/out/20241212_223142_SemitTightPtLearningRateConstant/models/model_28.onnx",
-    "BKG_MORPHING_DNN": "/pnfs/psi.ch/cms/trivcat/store/user/mmalucch/keras_models_morphing/average_model_from_keras.onnx",
-    # "BKG_MORPHING_DNN": "",
+    #"BKG_MORPHING_DNN": "/pnfs/psi.ch/cms/trivcat/store/user/mmalucch/keras_models_morphing/average_model_from_keras.onnx",
+    #"BKG_MORPHING_DNN": "/work/tharte/datasets/ML_pytorch/out/AN_1e-2_noDropout_e20lrdrop95/state_dict/ratio/average_model_from_onnx.onnx",
+    "BKG_MORPHING_DNN": "/work/tharte/datasets/ML_pytorch/out/AN_1e-2_noDropout_lrdrop95/state_dict/ratio/average_model_from_onnx.onnx",
     "SIG_BKG_DNN": "",
     # "SIG_BKG_DNN": "/pnfs/psi.ch/cms/trivcat/store/user/mmalucch/keras_models_SvsB/model_fold0.onnx",
 }
 
 print(onnx_model_dict)
 
+## Defining the used samples
+samples_list = [
+            # "DATA_JetMET_JMENano_C_skimmed",
+            # "DATA_JetMET_JMENano_D_skimmed",
+            "DATA_JetMET_JMENano_E_skimmed",
+            # "DATA_JetMET_JMENano_F_skimmed",
+            # "DATA_JetMET_JMENano_G_skimmed",
+            # "DATA_JetMET_JMENano_2023_Cv1_skimmed",
+            # "DATA_JetMET_JMENano_2023_Cv2_skimmed",
+            # "DATA_ParkingHH_2023_Cv3",
+            # "DATA_ParkingHH_2023_Cv4",
+            # "DATA_ParkingHH_2023_Dv1",
+            # "DATA_ParkingHH_2023_Dv2",
+        ]
 
+## General workflow options
 workflow_options = {
         "parton_jet_min_dR": 0.4,
         "max_num_jets": 5,
@@ -102,6 +119,8 @@ if SAVE_CHUNK:
 
 variables_dict = get_variables_dict(True, CLASSIFICATION, RANDOM_PT, False)
 
+
+## Rather complicated build of the different regions depending on what setting is activated
 column_dict = DEFAULT_COLUMNS
 event_cols = []
 if CLASSIFICATION:
@@ -123,7 +142,6 @@ categories_dict = {
         "4b_signal_region": [hh4b_4b_region, hh4b_signal_region],
         "2b_signal_region_preW": [hh4b_2b_region, hh4b_signal_region],
     }
-print(type(categories_dict))
 if onnx_model_dict["BKG_MORPHING_DNN"]:
     categories_reweight = {
         "2b_control_region_postW": [hh4b_2b_region, hh4b_control_region],
@@ -145,19 +163,28 @@ if RUN2:
         categories_dict |= categories_reweight
     categories_dict |= categories_run2
 
+print(categories_dict.keys())
 
 weight_dict = {}
 column_dict = {}
 for key in categories_dict.keys():
     if "postW" in key:
         if "Run2" in key:
-            weight_dict[key] = "bkg_morphing_dnn_weight" 
+            weight_dict[key] = ["bkg_morphing_dnn_weightRun2"] 
         else:
-            weight_dict[key] = "bkg_morphing_dnn_weightRun2"
+            weight_dict[key] = ["bkg_morphing_dnn_weight"]
     if "Run2" in key:
         column_dict[key] = column_listRun2
     else:
         column_dict[key] = column_list
+
+### Filling a dictionary with all the samples and add the weight dictionary to them. (the inclusive way did not really work).
+#weight_sample_dict = {}
+#for sample in samples_list:
+#    weight_sample_dict[sample] = {"inclusive" : [], "bycategory": weight_dict} 
+#
+#
+#print(weight_sample_dict)
 
 cfg = Configurator(
     # save_skimmed_files="root://t3dcachedb03.psi.ch:1094//pnfs/psi.ch/cms/trivcat/store/user/tharte/HH4b/ntuples/DATA_JetMET_2022_2023_skimmed",
@@ -174,21 +201,7 @@ cfg = Configurator(
             f"{localdir}/datasets/DATA_JetMET.json",
         ],
         "filter": {
-            "samples": (
-                [
-                    "DATA_JetMET_JMENano_C_skimmed",
-                    "DATA_JetMET_JMENano_D_skimmed",
-                    "DATA_JetMET_JMENano_E_skimmed",
-                    "DATA_JetMET_JMENano_F_skimmed",
-                    "DATA_JetMET_JMENano_G_skimmed",
-                    # "DATA_JetMET_JMENano_2023_Cv1_skimmed",
-                    # "DATA_JetMET_JMENano_2023_Cv2_skimmed",
-                    # "DATA_ParkingHH_2023_Cv3",
-                    # "DATA_ParkingHH_2023_Cv4",
-                    # "DATA_ParkingHH_2023_Dv1",
-                    # "DATA_ParkingHH_2023_Dv2",
-                ]
-            ),
+            "samples": samples_list,
             "samples_exclude": [],
             "year": year,
         },
