@@ -24,7 +24,7 @@ parser.add_argument(
     "--normalisation",
     type=str,
     help="Type of normalisation (num_events, sum_weights, const_frac)",
-    default="num_events",
+    default="sum_weights",
 )
 parser.add_argument("-w", "--workers", type=int, default=8, help="Number of workers")
 parser.add_argument(
@@ -51,18 +51,18 @@ outputdir = os.path.join(input_dir, args.output) + f"_{args.normalisation}"
 # because first the name of the variables is try with the Run2 string
 # and after without it
 cat_dict = {
-    "CR": ["4b_control_region", "2b_control_region_preW", "2b_control_region_postW"],
+    # "CR": ["4b_control_region", "2b_control_region_preW", "2b_control_region_postW"],
     "CRRun2": [
         "4b_control_regionRun2",
         "2b_control_region_preWRun2",
         "2b_control_region_postWRun2",
     ],
-    "SR": ["4b_signal_region", "2b_signal_region_preW", "2b_signal_region_postW"],
-    "SRRun2": [
-        "4b_signal_regionRun2",
-        "2b_signal_region_preWRun2",
-        "2b_signal_region_postWRun2",
-    ],
+    # "SR": ["4b_signal_region", "2b_signal_region_preW", "2b_signal_region_postW"],
+    # "SRRun2": [
+    #     "4b_signal_regionRun2",
+    #     "2b_signal_region_preWRun2",
+    #     "2b_signal_region_postWRun2",
+    # ],
     "CR_SPANetRun2": ["2b_control_region_preWRun2", "2b_control_region_preW"],
 }
 
