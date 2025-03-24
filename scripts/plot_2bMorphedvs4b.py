@@ -56,17 +56,17 @@ outputdir = os.path.join(input_dir, args.output) + f"_{args.normalisation}"
 # because first the name of the variables is try with the Run2 string
 # and after without it
 cat_dict = {
-    "CR": ["4b_control_region", "2b_control_region_preW", "2b_control_region_postW"],
+    "CR": ["4b_control_region", "2b_control_region_postW", "2b_control_region_preW"],
     "CRRun2": [
         "4b_control_regionRun2",
         "2b_control_region_postWRun2",
         "2b_control_region_preWRun2",
     ],
-    "SR": ["4b_signal_region", "2b_signal_region_preW", "2b_signal_region_postW"],
+    "SR": ["4b_signal_region", "2b_signal_region_postW", "2b_signal_region_preW"],
     "SRRun2": [
         "4b_signal_regionRun2",
-        "2b_signal_region_preWRun2",
         "2b_signal_region_postWRun2",
+        "2b_signal_region_preWRun2",
     ],
     "CR_2b_Run2SPANet": ["2b_control_region_preWRun2", "2b_control_region_preW"],
     "CR_4b_Run2SPANet": ["4b_control_regionRun2", "4b_control_region"],
@@ -306,10 +306,19 @@ def plot_single_var_from_columns(
             f"Plotting from columns {var} for {cat} with norm {norm_factor} and weights sum {weights_den.sum()}"
         )
 
-        range_4b = (np.min(col_den), np.max(col_den)) if i == 0 else range_4b
-        mask_range4b = (col_den > range_4b[0]) & (col_den < range_4b[1])
-        weights_den = weights_den[mask_range4b]
-        col_den = col_den[mask_range4b]
+        # compute the range of the 4b category considering the 0.1% and 99.9% quantile
+        range_4b = tuple(np.quantile(col_den, [0.001, 0.999])) if i == 0 else range_4b
+
+        # range_4b = (np.min(col_num), np.max(col_num)) if i == 0 else range_4b
+        print(f"range_4b {range_4b}")
+
+        mask_num_range4b = (col_num > range_4b[0]) & (col_num < range_4b[1])
+        weights_num = weights_num[mask_num_range4b]
+        col_num = col_num[mask_num_range4b]
+
+        mask_den_range4b = (col_den > range_4b[0]) & (col_den < range_4b[1])
+        weights_den = weights_den[mask_den_range4b]
+        col_den = col_den[mask_den_range4b]
 
         print(f"weights_den {weights_den}", type(weights_den))
         print(f"weights_num {weights_num}")
@@ -319,11 +328,18 @@ def plot_single_var_from_columns(
         h_den, bins = np.histogram(
             col_den, bins=30, weights=weights_den * norm_factor, range=range_4b
         )
-        bins_center = (bins[1:] + bins[:-1]) / 2
         # draw the ratio
         h_num, bins = np.histogram(
             col_num, bins=30, weights=weights_num * norm_factor_num, range=range_4b
         )
+        bins_center = (bins[1:] + bins[:-1]) / 2
+
+        # remove bins with h_num<=2
+        # mask = h_num > 2
+        # h_den = h_den[mask]
+        # h_num = h_num[mask]
+        # bins_center = bins_center[mask]
+
         chi2_norm = None
 
         if i > 0:
@@ -331,12 +347,17 @@ def plot_single_var_from_columns(
             chi2_value = np.sum((h_den - h_num) ** 2 / (np.where(h_den == 0, 1, h_den)))
             ndof = len(h_den) - 1
             chi2_norm = chi2_value / ndof
-            pvalue= chi2.sf(chi2_value, ndof)
+            pvalue = chi2.sf(chi2_value, ndof)
 
         ratio = h_num / h_den
         err_num = np.sqrt(h_num)
         err_den = np.sqrt(h_den)
-        ratio_err = np.sqrt((err_num / h_den) ** 2 + (h_num * err_den / h_den**2) ** 2)
+        if i == 0:
+            ratio_err = err_num / h_num
+        else:
+            ratio_err = np.sqrt(
+                (err_num / h_den) ** 2 + (h_num * err_den / h_den**2) ** 2
+            )
         print("ratio_err", ratio_err)
 
         if args.density:
@@ -401,7 +422,8 @@ def plot_single_var_from_columns(
             ax.text(
                 0.05,
                 0.95 - 0.05 * i,
-                r"$\chi^2$/ndof= {:.1f},".format(chi2_norm) + f"  p-value= {pvalue:.2f}",
+                r"$\chi^2$/ndof= {:.1f},".format(chi2_norm)
+                + f"  p-value= {pvalue:.2f}",
                 horizontalalignment="left",
                 verticalalignment="center",
                 transform=ax.transAxes,
@@ -413,7 +435,7 @@ def plot_single_var_from_columns(
 
     ax.legend(loc="upper right")
     ax.set_yscale("log" if log_scale else "linear")
-    hep.cms.lumitext(r"(13.6 TeV)", ax=ax)
+    hep.cms.lumitext(r"2022 (13.6 TeV)", ax=ax)
     # hep.cms.lumitext(r"22EE Era E, 6 $fb^{-1}$, (13.6 TeV)", ax=ax)
     hep.cms.text(text="Preliminary", ax=ax)
 
@@ -449,7 +471,8 @@ def plot_from_columns(accumulator, norm_factor_dict=None):
             os.makedirs(dir_cat)
         vars_tot = list(col_cat[cat_list[0]].keys())
         if args.test:
-            vars_tot = vars_tot[:2]
+            vars_tot = vars_tot[:3]
+        print("vars_tot", vars_tot)
         vars = []
         # vars_tot = [v for v in vars_tot if "add" in v or "weight"  in v]
         col_dict = {}
