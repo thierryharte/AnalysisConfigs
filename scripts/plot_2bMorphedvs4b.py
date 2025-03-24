@@ -1,11 +1,10 @@
 import os
 import sys
-import re
 from matplotlib import pyplot as plt
 from coffea.util import load
 from omegaconf import OmegaConf
 import numpy as np
-import awkward as ak
+from scipy.stats.distributions import chi2
 from pocket_coffea.utils.plot_utils import PlotManager
 import argparse
 import mplhep as hep
@@ -33,8 +32,14 @@ parser.add_argument(
 parser.add_argument(
     "-d", "--density", action="store_true", help="Normalize plots to 1", default=False
 )
+parser.add_argument(
+    "-t", "--test", action="store_true", help="Test on one variable", default=False
+)
 args = parser.parse_args()
 
+if args.test:
+    args.workers = 1
+    args.output = "test"
 
 NORMALIZE_WEIGHTS = False
 PAD_VALUE = -999
@@ -51,20 +56,30 @@ outputdir = os.path.join(input_dir, args.output) + f"_{args.normalisation}"
 # because first the name of the variables is try with the Run2 string
 # and after without it
 cat_dict = {
-    # "CR": ["4b_control_region", "2b_control_region_preW", "2b_control_region_postW"],
+    "CR": ["4b_control_region", "2b_control_region_preW", "2b_control_region_postW"],
     "CRRun2": [
         "4b_control_regionRun2",
         "2b_control_region_postWRun2",
         "2b_control_region_preWRun2",
     ],
-    # "SR": ["4b_signal_region", "2b_signal_region_preW", "2b_signal_region_postW"],
-    # "SRRun2": [
-    #     "4b_signal_regionRun2",
-    #     "2b_signal_region_preWRun2",
-    #     "2b_signal_region_postWRun2",
-    # ],
-    "CR_SPANetRun2": ["2b_control_region_preWRun2", "2b_control_region_preW"],
+    "SR": ["4b_signal_region", "2b_signal_region_preW", "2b_signal_region_postW"],
+    "SRRun2": [
+        "4b_signal_regionRun2",
+        "2b_signal_region_preWRun2",
+        "2b_signal_region_postWRun2",
+    ],
+    "CR_2b_Run2SPANet": ["2b_control_region_preWRun2", "2b_control_region_preW"],
+    "CR_4b_Run2SPANet": ["4b_control_regionRun2", "4b_control_region"],
 }
+
+if args.test:
+    cat_dict = {
+        "CRRun2": [
+            "4b_control_regionRun2",
+            "2b_control_region_postWRun2",
+            "2b_control_region_preWRun2",
+        ],
+    }
 
 
 color_list = [("black",), ("blue", "dodgerblue"), ("red",)]
@@ -309,12 +324,21 @@ def plot_single_var_from_columns(
         h_num, bins = np.histogram(
             col_num, bins=30, weights=weights_num * norm_factor_num, range=range_4b
         )
+        chi2_norm = None
+
+        if i > 0:
+            # compute the chi square between the two histograms
+            chi2_value = np.sum((h_den - h_num) ** 2 / (np.where(h_den == 0, 1, h_den)))
+            ndof = len(h_den) - 1
+            chi2_norm = chi2_value / ndof
+            pvalue= chi2.sf(chi2_value, ndof)
 
         ratio = h_num / h_den
         err_num = np.sqrt(h_num)
         err_den = np.sqrt(h_den)
         ratio_err = np.sqrt((err_num / h_den) ** 2 + (h_num * err_den / h_den**2) ** 2)
         print("ratio_err", ratio_err)
+
         if args.density:
             h_den, bins = np.histogram(
                 col_den,
@@ -330,6 +354,7 @@ def plot_single_var_from_columns(
                 range=range_4b,
                 density=True,
             )
+
         if i == 0:
             ax.errorbar(
                 bins_center,
@@ -348,7 +373,7 @@ def plot_single_var_from_columns(
                 alpha=0.5,
             )
         else:
-            
+
             print("color_list[i][0]", i, color_list[i])
             ax.hist(
                 col_den,
@@ -372,11 +397,24 @@ def plot_single_var_from_columns(
                 color=color_list[i][0],
             )
 
+        if chi2_norm:
+            ax.text(
+                0.05,
+                0.95 - 0.05 * i,
+                r"$\chi^2$/ndof= {:.1f},".format(chi2_norm) + f"  p-value= {pvalue:.2f}",
+                horizontalalignment="left",
+                verticalalignment="center",
+                transform=ax.transAxes,
+                color=color_list[i][0],
+                fontsize=20,
+            )
+
         del col_den, col_num
 
     ax.legend(loc="upper right")
     ax.set_yscale("log" if log_scale else "linear")
-    hep.cms.lumitext(r"22EE Era E, 6 $fb^{-1}$, (13.6 TeV)", ax=ax)
+    hep.cms.lumitext(r"(13.6 TeV)", ax=ax)
+    # hep.cms.lumitext(r"22EE Era E, 6 $fb^{-1}$, (13.6 TeV)", ax=ax)
     hep.cms.text(text="Preliminary", ax=ax)
 
     ax_ratio.set_xlabel(var)
@@ -409,7 +447,9 @@ def plot_from_columns(accumulator, norm_factor_dict=None):
         dir_cat = f"{outputdir}/{cats_name}_columns"
         if not os.path.exists(dir_cat):
             os.makedirs(dir_cat)
-        vars_tot = col_cat[cat_list[0]].keys()
+        vars_tot = list(col_cat[cat_list[0]].keys())
+        if args.test:
+            vars_tot = vars_tot[:2]
         vars = []
         # vars_tot = [v for v in vars_tot if "add" in v or "weight"  in v]
         col_dict = {}
@@ -458,6 +498,7 @@ def plot_from_columns(accumulator, norm_factor_dict=None):
                     except KeyError:
                         col_dict[v][cat] = col_cat[cat][v.replace("Run2", "")].value
         print(col_dict)
+
         with Pool(args.workers) as p:
             p.starmap(
                 plot_single_var_from_columns,
