@@ -87,21 +87,25 @@ color_list_alt = [("purple",), ("darkorange", "orange"), ("green",)]
 
 
 def plot_weights(weights_list, suffix):
-    fig, ax = plt.subplots()
+    fig, ax = plt.subplots(figsize=[13, 13])
     for i, weights in enumerate(weights_list):
         ax.hist(
             weights,
             bins=np.logspace(-3, 2, 100),
             histtype="step",
-            label="weights_"
-            + str(i)
+            label="Morphing weights "
+            + (f"{i}" if len(weights_list)>1 else "")
             + "\nmean: {:.2f}\nstd: {:.2f}".format(np.mean(weights), np.std(weights)),
         )
     ax.set_xscale("log")
     ax.set_yscale("log")
     ax.legend()
-    ax.set_xlabel("weights")
+    ax.set_xlabel("Morphing weights")
     ax.set_ylabel("Events")
+    
+    hep.cms.lumitext(r"22EE Era E, 6 $fb^{-1}$, (13.6 TeV)", ax=ax)
+    hep.cms.text(text="Preliminary", ax=ax)
+    
     fig.savefig(os.path.join(outputdir, f"weights_{suffix}.png"))
     plt.close(fig)
 
@@ -150,7 +154,7 @@ def plot_single_var_from_hist(
                 h.values(),
                 yerr=np.sqrt(h.values()),
                 label=cat,
-                color=color_list[i][0],
+                color=color_list_orig[i][0],
                 fmt=".",
             )
         else:
@@ -159,7 +163,7 @@ def plot_single_var_from_hist(
                 np.append(h_den.values(), h_den.values()[-1]),
                 where="post",
                 label=cat,
-                color=color_list[i][0],
+                color=color_list_orig[i][0],
             )
 
         if "4b" not in cat:
@@ -169,10 +173,10 @@ def plot_single_var_from_hist(
                 yerr=ratio_err,
                 fmt=".",
                 label=cat,
-                color=color_list[i][0],
+                color=color_list_orig[i][0],
             )
         else:
-            ax_ratio.axhline(y=1, color=color_list[i][0], linestyle="--")
+            ax_ratio.axhline(y=1, color=color_list_orig[i][0], linestyle="--")
             ax_ratio.fill_between(
                 h.axes[0].centers,
                 1 - ratio_err,
@@ -188,9 +192,10 @@ def plot_single_var_from_hist(
     )
     ax_ratio.set_ylim(0.5, 1.5)
 
-    hep.cms.lumitext("(13.6 TeV)", ax=ax)
-    # hep.cms.lumitext(r"22EE Era E, 6 $fb^{-1}$, (13.6 TeV)", ax=ax)
+    # hep.cms.lumitext("(13.6 TeV)", ax=ax)
+    hep.cms.lumitext(r"22EE Era E, 6 $fb^{-1}$, (13.6 TeV)", ax=ax)
     hep.cms.text(text="Preliminary", ax=ax)
+    
     ax.grid()
     ax_ratio.grid()
 
@@ -270,6 +275,8 @@ def plot_single_var_from_columns(
     range_4b = (0, 0)
 
     for i, cat in enumerate(cat_list):
+        
+        cat_plot_name=cat.replace("Run2", "_DHH")
 
         weights_den = weight_dict[cat]
         weights_num = weight_dict[cat_list[0]]
@@ -416,7 +423,7 @@ def plot_single_var_from_columns(
                 bins_center,
                 h_den,
                 yerr=err_den if not args.density else 0,
-                label=cat,
+                label=cat_plot_name,
                 color=color_list[i][0],
                 fmt=".",
             )
@@ -434,7 +441,7 @@ def plot_single_var_from_columns(
                 col_den,
                 bins=30,
                 histtype="step",
-                label=cat,
+                label=cat_plot_name,
                 weights=weights_den,
                 edgecolor=color_list[i][0],
                 facecolor=color_list[i][1] if len(color_list[i]) > 1 else None,
@@ -448,7 +455,7 @@ def plot_single_var_from_columns(
                 ratio,
                 yerr=ratio_err,
                 fmt=".",
-                label=cat,
+                label=cat_plot_name,
                 color=color_list[i][0],
             )
 
@@ -469,11 +476,13 @@ def plot_single_var_from_columns(
 
     ax.legend(loc="upper right")
     ax.set_yscale("log" if log_scale else "linear")
+    
     # hep.cms.lumitext(r"2022 (13.6 TeV)", ax=ax)
     hep.cms.lumitext(r"22EE Era E, 6 $fb^{-1}$, (13.6 TeV)", ax=ax)
     hep.cms.text(text="Preliminary", ax=ax)
 
-    ax_ratio.set_xlabel(var)
+    var_plot_name = var.replace("Run2", "")
+    ax_ratio.set_xlabel(var_plot_name)
     ax.set_ylabel("Events")
     ax_ratio.set_ylabel("Data/Pred.")
 
