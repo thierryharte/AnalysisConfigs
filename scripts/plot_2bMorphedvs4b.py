@@ -82,7 +82,8 @@ if args.test:
     }
 
 
-color_list = [("black",), ("blue", "dodgerblue"), ("red",)]
+color_list_orig = [("black",), ("blue", "dodgerblue"), ("red",)]
+color_list_alt = [("purple",), ("darkorange", "orange"), ("green",)]
 
 
 def plot_weights(weights_list, suffix):
@@ -248,7 +249,14 @@ def plot_from_hist(accumulator, norm_factor_dict=None):
 
 
 def plot_single_var_from_columns(
-    var, col_dict, weight_dict, cat_list, dir_cat, norm_factor_dict=None
+    var,
+    col_dict,
+    weight_dict,
+    cat_list,
+    dir_cat,
+    norm_factor_dict=None,
+    chi_squared=True,
+    color_list=color_list_orig,
 ):
     fig, (ax, ax_ratio) = plt.subplots(
         2,
@@ -297,19 +305,18 @@ def plot_single_var_from_columns(
         col_num = col_num[col_num != PAD_VALUE]
 
         if norm_factor_dict:
-            norm_factor = norm_factor_dict[cat]
+            norm_factor_den = norm_factor_dict[cat]
             norm_factor_num = norm_factor_dict[cat_list[0]]
         else:
-            norm_factor = weights_num.sum() / weights_den.sum()
+            norm_factor_den = weights_num.sum() / weights_den.sum()
             norm_factor_num = 1.0
         print(
-            f"Plotting from columns {var} for {cat} with norm {norm_factor} and weights sum {weights_den.sum()}"
+            f"Plotting from columns {var} for {cat} with norm {norm_factor_den} and weights sum {weights_den.sum()}"
         )
 
         # compute the range of the 4b category considering the 0.1% and 99.9% quantile
         range_4b = tuple(np.quantile(col_den, [0.001, 0.999])) if i == 0 else range_4b
 
-        # range_4b = (np.min(col_num), np.max(col_num)) if i == 0 else range_4b
         print(f"range_4b {range_4b}")
 
         mask_num_range4b = (col_num > range_4b[0]) & (col_num < range_4b[1])
@@ -320,38 +327,66 @@ def plot_single_var_from_columns(
         weights_den = weights_den[mask_den_range4b]
         col_den = col_den[mask_den_range4b]
 
+        # normalize the weights
+        weights_den = weights_den * norm_factor_den
+        weights_num = weights_num * norm_factor_num
+
         print(f"weights_den {weights_den}", type(weights_den))
         print(f"weights_num {weights_num}")
         print(f"col_num {col_num}", type(col_num))
         print(f"col_den {col_den}")
 
-        h_den, bins = np.histogram(
-            col_den, bins=30, weights=weights_den * norm_factor, range=range_4b
-        )
-        # draw the ratio
-        h_num, bins = np.histogram(
-            col_num, bins=30, weights=weights_num * norm_factor_num, range=range_4b
-        )
-        bins_center = (bins[1:] + bins[:-1]) / 2
+        # h_den, bins = np.histogram(
+        #     col_den, bins=30, range=range_4b
+        # )
+        # # draw the ratio
+        # h_num, _ = np.histogram(
+        #     col_num, bins=bins, range=range_4b
+        # )
 
-        # remove bins with h_num<=2
-        # mask = h_num > 2
-        # h_den = h_den[mask]
-        # h_num = h_num[mask]
-        # bins_center = bins_center[mask]
+        bins = np.linspace(range_4b[0], range_4b[1], 31)
+        print("bins", bins, len(bins))
+        bins_center = (bins[1:] + bins[:-1]) / 2
+        print("bins_center", bins_center, len(bins_center))
+        idx_den = np.digitize(col_den, bins)
+        idx_num = np.digitize(col_num, bins)
+        print("idx_den", idx_den, len(idx_den))
+        print("idx_num", idx_num, len(idx_num))
+
+        h_den = []
+        h_num = []
+        err_den = []
+        err_num = []
+
+        for j in range(1, len(bins)):
+            h_den.append(np.sum(weights_den[idx_den == j]))
+            h_num.append(np.sum(weights_num[idx_num == j]))
+            err_den.append(np.sqrt(np.sum(weights_den[idx_den == j] ** 2)))
+            err_num.append(np.sqrt(np.sum(weights_num[idx_num == j] ** 2)))
+            print('weights_den[idx_den == j]', weights_den[idx_den == j])
+
+        h_den = np.array(h_den)
+        h_num = np.array(h_num)
+        err_den = np.array(err_den)
+        err_num = np.array(err_num)
+
+        print("h_den", h_den, len(h_den))
+        print("h_num", h_num, len(h_num))
+        print("err_den", err_den)
+        print("err_num", err_num)
 
         chi2_norm = None
-
-        if i > 0:
-            # compute the chi square between the two histograms
-            chi2_value = np.sum((h_den - h_num) ** 2 / (np.where(h_den == 0, 1, h_den)))
+        if i > 0 and chi_squared:
+            # compute the chi square between the two histograms (divide by the error on data)
+            chi2_value = np.sum(
+                ((h_den - h_num) / np.where(err_num == 0, 1, err_num)) ** 2
+            )
             ndof = len(h_den) - 1
             chi2_norm = chi2_value / ndof
             pvalue = chi2.sf(chi2_value, ndof)
 
         ratio = h_num / h_den
-        err_num = np.sqrt(h_num)
-        err_den = np.sqrt(h_den)
+
         if i == 0:
             ratio_err = err_num / h_num
         else:
@@ -364,14 +399,14 @@ def plot_single_var_from_columns(
             h_den, bins = np.histogram(
                 col_den,
                 bins=30,
-                weights=weights_den * norm_factor,
+                weights=weights_den,
                 range=range_4b,
                 density=True,
             )
             h_num, bins = np.histogram(
                 col_num,
                 bins=30,
-                weights=weights_num * norm_factor_num,
+                weights=weights_num,
                 range=range_4b,
                 density=True,
             )
@@ -380,7 +415,7 @@ def plot_single_var_from_columns(
             ax.errorbar(
                 bins_center,
                 h_den,
-                yerr=np.sqrt(h_den) if not args.density else 0,
+                yerr=err_den if not args.density else 0,
                 label=cat,
                 color=color_list[i][0],
                 fmt=".",
@@ -395,13 +430,12 @@ def plot_single_var_from_columns(
             )
         else:
 
-            print("color_list[i][0]", i, color_list[i])
             ax.hist(
                 col_den,
                 bins=30,
                 histtype="step",
                 label=cat,
-                weights=weights_den * norm_factor,
+                weights=weights_den,
                 edgecolor=color_list[i][0],
                 facecolor=color_list[i][1] if len(color_list[i]) > 1 else None,
                 fill=True if len(color_list[i]) > 1 else False,
@@ -435,8 +469,8 @@ def plot_single_var_from_columns(
 
     ax.legend(loc="upper right")
     ax.set_yscale("log" if log_scale else "linear")
-    hep.cms.lumitext(r"2022 (13.6 TeV)", ax=ax)
-    # hep.cms.lumitext(r"22EE Era E, 6 $fb^{-1}$, (13.6 TeV)", ax=ax)
+    # hep.cms.lumitext(r"2022 (13.6 TeV)", ax=ax)
+    hep.cms.lumitext(r"22EE Era E, 6 $fb^{-1}$, (13.6 TeV)", ax=ax)
     hep.cms.text(text="Preliminary", ax=ax)
 
     ax_ratio.set_xlabel(var)
@@ -446,7 +480,6 @@ def plot_single_var_from_columns(
     ax.grid()
     ax_ratio.grid()
     ax_ratio.set_ylim(0.5, 1.5)
-    print("ax.get_ylim()[1]", ax.get_ylim()[1])
     ax.set_ylim(
         top=(
             1.3 * ax.get_ylim()[1]
@@ -466,6 +499,12 @@ def plot_from_columns(accumulator, norm_factor_dict=None):
     col_cat = accumulator["columns"][sample][dataset]
 
     for cats_name, cat_list in cat_dict.items():
+        if "Run2SPANet" in cats_name:
+            chi_squared = False
+            color_list = color_list_alt
+        else:
+            chi_squared = True
+            color_list = color_list_orig
         dir_cat = f"{outputdir}/{cats_name}_columns"
         if not os.path.exists(dir_cat):
             os.makedirs(dir_cat)
@@ -533,6 +572,8 @@ def plot_from_columns(accumulator, norm_factor_dict=None):
                         cat_list,
                         dir_cat,
                         norm_factor_dict,
+                        chi_squared,
+                        color_list,
                     )
                     for var in vars
                 ],
