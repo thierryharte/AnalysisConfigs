@@ -58,13 +58,15 @@ parameters = defaults.merge_parameters_from_files(
     update=True,
 )
 
+common_params=f"{localdir}/../HH4b_common/params_common/"
 
 onnx_model_dict = {
-    "SPANET": "/work/tharte/datasets/mass_sculpting_data/hh4b_5jets_e300_s100_ptvary_wide_loose_btag.onnx",
+    "SPANET": f"{common_params}/hh4b_5jets_e300_s100_ptvary_wide_loose_btag.onnx",
     # "SPANET": "params/out_hh4b_5jets_ATLAS_ptreg_c0_lr1e4_wp0_noklininp_oc_300e_kl3p5.onnx",
     "VBF_GGF_DNN": "",
     # "VBF_GGF_DNN":"/t3home/rcereghetti/ML_pytorch/out/20241212_223142_SemitTightPtLearningRateConstant/models/model_28.onnx",
-    "BKG_MORPHING_DNN": "/work/mmalucch/out_ML_pytorch/DNN_AN_minDelta1em5/batch06/best_models/average_model_from_onnx.onnx", # 20 k-folds, early stopping, 1e-5 minDelta
+    "BKG_MORPHING_DNN": f"{common_params}/DNN_AN_1e-3_e20drop75_minDelta1em5_SPANet_noEarlyStopping_average_model_from_onnx.onnx",
+    # "BKG_MORPHING_DNN": "/work/mmalucch/out_ML_pytorch/DNN_AN_minDelta1em5/batch06/best_models/average_model_from_onnx.onnx", # 20 k-folds, early stopping, 1e-5 minDelta
     # "BKG_MORPHING_DNN": "/work/tharte/datasets/ML_pytorch/out/AN_1e-2_noDropout_e20lrdrop95/state_dict/ratio/average_model_from_onnx.onnx",
     # "BKG_MORPHING_DNN": "/work/tharte/datasets/ML_pytorch/out/test_multiple_coffea/state_dict/model_40_state_dict.onnx", # thierry's model trained on 22C-22D-22E
     # "BKG_MORPHING_DNN": "/work/tharte/datasets/ML_pytorch/out/batch01/best_models/output/average_model_from_onnx.onnx", # thierry's model trained on 22E
