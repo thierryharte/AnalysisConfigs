@@ -19,8 +19,8 @@ from configs.HH4b_common.custom_cuts_common import (
     hh4b_2b_region,
     hh4b_signal_region,
     hh4b_control_region,
-    signal_region_run2,
-    control_region_run2,
+    hh4b_signal_region_run2,
+    hh4b_control_region_run2,
 )
 
 from configs.HH4b_common.custom_weights import (
@@ -133,32 +133,32 @@ if onnx_model_dict["BKG_MORPHING_DNN"]:
     categories_dict |= categories_reweight
 if RUN2:
     categories_run2 = {
-        "4b_control_regionRun2": [hh4b_4b_region, control_region_run2],
-        "2b_control_region_preWRun2": [hh4b_2b_region, control_region_run2],
-        "4b_signal_regionRun2": [hh4b_4b_region, signal_region_run2],
-        "2b_signal_region_preWRun2": [hh4b_2b_region, signal_region_run2],
+        "4b_control_regionRun2": [hh4b_4b_region, hh4b_control_region_run2],
+        "2b_control_region_preWRun2": [hh4b_2b_region, hh4b_control_region_run2],
+        "4b_signal_regionRun2": [hh4b_4b_region, hh4b_signal_region_run2],
+        "2b_signal_region_preWRun2": [hh4b_2b_region, hh4b_signal_region_run2],
         }
     if onnx_model_dict["BKG_MORPHING_DNN"]:
         categories_reweight = {
-            "2b_control_region_postWRun2": [hh4b_2b_region, control_region_run2],
-            "2b_signal_region_postWRun2": [hh4b_2b_region, signal_region_run2],
+            "2b_control_region_postWRun2": [hh4b_2b_region, hh4b_control_region_run2],
+            "2b_signal_region_postWRun2": [hh4b_2b_region, hh4b_signal_region_run2],
             }
         categories_dict |= categories_reweight
     categories_dict |= categories_run2
 
 
-weight_dict = {}
-column_dict = {}
+bycategory_weight_dict = {}
+bycategory_column_dict = {}
 for key in categories_dict.keys():
     if "postW" in key:
         if "Run2" in key:
-            weight_dict[key] = "bkg_morphing_dnn_weight" 
+            bycategory_weight_dict[key] = ["bkg_morphing_dnn_weight" ]
         else:
-            weight_dict[key] = "bkg_morphing_dnn_weightRun2"
+            bycategory_weight_dict[key] = ["bkg_morphing_dnn_weightRun2"]
     if "Run2" in key:
-        column_dict[key] = column_listRun2
+        bycategory_column_dict[key] = column_listRun2
     else:
-        column_dict[key] = column_list
+        bycategory_column_dict[key] = column_list
 
 cfg = Configurator(
     # save_skimmed_files="root://t3dcachedb03.psi.ch:1094//pnfs/psi.ch/cms/trivcat/store/user/tharte/HH4b/ntuples/DATA_JetMET_2022_2023_skimmed",
@@ -213,7 +213,7 @@ cfg = Configurator(
                 "lumi",
                 "XS",
             ],
-            "bycategory": weight_dict
+            "bycategory": bycategory_weight_dict
         },
         "bysample": {}
     },
@@ -230,7 +230,7 @@ cfg = Configurator(
     columns={
         "common": {
             "inclusive": [],
-            "bycategory": column_dict,
+            "bycategory": bycategory_column_dict,
         },
         "bysample": {
         },

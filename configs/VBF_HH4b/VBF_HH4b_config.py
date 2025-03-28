@@ -22,8 +22,12 @@ from configs.HH4b_common.custom_cuts_common import (
     hh4b_2b_region,
     hh4b_signal_region,
     hh4b_control_region,
-    signal_region_run2,
-    control_region_run2,
+    hh4b_signal_region_run2,
+    hh4b_control_region_run2,
+    hh4b_VR1_signal_region,
+    hh4b_VR1_control_region,
+    hh4b_VR1_signal_region_run2,
+    hh4b_VR1_control_region_run2,
 )
 
 from configs.HH4b_common.custom_weights import (
@@ -58,15 +62,15 @@ parameters = defaults.merge_parameters_from_files(
     update=True,
 )
 
-common_params=f"{localdir}/../HH4b_common/params_common/"
+common_params = f"{localdir}/../HH4b_common/params_common/"
 
 onnx_model_dict = {
     "SPANET": f"{common_params}/hh4b_5jets_e300_s100_ptvary_wide_loose_btag.onnx",
     # "SPANET": "params/out_hh4b_5jets_ATLAS_ptreg_c0_lr1e4_wp0_noklininp_oc_300e_kl3p5.onnx",
     "VBF_GGF_DNN": "",
     # "VBF_GGF_DNN":"/t3home/rcereghetti/ML_pytorch/out/20241212_223142_SemitTightPtLearningRateConstant/models/model_28.onnx",
-    "BKG_MORPHING_DNN": f"{common_params}/DNN_AN_1e-3_e20drop75_minDelta1em5_SPANet_noEarlyStopping_average_model_from_onnx.onnx",
-    # "BKG_MORPHING_DNN": "/work/mmalucch/out_ML_pytorch/DNN_AN_minDelta1em5/batch06/best_models/average_model_from_onnx.onnx", # 20 k-folds, early stopping, 1e-5 minDelta
+    # "BKG_MORPHING_DNN": f"{common_params}/DNN_AN_1e-3_e20drop75_minDelta1em5_SPANet_noEarlyStopping_average_model_from_onnx.onnx",
+    "BKG_MORPHING_DNN": "/work/mmalucch/out_ML_pytorch/DNN_AN_minDelta1em5/batch06/best_models/average_model_from_onnx.onnx",  # 20 k-folds, early stopping, 1e-5 minDelta
     # "BKG_MORPHING_DNN": "/work/tharte/datasets/ML_pytorch/out/AN_1e-2_noDropout_e20lrdrop95/state_dict/ratio/average_model_from_onnx.onnx",
     # "BKG_MORPHING_DNN": "/work/tharte/datasets/ML_pytorch/out/test_multiple_coffea/state_dict/model_40_state_dict.onnx", # thierry's model trained on 22C-22D-22E
     # "BKG_MORPHING_DNN": "/work/tharte/datasets/ML_pytorch/out/batch01/best_models/output/average_model_from_onnx.onnx", # thierry's model trained on 22E
@@ -75,7 +79,7 @@ onnx_model_dict = {
     # "SIG_BKG_DNN": "/pnfs/psi.ch/cms/trivcat/store/user/mmalucch/keras_models_SvsB/model_fold0.onnx",
 }
 
-print(onnx_model_dict)
+print("onnx_model_dict", onnx_model_dict)
 
 
 HIGGS_PARTON_MATCHING = False
@@ -102,7 +106,7 @@ workflow_options = {
     "semi_tight_vbf": SEMI_TIGHT_VBF,
     "DNN_VARIABLES": DNN_VARIABLES,
     "RUN2": RUN2,
-    "pad_value":-999.0,
+    "pad_value": -999.0,
 }
 workflow_options.update(onnx_model_dict)
 
@@ -122,10 +126,10 @@ variables_dict = get_variables_dict(
 print("bkg_morphing_dnn_input_variables", bkg_morphing_dnn_input_variables)
 
 column_list = create_DNN_columns_list(
-    False, not SAVE_CHUNK, bkg_morphing_dnn_input_variables, btag=True
+    False, not SAVE_CHUNK, bkg_morphing_dnn_input_variables, btag=False
 )
 column_listRun2 = create_DNN_columns_list(
-    True, not SAVE_CHUNK, bkg_morphing_dnn_input_variables, btag=True
+    True, not SAVE_CHUNK, bkg_morphing_dnn_input_variables, btag=False
 )
 
 preselection = (
@@ -133,6 +137,92 @@ preselection = (
     if VBF_PRESEL
     else [hh4b_presel if TIGHT_CUTS is False else hh4b_presel_tight]
 )
+
+sample_list = [
+    "DATA_JetMET_JMENano_C_skimmed",
+    "DATA_JetMET_JMENano_D_skimmed",
+    "DATA_JetMET_JMENano_E_skimmed",
+    "DATA_JetMET_JMENano_F_skimmed",
+    "DATA_JetMET_JMENano_G_skimmed",
+    # "VBF_HHto4B",
+    # "GluGlutoHHto4B",
+]
+categories_dict = {
+    # "4b_control_region": [hh4b_4b_region, hh4b_control_region],
+    # "2b_control_region_preW": [hh4b_2b_region, hh4b_control_region],
+    # "2b_control_region_postW": [hh4b_2b_region, hh4b_control_region],
+    # "4b_control_regionRun2": [hh4b_4b_region, hh4b_control_region_run2],
+    # "2b_control_region_preWRun2": [hh4b_2b_region, hh4b_control_region_run2],
+    # "2b_control_region_postWRun2": [hh4b_2b_region, hh4b_control_region_run2],
+    # #
+    # "4b_signal_region": [hh4b_4b_region, hh4b_signal_region],
+    # "2b_signal_region_preW": [hh4b_2b_region, hh4b_signal_region],
+    # "2b_signal_region_postW": [hh4b_2b_region, hh4b_signal_region],
+    # "4b_signal_regionRun2": [hh4b_4b_region, hh4b_signal_region_run2],
+    # "2b_signal_region_preWRun2": [hh4b_2b_region, hh4b_signal_region_run2],
+    # "2b_signal_region_postWRun2": [hh4b_2b_region, hh4b_signal_region_run2],
+    #
+    "4b_VR1_control_region": [hh4b_4b_region, hh4b_VR1_control_region],
+    "2b_VR1_control_region_preW": [hh4b_2b_region, hh4b_VR1_control_region],
+    "2b_VR1_control_region_postW": [hh4b_2b_region, hh4b_VR1_control_region],
+    "4b_VR1_control_regionRun2": [hh4b_4b_region, hh4b_VR1_control_region_run2],
+    "2b_VR1_control_region_preWRun2": [hh4b_2b_region, hh4b_VR1_control_region_run2],
+    "2b_VR1_control_region_postWRun2": [hh4b_2b_region, hh4b_VR1_control_region_run2],
+    #
+    "4b_VR1_signal_region": [hh4b_4b_region, hh4b_VR1_signal_region],
+    "2b_VR1_signal_region_preW": [hh4b_2b_region, hh4b_VR1_signal_region],
+    "2b_VR1_signal_region_postW": [hh4b_2b_region, hh4b_VR1_signal_region],
+    "4b_VR1_signal_regionRun2": [hh4b_4b_region, hh4b_VR1_signal_region_run2],
+    "2b_VR1_signal_region_preWRun2": [hh4b_2b_region, hh4b_VR1_signal_region_run2],
+    "2b_VR1_signal_region_postWRun2": [hh4b_2b_region, hh4b_VR1_signal_region_run2],
+    #
+    # "4b_region": [hh4b_4b_region],
+    # "2b_region": [hh4b_2b_region],
+    ## VBF SPECIFIC REGIONS
+    # **{f"4b_semiTight_LeadingPt_region": [hh4b_4b_region, semiTight_leadingPt]},
+    # **{f"4b_semiTight_LeadingMjj_region": [hh4b_4b_region, semiTight_leadingMjj]},
+    # **{f"4b_semiTight_LeadingMjj_region": [hh4b_4b_region, semiTight_leadingMjj]}
+    # **{"4b_VBFtight_region": [hh4b_4b_region, VBFtight_region]},
+    # **{"4b_VBFtight_region": [hh4b_4b_region, vbf_wrapper()]},
+    #
+    # **{
+    #     f"4b_VBFtight_{list(ab[0].keys())[i]}_region": [
+    #         hh4b_4b_region,
+    #         vbf_wrapper(ab[i]),
+    #     ]
+    #     for i in range(0, 6)
+    # },
+    #
+    # **{"4b_VBF_generalSelection_region": [hh4b_4b_region, VBF_generalSelection_region]},
+    # **{"4b_VBF_region": [hh4b_4b_region, VBF_region]},
+    # **{f"4b_VBF_0{i}qvg_region": [hh4b_4b_region, VBF_region, qvg_regions[f"qvg_0{i}_region"]] for i in range(5, 10)},
+    # **{f"4b_VBF_0{i}qvg_generalSelection_region": [hh4b_4b_region, VBF_generalSelection_region, qvg_regions[f"qvg_0{i}_region"]] for i in range(5, 10)},
+}
+
+
+bycategory_column_dict = {}
+for category in categories_dict.keys():
+    if "Run2" in category:
+        bycategory_column_dict[category] = column_listRun2
+    else:
+        bycategory_column_dict[category] = column_list
+
+bysample_bycategory_weight_dict = {}
+for sample in sample_list:
+    if "DATA" in sample:
+        bysample_bycategory_weight_dict[sample] = {"inclusive": [], "bycategory": {}}
+        for category in categories_dict.keys():
+            if "postW" in category:
+                if "Run2" in category:
+                    bysample_bycategory_weight_dict[sample]["bycategory"][category] = (
+                        ["bkg_morphing_dnn_weight"]
+                    )
+                else:
+                    bysample_bycategory_weight_dict[sample]["bycategory"][category] = (
+                        ["bkg_morphing_dnn_weightRun2"]
+                    )
+
+print(bysample_bycategory_weight_dict)
 
 cfg = Configurator(
     parameters=parameters,
@@ -144,15 +234,9 @@ cfg = Configurator(
             f"{localdir}/datasets/DATA_JetMET_skimmed.json",
         ],
         "filter": {
-            "samples": (
-                [
-                    # "VBF_HHto4B",
-                    "DATA_JetMET_JMENano_skimmed",
-                    # "GluGlutoHHto4B",
-                ]
-            ),
+            "samples": sample_list,
             "samples_exclude": [],
-            "year": [year],
+            # "year": [year],
         },
         "subsamples": {},
     },
@@ -162,43 +246,7 @@ cfg = Configurator(
         get_HLTsel(primaryDatasets=["JetMET"]),
     ],
     preselections=preselection,
-    categories={
-        "4b_control_region": [hh4b_4b_region, hh4b_control_region],
-        "2b_control_region_preW": [hh4b_2b_region, hh4b_control_region],
-        "2b_control_region_postW": [hh4b_2b_region, hh4b_control_region],
-        "4b_control_regionRun2": [hh4b_4b_region, control_region_run2],
-        "2b_control_region_preWRun2": [hh4b_2b_region, control_region_run2],
-        "2b_control_region_postWRun2": [hh4b_2b_region, control_region_run2],
-        #
-        "4b_signal_region": [hh4b_4b_region, hh4b_signal_region],
-        "2b_signal_region_preW": [hh4b_2b_region, hh4b_signal_region],
-        "2b_signal_region_postW": [hh4b_2b_region, hh4b_signal_region],
-        "4b_signal_regionRun2": [hh4b_4b_region, signal_region_run2],
-        "2b_signal_region_preWRun2": [hh4b_2b_region, signal_region_run2],
-        "2b_signal_region_postWRun2": [hh4b_2b_region, signal_region_run2],
-        #
-        # "4b_region": [hh4b_4b_region],
-        # "2b_region": [hh4b_2b_region],
-        ## VBF SPECIFIC REGIONS
-        # **{f"4b_semiTight_LeadingPt_region": [hh4b_4b_region, semiTight_leadingPt]},
-        # **{f"4b_semiTight_LeadingMjj_region": [hh4b_4b_region, semiTight_leadingMjj]},
-        # **{f"4b_semiTight_LeadingMjj_region": [hh4b_4b_region, semiTight_leadingMjj]}
-        # **{"4b_VBFtight_region": [hh4b_4b_region, VBFtight_region]},
-        # **{"4b_VBFtight_region": [hh4b_4b_region, vbf_wrapper()]},
-        #
-        # **{
-        #     f"4b_VBFtight_{list(ab[0].keys())[i]}_region": [
-        #         hh4b_4b_region,
-        #         vbf_wrapper(ab[i]),
-        #     ]
-        #     for i in range(0, 6)
-        # },
-        #
-        # **{"4b_VBF_generalSelection_region": [hh4b_4b_region, VBF_generalSelection_region]},
-        # **{"4b_VBF_region": [hh4b_4b_region, VBF_region]},
-        # **{f"4b_VBF_0{i}qvg_region": [hh4b_4b_region, VBF_region, qvg_regions[f"qvg_0{i}_region"]] for i in range(5, 10)},
-        # **{f"4b_VBF_0{i}qvg_generalSelection_region": [hh4b_4b_region, VBF_generalSelection_region, qvg_regions[f"qvg_0{i}_region"]] for i in range(5, 10)},
-    },
+    categories=categories_dict,
     weights_classes=common_weights
     + [bkg_morphing_dnn_weight, bkg_morphing_dnn_weightRun2],
     weights={
@@ -210,17 +258,7 @@ cfg = Configurator(
             ],
             "bycategory": {},
         },
-        "bysample": {
-            "DATA_JetMET_JMENano_skimmed": {
-                "inclusive": [],
-                "bycategory": {
-                    "2b_control_region_postW": ["bkg_morphing_dnn_weight"],
-                    "2b_control_region_postWRun2": ["bkg_morphing_dnn_weightRun2"],
-                    "2b_signal_region_postW": ["bkg_morphing_dnn_weight"],
-                    "2b_signal_region_postWRun2": ["bkg_morphing_dnn_weightRun2"],
-                },
-            },
-        },
+        "bysample": bysample_bycategory_weight_dict,
     },
     variations={
         "weights": {
@@ -234,165 +272,10 @@ cfg = Configurator(
     variables=variables_dict,
     columns={
         "common": {
-            "inclusive": (
-                [
-                    # ColOut("events", ["bkg_morphing_dnn_weight"])
-                    #             "etaProduct",
-                    #             "JetVBFLeadingPtNotFromHiggs_deltaEta",
-                    #             "JetVBFLeadingMjjNotFromHiggs_deltaEta",
-                    #             "JetVBFLeadingPtNotFromHiggs_jjMass",
-                    #             "JetVBFLeadingMjjNotFromHiggs_jjMass",
-                    #             "HH",
-                    #             "HH_centrality",
-                    #             "HH_deltaR",
-                    #             "jj_deltaR",
-                    #             "H1j1_deltaR",
-                    #             "H1j2_deltaR",
-                    #             "H2j1_deltaR",
-                    #             "H2j2_deltaR",
-                    #         ],
-                    #     ),
-                    #     ColOut(
-                    #         "Jet",
-                    #         jet_info,
-                    #     ),
-                    #     ColOut(
-                    #         "JetVBFNotFromHiggs",
-                    #         jet_info,
-                    #     ),
-                    #     ColOut(
-                    #         "JetGoodFromHiggsOrdered",
-                    #         jet_info,
-                    #     ),
-                    #     ColOut(
-                    #         "JetVBF_matching",
-                    #         jet_info,
-                    #     ),
-                    #     ColOut(
-                    #         "JetVBFLeadingPtNotFromHiggs",
-                    #         jet_info,
-                    #     ),
-                    #     ColOut(
-                    #         "JetVBFLeadingMjjNotFromHiggs",
-                    #         jet_info,
-                    #     ),
-                    #     ColOut(
-                    #         "HH",
-                    #         ["pt", "eta", "phi", "mass"],
-                    #     ),
-                    # ]
-                    # + [
-                    #     ColOut(
-                    #         "quarkVBF_matched",
-                    #         [
-                    #             "index",
-                    #             "pt",
-                    #             "eta",
-                    #             "phi",
-                    #         ],
-                    #     ),
-                    #     ColOut(
-                    #         "quarkVBF",
-                    #         [
-                    #             "index",
-                    #             "pt",
-                    #             "eta",
-                    #             "phi",
-                    #         ],
-                    #     ),
-                    #     ColOut(
-                    #         "quarkVBF_generalSelection_matched",
-                    #         [
-                    #             "index",
-                    #             "pt",
-                    #             "eta",
-                    #             "phi",
-                    #         ],
-                    #     ),
-                    #     ColOut(
-                    #         "JetVBF_matched",
-                    #         jet_info,
-                    #     ),
-                    #     ColOut(
-                    #         "JetVBF_generalSelection_matched",
-                    #         jet_info,
-                    #     ),
-                    #     ColOut(
-                    #         "events",
-                    #         [
-                    #             "deltaEta_matched",
-                    #             "jj_mass_matched",
-                    #             "nJetVBF_matched",
-                    #         ],
-                    #     ),
-                    # ]
-                    # if VBF_PARTON_MATCHING
-                    # else [
-                    #     ColOut(
-                    #         "events",
-                    #         [
-                    #             "HH",
-                    #             "JetVBFLeadingPtNotFromHiggs_deltaEta",
-                    #             "JetVBFLeadingMjjNotFromHiggs_deltaEta",
-                    #             "JetVBFLeadingPtNotFromHiggs_jjMass",
-                    #             "JetVBFLeadingMjjNotFromHiggs_jjMass",
-                    #             "HH_deltaR",
-                    #             "H1j1_deltaR",
-                    #             "H1j2_deltaR",
-                    #             "H2j1_deltaR",
-                    #             "H2j2_deltaR",
-                    #             "HH_centrality",
-                    #         ],
-                    #     ),
-                    #     ColOut(
-                    #         "HiggsLeading",
-                    #         ["pt", "eta", "phi", "mass"]
-                    #     ),
-                    #     ColOut(
-                    #         "HiggsSubLeading",
-                    #         ["pt", "eta", "phi", "mass"]
-                    #     ),
-                    #     ColOut(
-                    #         "Jet",
-                    #         jet_info,
-                    #     ),
-                    #     ColOut(
-                    #         "JetGoodFromHiggsOrdered",
-                    #         jet_info,
-                    #     ),
-                    #     ColOut(
-                    #         "JetVBFLeadingPtNotFromHiggs",
-                    #         jet_info,
-                    #     ),
-                    #     ColOut(
-                    #         "JetVBFLeadingMjjNotFromHiggs",
-                    #         jet_info,
-                    #     ),
-                    #     ColOut(
-                    #         "HH",
-                    #         ["pt", "eta", "phi", "mass"],
-                    #     ),
-                ]
-            ),
+            "inclusive": [],
+            "bycategory": bycategory_column_dict,
         },
         "bysample": {
-            "DATA_JetMET_JMENano_skimmed": {
-                "inclusive": [],
-                "bycategory": {
-                    "4b_control_region": column_list,
-                    "2b_control_region_preW": column_list,
-                    "2b_control_region_postW": column_list,
-                    "4b_control_regionRun2": column_listRun2,
-                    "2b_control_region_preWRun2": column_listRun2,
-                    "2b_control_region_postWRun2": column_listRun2,
-                    "4b_signal_region": column_list,
-                    "2b_signal_region_preW": column_list,
-                    "2b_signal_region_postW": column_list,
-                    "4b_signal_regionRun2": column_listRun2,
-                    "2b_signal_region_preWRun2": column_listRun2,
-                    "2b_signal_region_postWRun2": column_listRun2,
-                },
-            },
         },
     },
 )

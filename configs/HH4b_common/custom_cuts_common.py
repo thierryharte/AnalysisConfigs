@@ -64,9 +64,11 @@ hh4b_4b_region = Cut(
 hh4b_signal_region = Cut(
     name="hh4b_signal_region",
     params={
-        "radius": "Rhh",
+        "Run2": False,
         "radius_min": 0,
         "radius_max": 30,
+        "higgs_lead_center":125,
+        "higgs_sublead_center":120,
         },
     function=cuts_f.hh4b_Rhh_cuts,
 )
@@ -74,29 +76,83 @@ hh4b_signal_region = Cut(
 hh4b_control_region = Cut(
     name="hh4b_control_region",
     params={
-        "radius": "Rhh",
+        "Run2": False,
         "radius_min": 30,
         "radius_max": 55,
+        "higgs_lead_center":125,
+        "higgs_sublead_center":120,
         },
     function=cuts_f.hh4b_Rhh_cuts,
 )
 
-signal_region_run2 = Cut(
-    name="signal_region_run2",
+hh4b_signal_region_run2 = Cut(
+    name="hh4b_signal_region_run2",
     params={
-        "radius": "Rhh_Run2",
+        "Run2": True,
         "radius_min": 0,
         "radius_max": 30,
+        "higgs_lead_center":125,
+        "higgs_sublead_center":120,
         },
     function=cuts_f.hh4b_Rhh_cuts,
 )
 
-control_region_run2 = Cut(
-    name="control_region_run2",
+hh4b_control_region_run2 = Cut(
+    name="hh4b_control_region_run2",
     params={
-        "radius": "Rhh_Run2",
+        "Run2": True,
         "radius_min": 30,
         "radius_max": 55,
+        "higgs_lead_center":125,
+        "higgs_sublead_center":120,
+        },
+    function=cuts_f.hh4b_Rhh_cuts,
+)
+
+hh4b_VR1_signal_region = Cut(
+    name="hh4b_VR1_signal_region",
+    params={
+        "Run2": False,
+        "radius_min": 0,
+        "radius_max": 30,
+        "higgs_lead_center":185,
+        "higgs_sublead_center":180,
+        },
+    function=cuts_f.hh4b_Rhh_cuts,
+)
+
+hh4b_VR1_control_region = Cut(
+    name="hh4b_VR1_control_region",
+    params={
+        "Run2": False,
+        "radius_min": 30,
+        "radius_max": 55,
+        "higgs_lead_center":185,
+        "higgs_sublead_center":180,
+        },
+    function=cuts_f.hh4b_Rhh_cuts,
+)
+
+hh4b_VR1_signal_region_run2 = Cut(
+    name="hh4b_VR1_signal_region_run2",
+    params={
+        "Run2": True,
+        "radius_min": 0,
+        "radius_max": 30,
+        "higgs_lead_center":185,
+        "higgs_sublead_center":180,
+        },
+    function=cuts_f.hh4b_Rhh_cuts,
+)
+
+hh4b_VR1_control_region_run2 = Cut(
+    name="hh4b_VR1_control_region_run2",
+    params={
+        "Run2": True,
+        "radius_min": 30,
+        "radius_max": 55,
+        "higgs_lead_center":185,
+        "higgs_sublead_center":180,
         },
     function=cuts_f.hh4b_Rhh_cuts,
 )
