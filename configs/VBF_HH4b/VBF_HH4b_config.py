@@ -69,8 +69,10 @@ onnx_model_dict = {
     # "SPANET": "params/out_hh4b_5jets_ATLAS_ptreg_c0_lr1e4_wp0_noklininp_oc_300e_kl3p5.onnx",
     "VBF_GGF_DNN": "",
     # "VBF_GGF_DNN":"/t3home/rcereghetti/ML_pytorch/out/20241212_223142_SemitTightPtLearningRateConstant/models/model_28.onnx",
-    # "BKG_MORPHING_DNN": f"{common_params}/DNN_AN_1e-3_e20drop75_minDelta1em5_SPANet_noEarlyStopping_average_model_from_onnx.onnx",
-    "BKG_MORPHING_DNN": "/work/mmalucch/out_ML_pytorch/DNN_AN_minDelta1em5/batch06/best_models/average_model_from_onnx.onnx",  # 20 k-folds, early stopping, 1e-5 minDelta
+    # "BKG_MORPHING_DNN": f"{common_params}/DNN_AN_1e-3_e20drop75_minDelta1em5_SPANet_noEarlyStopping_average_model_from_onnx.onnx",  # 20 k-folds, early stopping, 1e-5 minDelta, spanet
+    # "BKG_MORPHING_DNN": "/t3home/mmalucch/ML_pytorch/out/DNN_AN_VR1_1e-3_e20drop75_minDelta1em5_SPANet_oversample_split/state_dict/average_model_from_onnx.onnx",  # VR1 train, early stopping, 1e-5 minDelta, spanet
+    "BKG_MORPHING_DNN": "/work/mmalucch/out_ML_pytorch/DNN_AN_1e-3_e20drop75_minDelta1em5_run2/state_dict/average_model_from_onnx.onnx",  # Run2 CR train, early stopping, 1e-5 minDelta
+    # "BKG_MORPHING_DNN": "/work/mmalucch/out_ML_pytorch/DNN_AN_minDelta1em5/batch06/best_models/average_model_from_onnx.onnx",  # 20 k-folds, early stopping, 1e-5 minDelta, spanet
     # "BKG_MORPHING_DNN": "/work/tharte/datasets/ML_pytorch/out/AN_1e-2_noDropout_e20lrdrop95/state_dict/ratio/average_model_from_onnx.onnx",
     # "BKG_MORPHING_DNN": "/work/tharte/datasets/ML_pytorch/out/test_multiple_coffea/state_dict/model_40_state_dict.onnx", # thierry's model trained on 22C-22D-22E
     # "BKG_MORPHING_DNN": "/work/tharte/datasets/ML_pytorch/out/batch01/best_models/output/average_model_from_onnx.onnx", # thierry's model trained on 22E
@@ -91,6 +93,8 @@ VBF_PRESEL = False
 SEMI_TIGHT_VBF = True
 DNN_VARIABLES = True
 RUN2 = True
+VR1=False
+
 
 
 workflow_options = {
@@ -139,65 +143,70 @@ preselection = (
 )
 
 sample_list = [
-    "DATA_JetMET_JMENano_C_skimmed",
-    "DATA_JetMET_JMENano_D_skimmed",
+    # "DATA_JetMET_JMENano_C_skimmed",
+    # "DATA_JetMET_JMENano_D_skimmed",
     "DATA_JetMET_JMENano_E_skimmed",
-    "DATA_JetMET_JMENano_F_skimmed",
-    "DATA_JetMET_JMENano_G_skimmed",
+    # "DATA_JetMET_JMENano_F_skimmed",
+    # "DATA_JetMET_JMENano_G_skimmed",
+    
     # "VBF_HHto4B",
     # "GluGlutoHHto4B",
 ]
-categories_dict = {
-    # "4b_control_region": [hh4b_4b_region, hh4b_control_region],
-    # "2b_control_region_preW": [hh4b_2b_region, hh4b_control_region],
-    # "2b_control_region_postW": [hh4b_2b_region, hh4b_control_region],
-    # "4b_control_regionRun2": [hh4b_4b_region, hh4b_control_region_run2],
-    # "2b_control_region_preWRun2": [hh4b_2b_region, hh4b_control_region_run2],
-    # "2b_control_region_postWRun2": [hh4b_2b_region, hh4b_control_region_run2],
-    # #
-    # "4b_signal_region": [hh4b_4b_region, hh4b_signal_region],
-    # "2b_signal_region_preW": [hh4b_2b_region, hh4b_signal_region],
-    # "2b_signal_region_postW": [hh4b_2b_region, hh4b_signal_region],
-    # "4b_signal_regionRun2": [hh4b_4b_region, hh4b_signal_region_run2],
-    # "2b_signal_region_preWRun2": [hh4b_2b_region, hh4b_signal_region_run2],
-    # "2b_signal_region_postWRun2": [hh4b_2b_region, hh4b_signal_region_run2],
-    #
-    "4b_VR1_control_region": [hh4b_4b_region, hh4b_VR1_control_region],
-    "2b_VR1_control_region_preW": [hh4b_2b_region, hh4b_VR1_control_region],
-    "2b_VR1_control_region_postW": [hh4b_2b_region, hh4b_VR1_control_region],
-    "4b_VR1_control_regionRun2": [hh4b_4b_region, hh4b_VR1_control_region_run2],
-    "2b_VR1_control_region_preWRun2": [hh4b_2b_region, hh4b_VR1_control_region_run2],
-    "2b_VR1_control_region_postWRun2": [hh4b_2b_region, hh4b_VR1_control_region_run2],
-    #
-    "4b_VR1_signal_region": [hh4b_4b_region, hh4b_VR1_signal_region],
-    "2b_VR1_signal_region_preW": [hh4b_2b_region, hh4b_VR1_signal_region],
-    "2b_VR1_signal_region_postW": [hh4b_2b_region, hh4b_VR1_signal_region],
-    "4b_VR1_signal_regionRun2": [hh4b_4b_region, hh4b_VR1_signal_region_run2],
-    "2b_VR1_signal_region_preWRun2": [hh4b_2b_region, hh4b_VR1_signal_region_run2],
-    "2b_VR1_signal_region_postWRun2": [hh4b_2b_region, hh4b_VR1_signal_region_run2],
-    #
-    # "4b_region": [hh4b_4b_region],
-    # "2b_region": [hh4b_2b_region],
-    ## VBF SPECIFIC REGIONS
-    # **{f"4b_semiTight_LeadingPt_region": [hh4b_4b_region, semiTight_leadingPt]},
-    # **{f"4b_semiTight_LeadingMjj_region": [hh4b_4b_region, semiTight_leadingMjj]},
-    # **{f"4b_semiTight_LeadingMjj_region": [hh4b_4b_region, semiTight_leadingMjj]}
-    # **{"4b_VBFtight_region": [hh4b_4b_region, VBFtight_region]},
-    # **{"4b_VBFtight_region": [hh4b_4b_region, vbf_wrapper()]},
-    #
-    # **{
-    #     f"4b_VBFtight_{list(ab[0].keys())[i]}_region": [
-    #         hh4b_4b_region,
-    #         vbf_wrapper(ab[i]),
-    #     ]
-    #     for i in range(0, 6)
-    # },
-    #
-    # **{"4b_VBF_generalSelection_region": [hh4b_4b_region, VBF_generalSelection_region]},
-    # **{"4b_VBF_region": [hh4b_4b_region, VBF_region]},
-    # **{f"4b_VBF_0{i}qvg_region": [hh4b_4b_region, VBF_region, qvg_regions[f"qvg_0{i}_region"]] for i in range(5, 10)},
-    # **{f"4b_VBF_0{i}qvg_generalSelection_region": [hh4b_4b_region, VBF_generalSelection_region, qvg_regions[f"qvg_0{i}_region"]] for i in range(5, 10)},
-}
+if not VR1:
+    categories_dict = {
+        "4b_control_region": [hh4b_4b_region, hh4b_control_region],
+        "2b_control_region_preW": [hh4b_2b_region, hh4b_control_region],
+        "2b_control_region_postW": [hh4b_2b_region, hh4b_control_region],
+        "4b_control_regionRun2": [hh4b_4b_region, hh4b_control_region_run2],
+        "2b_control_region_preWRun2": [hh4b_2b_region, hh4b_control_region_run2],
+        "2b_control_region_postWRun2": [hh4b_2b_region, hh4b_control_region_run2],
+        #
+        "4b_signal_region": [hh4b_4b_region, hh4b_signal_region],
+        "2b_signal_region_preW": [hh4b_2b_region, hh4b_signal_region],
+        "2b_signal_region_postW": [hh4b_2b_region, hh4b_signal_region],
+        "4b_signal_regionRun2": [hh4b_4b_region, hh4b_signal_region_run2],
+        "2b_signal_region_preWRun2": [hh4b_2b_region, hh4b_signal_region_run2],
+        "2b_signal_region_postWRun2": [hh4b_2b_region, hh4b_signal_region_run2],
+        #
+
+        # "4b_region": [hh4b_4b_region],
+        # "2b_region": [hh4b_2b_region],
+        ## VBF SPECIFIC REGIONS
+        # **{f"4b_semiTight_LeadingPt_region": [hh4b_4b_region, semiTight_leadingPt]},
+        # **{f"4b_semiTight_LeadingMjj_region": [hh4b_4b_region, semiTight_leadingMjj]},
+        # **{f"4b_semiTight_LeadingMjj_region": [hh4b_4b_region, semiTight_leadingMjj]}
+        # **{"4b_VBFtight_region": [hh4b_4b_region, VBFtight_region]},
+        # **{"4b_VBFtight_region": [hh4b_4b_region, vbf_wrapper()]},
+        #
+        # **{
+        #     f"4b_VBFtight_{list(ab[0].keys())[i]}_region": [
+        #         hh4b_4b_region,
+        #         vbf_wrapper(ab[i]),
+        #     ]
+        #     for i in range(0, 6)
+        # },
+        #
+        # **{"4b_VBF_generalSelection_region": [hh4b_4b_region, VBF_generalSelection_region]},
+        # **{"4b_VBF_region": [hh4b_4b_region, VBF_region]},
+        # **{f"4b_VBF_0{i}qvg_region": [hh4b_4b_region, VBF_region, qvg_regions[f"qvg_0{i}_region"]] for i in range(5, 10)},
+        # **{f"4b_VBF_0{i}qvg_generalSelection_region": [hh4b_4b_region, VBF_generalSelection_region, qvg_regions[f"qvg_0{i}_region"]] for i in range(5, 10)},
+    }
+else:
+    categories_dict = {
+        "4b_VR1_control_region": [hh4b_4b_region, hh4b_VR1_control_region],
+        "2b_VR1_control_region_preW": [hh4b_2b_region, hh4b_VR1_control_region],
+        "2b_VR1_control_region_postW": [hh4b_2b_region, hh4b_VR1_control_region],
+        "4b_VR1_control_regionRun2": [hh4b_4b_region, hh4b_VR1_control_region_run2],
+        "2b_VR1_control_region_preWRun2": [hh4b_2b_region, hh4b_VR1_control_region_run2],
+        "2b_VR1_control_region_postWRun2": [hh4b_2b_region, hh4b_VR1_control_region_run2],
+        #
+        "4b_VR1_signal_region": [hh4b_4b_region, hh4b_VR1_signal_region],
+        "2b_VR1_signal_region_preW": [hh4b_2b_region, hh4b_VR1_signal_region],
+        "2b_VR1_signal_region_postW": [hh4b_2b_region, hh4b_VR1_signal_region],
+        "4b_VR1_signal_regionRun2": [hh4b_4b_region, hh4b_VR1_signal_region_run2],
+        "2b_VR1_signal_region_preWRun2": [hh4b_2b_region, hh4b_VR1_signal_region_run2],
+        "2b_VR1_signal_region_postWRun2": [hh4b_2b_region, hh4b_VR1_signal_region_run2],
+    }
 
 
 bycategory_column_dict = {}
