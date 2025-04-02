@@ -25,6 +25,13 @@ parser.add_argument(
     help="Type of normalisation (num_events, sum_weights)",
     default="sum_weights",
 )
+parser.add_argument(
+    "-r",
+    "--region-suffix",
+    type=str,
+    help="Suffix for the region",
+    default="",
+)
 parser.add_argument("-w", "--workers", type=int, default=8, help="Number of workers")
 parser.add_argument(
     "-l", "--linear", action="store_true", help="Linear scale", default=False
@@ -56,28 +63,28 @@ outputdir = os.path.join(input_dir, args.output) + f"_{args.normalisation}"
 # because first the name of the variables is try with the Run2 string
 # and after without it
 cat_dict = {
-    "CR": ["4b_control_region", "2b_control_region_postW", "2b_control_region_preW"],
-    "CRRun2": [
-        "4b_control_regionRun2",
-        "2b_control_region_postWRun2",
-        "2b_control_region_preWRun2",
+    f"CR{args.region_suffix}": [f"4b{args.region_suffix}_control_region", f"2b{args.region_suffix}_control_region_postW", f"2b{args.region_suffix}_control_region_preW"],
+    f"CR{args.region_suffix}Run2": [
+        f"4b{args.region_suffix}_control_regionRun2",
+        f"2b{args.region_suffix}_control_region_postWRun2",
+        f"2b{args.region_suffix}_control_region_preWRun2",
     ],
-    "SR": ["4b_signal_region", "2b_signal_region_postW", "2b_signal_region_preW"],
-    "SRRun2": [
-        "4b_signal_regionRun2",
-        "2b_signal_region_postWRun2",
-        "2b_signal_region_preWRun2",
+    f"SR{args.region_suffix}": [f"4b{args.region_suffix}_signal_region", f"2b{args.region_suffix}_signal_region_postW", f"2b{args.region_suffix}_signal_region_preW"],
+    f"SR{args.region_suffix}Run2": [
+        f"4b{args.region_suffix}_signal_regionRun2",
+        f"2b{args.region_suffix}_signal_region_postWRun2",
+        f"2b{args.region_suffix}_signal_region_preWRun2",
     ],
-    "CR_2b_Run2SPANet": ["2b_control_region_preWRun2", "2b_control_region_preW"],
-    "CR_4b_Run2SPANet": ["4b_control_regionRun2", "4b_control_region"],
+    f"CR{args.region_suffix}_2b_Run2SPANet": [f"2b{args.region_suffix}_control_region_preWRun2", f"2b{args.region_suffix}_control_region_preW"],
+    f"CR{args.region_suffix}_4b_Run2SPANet": [f"4b{args.region_suffix}_control_regionRun2", f"4b{args.region_suffix}_control_region"],
 }
 
 if args.test:
     cat_dict = {
-        "CRRun2": [
-            "4b_control_regionRun2",
-            "2b_control_region_postWRun2",
-            "2b_control_region_preWRun2",
+        f"CR{args.region_suffix}Run2": [
+            f"4b{args.region_suffix}_control_regionRun2",
+            f"2b{args.region_suffix}_control_region_postWRun2",
+            f"2b{args.region_suffix}_control_region_preWRun2",
         ],
     }
 
