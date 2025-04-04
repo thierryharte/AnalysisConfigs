@@ -159,3 +159,20 @@ sig_bkg_dnn_input_variables = OrderedDict(
         ("sigma_over_higgs2_reco_mass", ["events", "sigma_over_higgs2_reco_mass"]),
     ]
 )
+
+
+if __name__ == "__main__":
+    #print the difference between the two dictionaries
+    def print_dict_diff(dict1, dict2):
+        for key in dict1:
+            if key not in dict2:
+                print(f"Key {key} is missing in the second dictionary")
+            elif dict1[key] != dict2[key]:
+                print(f"Key {key} has different values: {dict1[key]} vs {dict2[key]}")
+        for key in dict2:
+            if key not in dict1:
+                print(f"Key {key} is missing in the first dictionary")
+                
+    # Call the function to print the differences
+    print("Differences between bkg_morphing_dnn_input_variables and bkg_morphing_dnn_input_variables_altOrder:")
+    print_dict_diff(bkg_morphing_dnn_input_variables, sig_bkg_dnn_input_variables)

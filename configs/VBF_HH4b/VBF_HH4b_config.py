@@ -42,6 +42,7 @@ from configs.HH4b_common.configurator_options import (
 from configs.HH4b_common.dnn_input_variables import (
     bkg_morphing_dnn_input_variables,
     bkg_morphing_dnn_input_variables_altOrder,
+    sig_bkg_dnn_input_variables,
 )
 
 
@@ -65,13 +66,13 @@ parameters = defaults.merge_parameters_from_files(
 common_params = f"{localdir}/../HH4b_common/params_common/"
 
 onnx_model_dict = {
-    "SPANET": f"{common_params}/hh4b_5jets_e300_s100_ptvary_wide_loose_btag.onnx",
+    "SPANET": f"{common_params}/hh4b_5jets_e300_s100_ptvary_wide_loose_btag.onnx", # pt vary 0.3, 1.7
     # "SPANET": "params/out_hh4b_5jets_ATLAS_ptreg_c0_lr1e4_wp0_noklininp_oc_300e_kl3p5.onnx",
     "VBF_GGF_DNN": "",
     # "VBF_GGF_DNN":"/t3home/rcereghetti/ML_pytorch/out/20241212_223142_SemitTightPtLearningRateConstant/models/model_28.onnx",
-    # "BKG_MORPHING_DNN": f"{common_params}/DNN_AN_1e-3_e20drop75_minDelta1em5_SPANet_noEarlyStopping_average_model_from_onnx.onnx",  # 20 k-folds, early stopping, 1e-5 minDelta, spanet
+    "BKG_MORPHING_DNN": f"{common_params}/DNN_AN_1e-3_e20drop75_minDelta1em5_SPANet_noEarlyStopping_20folds_average_model_from_onnx.onnx",  # 20 k-folds, early stopping, 1e-5 minDelta, spanet
     # "BKG_MORPHING_DNN": "/t3home/mmalucch/ML_pytorch/out/DNN_AN_VR1_1e-3_e20drop75_minDelta1em5_SPANet_oversample_split/state_dict/average_model_from_onnx.onnx",  # VR1 train, early stopping, 1e-5 minDelta, spanet
-    "BKG_MORPHING_DNN": "/work/mmalucch/out_ML_pytorch/DNN_AN_1e-3_e20drop75_minDelta1em5_run2/state_dict/average_model_from_onnx.onnx",  # Run2 CR train, early stopping, 1e-5 minDelta
+    # "BKG_MORPHING_DNN": "/work/mmalucch/out_ML_pytorch/DNN_AN_1e-3_e20drop75_minDelta1em5_run2/state_dict/average_model_from_onnx.onnx",  # Run2 CR train, early stopping, 1e-5 minDelta
     # "BKG_MORPHING_DNN": "/work/mmalucch/out_ML_pytorch/DNN_AN_minDelta1em5/batch06/best_models/average_model_from_onnx.onnx",  # 20 k-folds, early stopping, 1e-5 minDelta, spanet
     # "BKG_MORPHING_DNN": "/work/tharte/datasets/ML_pytorch/out/AN_1e-2_noDropout_e20lrdrop95/state_dict/ratio/average_model_from_onnx.onnx",
     # "BKG_MORPHING_DNN": "/work/tharte/datasets/ML_pytorch/out/test_multiple_coffea/state_dict/model_40_state_dict.onnx", # thierry's model trained on 22C-22D-22E
@@ -93,8 +94,7 @@ VBF_PRESEL = False
 SEMI_TIGHT_VBF = True
 DNN_VARIABLES = True
 RUN2 = True
-VR1=False
-
+VR1 = False
 
 
 workflow_options = {
@@ -120,20 +120,22 @@ if SAVE_CHUNK:
 
 jet_info = ["index", "pt", "btagPNetQvG", "eta", "btagPNetB", "phi", "mass"]
 
-variables_dict = get_variables_dict(
-    CLASSIFICATION=CLASSIFICATION,
-    VBF_VARIABLES=False,
-    BKG_MORPHING=True if onnx_model_dict["BKG_MORPHING_DNN"] else False,
-)
-# variables_dict={}
+# variables_dict = get_variables_dict(
+#     CLASSIFICATION=CLASSIFICATION,
+#     VBF_VARIABLES=False,
+#     BKG_MORPHING=True if onnx_model_dict["BKG_MORPHING_DNN"] else False,
+# )
+variables_dict = {}
 
-print("bkg_morphing_dnn_input_variables", bkg_morphing_dnn_input_variables)
+
+total_input_variables = sig_bkg_dnn_input_variables | bkg_morphing_dnn_input_variables
+print(total_input_variables)
 
 column_list = create_DNN_columns_list(
-    False, not SAVE_CHUNK, bkg_morphing_dnn_input_variables, btag=False
+    False, not SAVE_CHUNK, total_input_variables, btag=False
 )
 column_listRun2 = create_DNN_columns_list(
-    True, not SAVE_CHUNK, bkg_morphing_dnn_input_variables, btag=False
+    True, not SAVE_CHUNK, total_input_variables, btag=False
 )
 
 preselection = (
@@ -143,14 +145,13 @@ preselection = (
 )
 
 sample_list = [
-    # "DATA_JetMET_JMENano_C_skimmed",
-    # "DATA_JetMET_JMENano_D_skimmed",
+    "DATA_JetMET_JMENano_C_skimmed",
+    "DATA_JetMET_JMENano_D_skimmed",
     "DATA_JetMET_JMENano_E_skimmed",
-    # "DATA_JetMET_JMENano_F_skimmed",
-    # "DATA_JetMET_JMENano_G_skimmed",
-    
+    "DATA_JetMET_JMENano_F_skimmed",
+    "DATA_JetMET_JMENano_G_skimmed",
     # "VBF_HHto4B",
-    # "GluGlutoHHto4B",
+    "GluGlutoHHto4B",
 ]
 if not VR1:
     categories_dict = {
@@ -168,7 +169,6 @@ if not VR1:
         "2b_signal_region_preWRun2": [hh4b_2b_region, hh4b_signal_region_run2],
         "2b_signal_region_postWRun2": [hh4b_2b_region, hh4b_signal_region_run2],
         #
-
         # "4b_region": [hh4b_4b_region],
         # "2b_region": [hh4b_2b_region],
         ## VBF SPECIFIC REGIONS
@@ -197,8 +197,14 @@ else:
         "2b_VR1_control_region_preW": [hh4b_2b_region, hh4b_VR1_control_region],
         "2b_VR1_control_region_postW": [hh4b_2b_region, hh4b_VR1_control_region],
         "4b_VR1_control_regionRun2": [hh4b_4b_region, hh4b_VR1_control_region_run2],
-        "2b_VR1_control_region_preWRun2": [hh4b_2b_region, hh4b_VR1_control_region_run2],
-        "2b_VR1_control_region_postWRun2": [hh4b_2b_region, hh4b_VR1_control_region_run2],
+        "2b_VR1_control_region_preWRun2": [
+            hh4b_2b_region,
+            hh4b_VR1_control_region_run2,
+        ],
+        "2b_VR1_control_region_postWRun2": [
+            hh4b_2b_region,
+            hh4b_VR1_control_region_run2,
+        ],
         #
         "4b_VR1_signal_region": [hh4b_4b_region, hh4b_VR1_signal_region],
         "2b_VR1_signal_region_preW": [hh4b_2b_region, hh4b_VR1_signal_region],
@@ -223,13 +229,13 @@ for sample in sample_list:
         for category in categories_dict.keys():
             if "postW" in category:
                 if "Run2" in category:
-                    bysample_bycategory_weight_dict[sample]["bycategory"][category] = (
-                        ["bkg_morphing_dnn_weight"]
-                    )
+                    bysample_bycategory_weight_dict[sample]["bycategory"][category] = [
+                        "bkg_morphing_dnn_weight"
+                    ]
                 else:
-                    bysample_bycategory_weight_dict[sample]["bycategory"][category] = (
-                        ["bkg_morphing_dnn_weightRun2"]
-                    )
+                    bysample_bycategory_weight_dict[sample]["bycategory"][category] = [
+                        "bkg_morphing_dnn_weightRun2"
+                    ]
 
 print(bysample_bycategory_weight_dict)
 
@@ -284,7 +290,6 @@ cfg = Configurator(
             "inclusive": [],
             "bycategory": bycategory_column_dict,
         },
-        "bysample": {
-        },
+        "bysample": {},
     },
 )
