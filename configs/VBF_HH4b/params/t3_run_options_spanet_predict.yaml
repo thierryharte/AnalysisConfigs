@@ -5,5 +5,4 @@ disk-per-worker: "1GB"
 queue: "standard"
 walltime: "02:00:00"
 chunksize: 100000
-ignore-grid-certificate: true
-voms-proxy: null
+retries: 2 
