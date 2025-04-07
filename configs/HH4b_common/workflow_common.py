@@ -417,7 +417,6 @@ class HH4bCommonProcessor(BaseProcessorABC):
         return abs(np.cos(higgs1_vec.theta))
 
     def get_sigma_mbb(self, jet1, jet2):
-        print("jet1", jet1, jet1.pt)
         jet1 = add_fields(jet1)
         jet2 = add_fields(jet2)
 

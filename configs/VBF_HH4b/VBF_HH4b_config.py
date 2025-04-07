@@ -245,7 +245,9 @@ cfg = Configurator(
         "jsons": [
             f"{localdir}/datasets/QCD.json",
             f"{localdir}/datasets/signal_VBF_HH4b.json",
-            f"{localdir}/datasets/signal_ggF_HH4b_local.json",
+            # f"{localdir}/datasets/signal_ggF_HH4b_local.json",
+            # f"{localdir}/datasets/signal_ggF_HH4b_local_rucio_redirector.json",
+            f"{localdir}/datasets/signal_ggF_HH4b_altSite.json",
             f"{localdir}/datasets/DATA_JetMET_skimmed.json",
         ],
         "filter": {
