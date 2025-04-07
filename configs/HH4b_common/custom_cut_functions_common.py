@@ -1,5 +1,5 @@
 import awkward as ak
-
+import numpy as np
 
 def hh4b_presel_cuts(events, params, **kwargs):
     at_least_four_jets = events.nJetGood >= params["njet"]
@@ -64,9 +64,19 @@ def hh4b_4b_cuts(events, params, **kwargs):
 
 
 def hh4b_Rhh_cuts(events, params, **kwargs):
-    mask = (getattr(events, params["radius"]) >= params["radius_min"]) & (
-        getattr(events, params["radius"]) < params["radius_max"]
+    if params["Run2"]:
+        higgs_lead_mass = events.HiggsLeadingRun2.mass
+        higgs_sublead_mass = events.HiggsSubLeadingRun2.mass
+    else:
+        higgs_lead_mass = events.HiggsLeading.mass
+        higgs_sublead_mass = events.HiggsSubLeading.mass
+
+    Rhh = np.sqrt(
+        (higgs_lead_mass - params["higgs_lead_center"]) ** 2
+        + (higgs_sublead_mass - params["higgs_sublead_center"]) ** 2
     )
+
+    mask = (Rhh >= params["radius_min"]) & (Rhh < params["radius_max"])
 
     # Pad None values with False
     return ak.where(ak.is_none(mask), False, mask)

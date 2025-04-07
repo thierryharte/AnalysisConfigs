@@ -85,7 +85,7 @@
       "root://t3dcachedb03.psi.ch:1094//pnfs/psi.ch/cms/trivcat/store/user/tharte/HH4b/ntuples/DATA_JetMET_JMENano_D_skimmedDATA_JetMET_JMENano_D_2022_preEE_EraD/DATA_JetMET_JMENano_D_2022_preEE_EraD/DATA_JetMET_JMENano_D_2022_preEE_EraD_22.root"
     ]
   },
-  "DATA_JetMET_JMENano_2022_postEE_EraE": {
+  "DATA_JetMET_JMENano_E_2022_postEE_EraE": {
     "metadata": {
       "das_names": "['/JetMET/Run2022E-JMENano12p5-v1/NANOAOD']",
       "sample": "DATA_JetMET_JMENano_E_skimmed",

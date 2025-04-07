@@ -39,6 +39,10 @@ era_dict = {
     "2023_preBPix_Cv4": 8,
     "2023_postBPix_Dv1": 9,
     "2023_postBPix_Dv2": 10,
+    "2022_preEE_MC":-1,
+    "2022_postEE_MC":-2,
+    "2023_preBPix_MC":-3,
+    "2023_postBPix_MC":-4,
 }
 
 
@@ -436,7 +440,7 @@ class HH4bCommonProcessor(BaseProcessorABC):
         jet2_sigma_conc = ak.concatenate((jet2_up_sigma, jet2_down_sigma), axis=1)
         sigma_hbbCand_B = ak.max(jet2_sigma_conc, axis=1)
 
-        return ak.flatten(np.sqrt(sigma_hbbCand_A**2 + sigma_hbbCand_B**2))
+        return ak.flatten(np.sqrt(sigma_hbbCand_A**2 + sigma_hbbCand_B**2), axis=None)
 
     def get_jets_no_higgs(self, jet_higgs_idx_per_event):
         jet_offsets = np.concatenate(
@@ -761,7 +765,7 @@ class HH4bCommonProcessor(BaseProcessorABC):
                 self.events.HiggsSubLeading,
                 self.events.JetGoodFromHiggsOrdered,
                 matched_jet_higgs_idx_not_none,
-                sb_variables=True if self.SIG_BKG_DNN else False,
+                sb_variables=True,# if self.SIG_BKG_DNN else False,
             )
         if self.DNN_VARIABLES and self.RUN2:
             (
@@ -776,7 +780,7 @@ class HH4bCommonProcessor(BaseProcessorABC):
                 self.events.HiggsSubLeadingRun2,
                 self.events.JetGoodFromHiggsOrderedRun2,
                 matched_jet_higgs_idx_not_noneRun2,
-                sb_variables=True if self.SIG_BKG_DNN else False,
+                sb_variables=True,# if self.SIG_BKG_DNN else False,
             )
 
         if self.BKG_MORPHING_DNN and not self._isMC:
