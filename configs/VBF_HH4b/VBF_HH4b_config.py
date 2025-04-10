@@ -74,8 +74,8 @@ SAVE_CHUNK = False
 VBF_PRESEL = False
 SEMI_TIGHT_VBF = True
 
-DNN_VARIABLES = False
-RUN2 = False
+DNN_VARIABLES = True
+RUN2 = True
 VR1 = False
 
 
@@ -141,15 +141,16 @@ sample_list = [
     "GluGlutoHHto4B",
     # "VBF_HHto4B",
 ]
+
 if not VR1:
     categories_dict = {
         "4b_control_region": [hh4b_4b_region, hh4b_control_region],
-        # "2b_control_region_preW": [hh4b_2b_region, hh4b_control_region],
-        # "2b_control_region_postW": [hh4b_2b_region, hh4b_control_region],
-        # #
-        # "4b_signal_region": [hh4b_4b_region, hh4b_signal_region],
-        # "2b_signal_region_preW": [hh4b_2b_region, hh4b_signal_region],
-        # "2b_signal_region_postW": [hh4b_2b_region, hh4b_signal_region],
+        "2b_control_region_preW": [hh4b_2b_region, hh4b_control_region],
+        "2b_control_region_postW": [hh4b_2b_region, hh4b_control_region],
+        #
+        "4b_signal_region": [hh4b_4b_region, hh4b_signal_region],
+        "2b_signal_region_preW": [hh4b_2b_region, hh4b_signal_region],
+        "2b_signal_region_postW": [hh4b_2b_region, hh4b_signal_region],
         #
         # "4b_region": [hh4b_4b_region],
         # "2b_region": [hh4b_2b_region],
