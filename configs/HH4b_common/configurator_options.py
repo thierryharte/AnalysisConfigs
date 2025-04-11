@@ -1009,17 +1009,22 @@ def get_variables_dict(
     return variables_dict
 
 
-DEFAULT_COLUMN_PARAMS = ["provenance", "pt", "eta", "phi", "mass", "btagPNetB"]
-DEFAULT_COLUMNS = {
-    "JetGoodMatched": DEFAULT_COLUMN_PARAMS,
-    "JetGoodHiggsMatched": DEFAULT_COLUMN_PARAMS,
-    "JetGood": DEFAULT_COLUMN_PARAMS,
-    "JetGoodHiggs": DEFAULT_COLUMN_PARAMS,
+SPANET_TRAINING_DEFAULT_COLUMN_PARAMS = ["provenance", "pt", "eta", "phi", "mass", "btagPNetB"]
+SPANET_TRAINING_DEFAULT_COLUMNS = {
+    "JetGoodMatched": SPANET_TRAINING_DEFAULT_COLUMN_PARAMS,
+    "JetGoodHiggsMatched": SPANET_TRAINING_DEFAULT_COLUMN_PARAMS,
+    "JetGood": SPANET_TRAINING_DEFAULT_COLUMN_PARAMS,
+    "JetGoodHiggs": SPANET_TRAINING_DEFAULT_COLUMN_PARAMS,
+}
+
+DEFAULT_JET_COLUMN_PARAMS = ["pt", "eta", "phi", "mass", "btagPNetB"]
+DEFAULT_JET_COLUMNS = {
+    "JetGood": DEFAULT_JET_COLUMN_PARAMS,
 }
 
 
 def get_columns_list(
-    columns_dict=DEFAULT_COLUMNS,
+    columns_dict=DEFAULT_JET_COLUMNS,
     flatten=True,
 ):
     """Function to create the column definition for the PocketCoffea Configurator().

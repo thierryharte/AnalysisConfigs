@@ -1,0 +1,31 @@
+{
+    "GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_spanet__2022_postEE": {
+        "metadata": {
+            "das_names": "['/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer22EENanoAODv12-130X_mcRun3_2022_realistic_postEE_v6-v1/NANOAODSIM']",
+            "sample": "GluGlutoHHto4B",
+            "year": "2022_postEE",
+            "isMC": "True",
+            "xsec": "0.01167",
+            "part": "",
+            "nevents": "7391383",
+            "size": "16401238988"
+        },
+        "files": [
+            "root://t2dsk0011.cmsaf.mit.edu:1094//store/mc/Run3Summer22EENanoAODv12/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/NANOAODSIM/130X_mcRun3_2022_realistic_postEE_v6-v1/2540000/24de7598-15b3-4a9b-8adc-26f5b804560d.root",
+            "root://t2dsk0011.cmsaf.mit.edu:1094//store/mc/Run3Summer22EENanoAODv12/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/NANOAODSIM/130X_mcRun3_2022_realistic_postEE_v6-v1/2540000/8f4d9168-5ef1-4ea1-a82e-c678153229fa.root",
+            "root://t2dsk0011.cmsaf.mit.edu:1094//store/mc/Run3Summer22EENanoAODv12/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/NANOAODSIM/130X_mcRun3_2022_realistic_postEE_v6-v1/2540000/a8466605-a4ea-42d8-afa0-206d68b5e9d4.root",
+            "root://t2dsk0011.cmsaf.mit.edu:1094//store/mc/Run3Summer22EENanoAODv12/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/NANOAODSIM/130X_mcRun3_2022_realistic_postEE_v6-v1/2550000/02bcd5a5-949e-408f-b6bb-0036659c89e3.root",
+            "root://t2dsk0011.cmsaf.mit.edu:1094//store/mc/Run3Summer22EENanoAODv12/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/NANOAODSIM/130X_mcRun3_2022_realistic_postEE_v6-v1/2550000/0cdc0140-ed74-438c-bf69-cdb61e6750de.root",
+            "root://t2dsk0011.cmsaf.mit.edu:1094//store/mc/Run3Summer22EENanoAODv12/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/NANOAODSIM/130X_mcRun3_2022_realistic_postEE_v6-v1/2550000/bd6a930e-8cc8-4800-9249-cefa8803f95d.root",
+            "root://t2dsk0011.cmsaf.mit.edu:1094//store/mc/Run3Summer22EENanoAODv12/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/NANOAODSIM/130X_mcRun3_2022_realistic_postEE_v6-v1/2560000/28980f51-6445-4bdb-a1cc-9d76f760cb2e.root",
+            "root://t2dsk0011.cmsaf.mit.edu:1094//store/mc/Run3Summer22EENanoAODv12/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/NANOAODSIM/130X_mcRun3_2022_realistic_postEE_v6-v1/2560000/437a1576-99f4-47bf-826f-dcace24fba28.root",
+            "root://t2dsk0011.cmsaf.mit.edu:1094//store/mc/Run3Summer22EENanoAODv12/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/NANOAODSIM/130X_mcRun3_2022_realistic_postEE_v6-v1/2560000/69658234-07be-49a4-9f88-4fffbb6d3207.root",
+            "root://t2dsk0011.cmsaf.mit.edu:1094//store/mc/Run3Summer22EENanoAODv12/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/NANOAODSIM/130X_mcRun3_2022_realistic_postEE_v6-v1/2560000/ae335b16-4661-414f-8e92-f8cebb920931.root",
+            "root://t2dsk0011.cmsaf.mit.edu:1094//store/mc/Run3Summer22EENanoAODv12/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/NANOAODSIM/130X_mcRun3_2022_realistic_postEE_v6-v1/2810000/079d5966-1036-4de4-b5d6-c24b09022360.root",
+            "root://t2dsk0011.cmsaf.mit.edu:1094//store/mc/Run3Summer22EENanoAODv12/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/NANOAODSIM/130X_mcRun3_2022_realistic_postEE_v6-v1/2810000/146f07a2-c596-4b27-87c4-0528a038b43e.root",
+            "root://t2dsk0011.cmsaf.mit.edu:1094//store/mc/Run3Summer22EENanoAODv12/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/NANOAODSIM/130X_mcRun3_2022_realistic_postEE_v6-v1/2810000/26916a85-4b90-43db-85e0-0be869781b66.root",
+            "root://t2dsk0011.cmsaf.mit.edu:1094//store/mc/Run3Summer22EENanoAODv12/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/NANOAODSIM/130X_mcRun3_2022_realistic_postEE_v6-v1/2810000/29d18e19-92dd-47eb-b425-35c85f29cc4c.root",
+            "root://t2dsk0011.cmsaf.mit.edu:1094//store/mc/Run3Summer22EENanoAODv12/GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_TuneCP5_13p6TeV_powheg-pythia8/NANOAODSIM/130X_mcRun3_2022_realistic_postEE_v6-v1/2810000/2f284330-1d60-4cfd-915e-fd78cf32adb4.root"
+        ]
+    }
+}

@@ -1,4 +1,4 @@
-from VBF_HH4b_config import onnx_model_dict
+from onnx_models import onnx_model_dict
 
 from utils.onnx_executor_common import OnnxExecutorFactory
 

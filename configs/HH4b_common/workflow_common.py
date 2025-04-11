@@ -1,5 +1,6 @@
 import awkward as ak
 import numpy as np
+from pprint import pprint
 
 import vector
 
@@ -119,17 +120,17 @@ class HH4bCommonProcessor(BaseProcessorABC):
             del jets5plus
             del jets5plus_pt
 
-    def apply_preselection(self, variation):
-        """
-        Workaround to have the possibility for preselections depending on samples
-        Needs correct implementation in the config file to create a dict of all required samples.
-        The keys can then be set as samples and the values are the cuts for the respective sample
-        """
-        self._preselections_temp = self._preselections
-        if isinstance(self._preselections, dict):
-            self._preselections = self._preselections_temp[self._sample]
-        super().apply_preselection(self, variation)
-        self._preselections = self._preselections_temp
+    # def apply_preselection(self, variation):
+    #     """
+    #     Workaround to have the possibility for preselections depending on samples
+    #     Needs correct implementation in the config file to create a dict of all required samples.
+    #     The keys can then be set as samples and the values are the cuts for the respective sample
+    #     """
+    #     self._preselections_temp = self._preselections
+    #     if isinstance(self._preselections, dict):
+    #         self._preselections = self._preselections_temp[self._sample]
+    #     super().apply_preselection(self, variation)
+    #     self._preselections = self._preselections_temp
 
     def get_jet_higgs_provenance(self, which_bquark):  # -> ak.Array:
         # Select b-quarks at Gen level, coming from H->bb decay
@@ -683,8 +684,6 @@ class HH4bCommonProcessor(BaseProcessorABC):
             )
         elif self.SPANET:
             # apply spanet model to get the pairing prediction for the b-jets from Higgs
-            self.dummy_provenance()
-
             model_session_SPANET, input_name_SPANET, output_name_SPANET = (
                 get_model_session(self.SPANET, "SPANET")
             )
@@ -739,7 +738,10 @@ class HH4bCommonProcessor(BaseProcessorABC):
                 (self.events.HiggsLeadingRun2.mass - 125) ** 2
                 + (self.events.HiggsSubLeadingRun2.mass - 120) ** 2
             )
-
+        
+        if not (self._isMC and not self.SPANET):
+            self.dummy_provenance()
+                
         self.events["nJetGoodHiggsMatched"] = ak.num(
             self.events.JetGoodHiggsMatched, axis=1
         )
@@ -835,3 +837,10 @@ class HH4bCommonProcessor(BaseProcessorABC):
                 )[0],
                 axis=None,
             )
+            
+        # breakpoint()
+        # # print all the keys of the events 
+        # print("Events keys:")
+        # pprint(vars(self.events))
+        
+        
