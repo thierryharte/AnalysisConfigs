@@ -21,6 +21,7 @@ from configs.HH4b_common.custom_cuts_common import (
     hh4b_control_region,
     hh4b_signal_region_run2,
     hh4b_control_region_run2,
+    blinded,
 )
 
 from configs.HH4b_common.custom_weights import (
@@ -73,7 +74,7 @@ onnx_model_dict={
     # "VBF_GGF_DNN":"/t3home/rcereghetti/ML_pytorch/out/20241212_223142_SemitTightPtLearningRateConstant/models/model_28.onnx",
     #"BKG_MORPHING_DNN": "/pnfs/psi.ch/cms/trivcat/store/user/mmalucch/keras_models_morphing/average_model_from_keras.onnx",
     #"BKG_MORPHING_DNN": "/work/tharte/datasets/ML_pytorch/out/AN_1e-2_noDropout_e20lrdrop95/state_dict/ratio/average_model_from_onnx.onnx",
-    "BKG_MORPHING_DNN": "/work/tharte/datasets/ML_pytorch/out/DHH_method_20_runs/best_models/ratio/average_model_from_onnx.onnx",
+    "BKG_MORPHING_DNN": "/work/tharte/datasets/ML_pytorch/out/bkg_morphing/DHH_method_20_runs/best_models/ratio/average_model_from_onnx.onnx",
     "SIG_BKG_DNN": "",
     # "SIG_BKG_DNN": "/pnfs/psi.ch/cms/trivcat/store/user/mmalucch/keras_models_SvsB/model_fold0.onnx",
 }
@@ -83,11 +84,11 @@ print(onnx_model_dict)
 ## Defining the used samples
 samples_list = [
         #            "DATA_JetMET_JMENano_C_skimmed",
-        #            "DATA_JetMET_JMENano_D_skimmed",
+                    "DATA_JetMET_JMENano_D_skimmed",
         #            "DATA_JetMET_JMENano_E_skimmed",
         #    "DATA_JetMET_JMENano_F_skimmed",
         #    "DATA_JetMET_JMENano_G_skimmed",
-            "GluGlutoHHto4B_spanet",
+        #            "GluGlutoHHto4B_spanet",
             # "DATA_JetMET_JMENano_2023_Cv1_skimmed",
             # "DATA_JetMET_JMENano_2023_Cv2_skimmed",
             # "DATA_ParkingHH_2023_Cv3",
@@ -169,6 +170,11 @@ if RUN2:
             }
         categories_dict |= categories_reweight
     categories_dict |= categories_run2
+if onnx_model_dict["SIG_BKG_DNN"]:
+    categories_dict["4b_signal_region_blinded"] = [hh4b_4b_region, hh4b_signal_region, blind]
+    if RUN2:
+        categories_dict["4b_signal_region_blinded_Run2"] = [hh4b_4b_region, hh4b_signal_region_run2, blind]
+
 
 print(categories_dict.keys())
 
