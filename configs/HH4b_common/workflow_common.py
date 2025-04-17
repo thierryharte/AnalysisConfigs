@@ -590,17 +590,6 @@ class HH4bCommonProcessor(BaseProcessorABC):
         )
 
         if sb_variables:
-            # dR
-            higgs1 = ak.with_field(
-                higgs1,
-                jets_from_higgs[:, 0].delta_r(jets_from_higgs[:, 1]),
-                "dR",
-            )
-            higgs2 = ak.with_field(
-                higgs2,
-                jets_from_higgs[:, 2].delta_r(jets_from_higgs[:, 3]),
-                "dR",
-            )
             # dPhi
             higgs1 = ak.with_field(
                 higgs1,
