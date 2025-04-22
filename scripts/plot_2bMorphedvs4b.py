@@ -66,6 +66,7 @@ for region_suffix in ["", "_VR1"]:
         ],
         f"SR{region_suffix}": [f"4b{region_suffix}_signal_region", f"2b{region_suffix}_signal_region_postW", f"2b{region_suffix}_signal_region_preW"],
         f"SR{region_suffix}_blind": [f"4b{region_suffix}_signal_region_blind", f"2b{region_suffix}_signal_region_postW_blind", f"2b{region_suffix}_signal_region_preW_blind"],
+        f"SR{region_suffix}Run2_blind": [f"4b{region_suffix}_signal_region_blindRun2", f"2b{region_suffix}_signal_region_postW_blindRun2", f"2b{region_suffix}_signal_region_preW_blindRun2"],
         f"SR{region_suffix}Run2": [
             f"4b{region_suffix}_signal_regionRun2",
             f"2b{region_suffix}_signal_region_postWRun2",
