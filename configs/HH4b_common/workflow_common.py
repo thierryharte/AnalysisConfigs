@@ -421,6 +421,7 @@ class HH4bCommonProcessor(BaseProcessorABC):
         jet1 = add_fields(jet1)
         jet2 = add_fields(jet2)
 
+        # PNetRegPtRawRes is the resolution of the jet pt estimated by PNet
         jet1_up = jet1 * (1 + jet1.PNetRegPtRawRes)
         jet2_up = jet2 * (1 + jet2.PNetRegPtRawRes)
 
@@ -440,6 +441,8 @@ class HH4bCommonProcessor(BaseProcessorABC):
         )
         jet2_sigma_conc = ak.concatenate((jet2_up_sigma, jet2_down_sigma), axis=1)
         sigma_hbbCand_B = ak.max(jet2_sigma_conc, axis=1)
+        
+        #breakpoint()
 
         return ak.flatten(np.sqrt(sigma_hbbCand_A**2 + sigma_hbbCand_B**2), axis=None)
 
@@ -826,21 +829,39 @@ class HH4bCommonProcessor(BaseProcessorABC):
                 output_name_SIG_BKG_DNN,
             ) = get_model_session(self.SIG_BKG_DNN, "SIG_BKG_DNN")
 
-            self.events["sig_bkg_dnn_score"] = ak.flatten(
-                get_dnn_prediction(
-                    model_session_SIG_BKG_DNN,
-                    input_name_SIG_BKG_DNN,
-                    output_name_SIG_BKG_DNN,
-                    self.events,
-                    sig_bkg_dnn_input_variables,
-                    pad_value=self.pad_value,
-                )[0],
-                axis=None,
-            )
+            if self.SPANET:
+                sig_bkg_dnn_score = get_dnn_prediction(
+                        model_session_SIG_BKG_DNN,
+                        input_name_SIG_BKG_DNN,
+                        output_name_SIG_BKG_DNN,
+                        self.events,
+                        sig_bkg_dnn_input_variables,
+                        pad_value=self.pad_value,
+                    )[0]
+                # if array is 1 dim just take it
+                if sig_bkg_dnn_score.ndim == 1:
+                    self.events["sig_bkg_dnn_score"] = sig_bkg_dnn_score
+                else:
+                    # if array is 2 dim take the last column
+                    self.events["sig_bkg_dnn_score"] = sig_bkg_dnn_score[:, -1]
             
-        # breakpoint()
-        # # print all the keys of the events 
-        # print("Events keys:")
-        # pprint(vars(self.events))
-        
+            if self.RUN2:
+                sig_bkg_dnn_score = get_dnn_prediction(
+                        model_session_SIG_BKG_DNN,
+                        input_name_SIG_BKG_DNN,
+                        output_name_SIG_BKG_DNN,
+                        self.events,
+                        sig_bkg_dnn_input_variables,
+                        pad_value=self.pad_value,
+                        run2=True,
+                    )[0]
+                # if array is 1 dim just take it
+                if sig_bkg_dnn_score.ndim == 1:
+                    self.events["sig_bkg_dnn_scoreRun2"] = sig_bkg_dnn_score
+                else:
+                    # if array is 2 dim take the last column
+                    self.events["sig_bkg_dnn_scoreRun2"] = sig_bkg_dnn_score[:, -1]
+                    
+        #breakpoint()
+
         
