@@ -115,8 +115,10 @@ else:
     column_listRun2 = get_columns_list()
     
     
-if workflow_options["SIG_BKG_DNN"]:
+if workflow_options["SIG_BKG_DNN"] and workflow_options["SPANET"]:
     column_list+=get_columns_list({"events": ["sig_bkg_dnn_score"]})
+if workflow_options["SIG_BKG_DNN"] and RUN2:
+    column_list+=get_columns_list({"events": ["sig_bkg_dnn_scoreRun2"]})
 
 preselection = (
     [vbf_hh4b_presel if TIGHT_CUTS is False else vbf_hh4b_presel_tight]
