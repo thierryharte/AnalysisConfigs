@@ -14,20 +14,7 @@ from pocket_coffea.lib.weights.common.common import common_weights
 from workflow import VBFHH4bProcessor
 from custom_cuts import vbf_hh4b_presel, vbf_hh4b_presel_tight
 
-from configs.HH4b_common.custom_cuts_common import (
-    hh4b_presel,
-    hh4b_presel_tight,
-    hh4b_4b_region,
-    hh4b_2b_region,
-    hh4b_signal_region,
-    hh4b_control_region,
-    hh4b_signal_region_run2,
-    hh4b_control_region_run2,
-    hh4b_VR1_signal_region,
-    hh4b_VR1_control_region,
-    hh4b_VR1_signal_region_run2,
-    hh4b_VR1_control_region_run2,
-)
+from configs.HH4b_common.categories_definitions_common import define_categories
 
 from configs.HH4b_common.custom_weights import (
     bkg_morphing_dnn_weight,
@@ -45,6 +32,8 @@ from configs.HH4b_common.dnn_input_variables import (
 )
 from configs.VBF_HH4b.onnx_models import onnx_model_dict
 
+import configs.HH4b_common.custom_cuts_common as cuts
+
 
 localdir = os.path.dirname(os.path.abspath(__file__))
 
@@ -59,7 +48,7 @@ parameters = defaults.merge_parameters_from_files(
     default_parameters,
     f"{localdir}/params/object_preselection.yaml",
     f"{localdir}/params/triggers.yaml",
-    f"{localdir}/params/jets_calibration.yaml",
+    f"{localdir}/params/jets_calibration_withVariations.yaml",
     update=True,
 )
 
@@ -75,9 +64,9 @@ VBF_PRESEL = False
 SEMI_TIGHT_VBF = True
 
 DNN_VARIABLES = True
-RUN2 = True
+RUN2 = False
 VR1 = False
-
+BLIND = True if onnx_model_dict["SIG_BKG_DNN"] else False
 
 workflow_options = {
     "parton_jet_min_dR": 0.4,
@@ -124,99 +113,113 @@ if DNN_VARIABLES:
 else:
     column_list = get_columns_list()
     column_listRun2 = get_columns_list()
-
+    
+    
+if workflow_options["SIG_BKG_DNN"]:
+    column_list+=get_columns_list({"events": ["sig_bkg_dnn_score"]})
 
 preselection = (
     [vbf_hh4b_presel if TIGHT_CUTS is False else vbf_hh4b_presel_tight]
     if VBF_PRESEL
-    else [hh4b_presel if TIGHT_CUTS is False else hh4b_presel_tight]
+    else [cuts.hh4b_presel if TIGHT_CUTS is False else cuts.hh4b_presel_tight]
 )
 
 sample_list = [
     # "DATA_JetMET_JMENano_C_skimmed",
     # "DATA_JetMET_JMENano_D_skimmed",
-    # "DATA_JetMET_JMENano_E_skimmed",
+    "DATA_JetMET_JMENano_E_skimmed",
     # "DATA_JetMET_JMENano_F_skimmed",
     # "DATA_JetMET_JMENano_G_skimmed",
-    "GluGlutoHHto4B",
+    # "GluGlutoHHto4B",
     # "VBF_HHto4B",
 ]
 
-if not VR1:
-    categories_dict = {
-        "4b_control_region": [hh4b_4b_region, hh4b_control_region],
-        "2b_control_region_preW": [hh4b_2b_region, hh4b_control_region],
-        "2b_control_region_postW": [hh4b_2b_region, hh4b_control_region],
-        #
-        "4b_signal_region": [hh4b_4b_region, hh4b_signal_region],
-        "2b_signal_region_preW": [hh4b_2b_region, hh4b_signal_region],
-        "2b_signal_region_postW": [hh4b_2b_region, hh4b_signal_region],
-        #
-        # "4b_region": [hh4b_4b_region],
-        # "2b_region": [hh4b_2b_region],
-        ## VBF SPECIFIC REGIONS
-        # **{f"4b_semiTight_LeadingPt_region": [hh4b_4b_region, semiTight_leadingPt]},
-        # **{f"4b_semiTight_LeadingMjj_region": [hh4b_4b_region, semiTight_leadingMjj]},
-        # **{f"4b_semiTight_LeadingMjj_region": [hh4b_4b_region, semiTight_leadingMjj]}
-        # **{"4b_VBFtight_region": [hh4b_4b_region, VBFtight_region]},
-        # **{"4b_VBFtight_region": [hh4b_4b_region, vbf_wrapper()]},
-        #
-        # **{
-        #     f"4b_VBFtight_{list(ab[0].keys())[i]}_region": [
-        #         hh4b_4b_region,
-        #         vbf_wrapper(ab[i]),
-        #     ]
-        #     for i in range(0, 6)
-        # },
-        #
-        # **{"4b_VBF_generalSelection_region": [hh4b_4b_region, VBF_generalSelection_region]},
-        # **{"4b_VBF_region": [hh4b_4b_region, VBF_region]},
-        # **{f"4b_VBF_0{i}qvg_region": [hh4b_4b_region, VBF_region, qvg_regions[f"qvg_0{i}_region"]] for i in range(5, 10)},
-        # **{f"4b_VBF_0{i}qvg_generalSelection_region": [hh4b_4b_region, VBF_generalSelection_region, qvg_regions[f"qvg_0{i}_region"]] for i in range(5, 10)},
-    }
-    if RUN2:
-        categories_dictRun2 = {
-            "4b_control_regionRun2": [hh4b_4b_region, hh4b_control_region_run2],
-            "2b_control_region_preWRun2": [hh4b_2b_region, hh4b_control_region_run2],
-            "2b_control_region_postWRun2": [hh4b_2b_region, hh4b_control_region_run2],
-            "4b_signal_regionRun2": [hh4b_4b_region, hh4b_signal_region_run2],
-            "2b_signal_region_preWRun2": [hh4b_2b_region, hh4b_signal_region_run2],
-            "2b_signal_region_postWRun2": [hh4b_2b_region, hh4b_signal_region_run2],
-        }
-        categories_dict = categories_dict | categories_dictRun2
-else:
-    categories_dict = {
-        "4b_VR1_control_region": [hh4b_4b_region, hh4b_VR1_control_region],
-        "2b_VR1_control_region_preW": [hh4b_2b_region, hh4b_VR1_control_region],
-        "2b_VR1_control_region_postW": [hh4b_2b_region, hh4b_VR1_control_region],
-        #
-        "4b_VR1_signal_region": [hh4b_4b_region, hh4b_VR1_signal_region],
-        "2b_VR1_signal_region_preW": [hh4b_2b_region, hh4b_VR1_signal_region],
-        "2b_VR1_signal_region_postW": [hh4b_2b_region, hh4b_VR1_signal_region],
-    }
-    if RUN2:
-        categories_dictRun2 = {
-            "4b_VR1_control_regionRun2": [hh4b_4b_region, hh4b_VR1_control_region_run2],
-            "2b_VR1_control_region_preWRun2": [
-                hh4b_2b_region,
-                hh4b_VR1_control_region_run2,
-            ],
-            "2b_VR1_control_region_postWRun2": [
-                hh4b_2b_region,
-                hh4b_VR1_control_region_run2,
-            ],
-            "4b_VR1_signal_regionRun2": [hh4b_4b_region, hh4b_VR1_signal_region_run2],
-            "2b_VR1_signal_region_preWRun2": [
-                hh4b_2b_region,
-                hh4b_VR1_signal_region_run2,
-            ],
-            "2b_VR1_signal_region_postWRun2": [
-                hh4b_2b_region,
-                hh4b_VR1_signal_region_run2,
-            ],
-        }
-        categories_dict = categories_dict | categories_dictRun2
+categories_dict = define_categories(
+    bkg_morphing_dnn=workflow_options["BKG_MORPHING_DNN"],
+    blind=BLIND,
+    spanet=workflow_options["SPANET"],
+    vbf_ggf_dnn=workflow_options["VBF_GGF_DNN"],
+    run2=RUN2,
+    vr1=VR1,
+)
+print("categories_dict", categories_dict)
 
+
+# if not VR1:
+#     categories_dict = {
+#         "4b_control_region": [hh4b_4b_region, hh4b_control_region],
+#         "2b_control_region_preW": [hh4b_2b_region, hh4b_control_region],
+#         "2b_control_region_postW": [hh4b_2b_region, hh4b_control_region],
+#         #
+#         "4b_signal_region": [hh4b_4b_region, hh4b_signal_region],
+#         "2b_signal_region_preW": [hh4b_2b_region, hh4b_signal_region],
+#         "2b_signal_region_postW": [hh4b_2b_region, hh4b_signal_region],
+#         #
+#         # "4b_region": [hh4b_4b_region],
+#         # "2b_region": [hh4b_2b_region],
+#     }
+#     if RUN2:
+#         categories_dictRun2 = {
+#             "4b_control_regionRun2": [hh4b_4b_region, hh4b_control_region_run2],
+#             "2b_control_region_preWRun2": [hh4b_2b_region, hh4b_control_region_run2],
+#             "2b_control_region_postWRun2": [hh4b_2b_region, hh4b_control_region_run2],
+#             "4b_signal_regionRun2": [hh4b_4b_region, hh4b_signal_region_run2],
+#             "2b_signal_region_preWRun2": [hh4b_2b_region, hh4b_signal_region_run2],
+#             "2b_signal_region_postWRun2": [hh4b_2b_region, hh4b_signal_region_run2],
+#         }
+#         categories_dict = categories_dict | categories_dictRun2
+# else:
+#     categories_dict = {
+#         "4b_VR1_control_region": [hh4b_4b_region, hh4b_VR1_control_region],
+#         "2b_VR1_control_region_preW": [hh4b_2b_region, hh4b_VR1_control_region],
+#         "2b_VR1_control_region_postW": [hh4b_2b_region, hh4b_VR1_control_region],
+#         #
+#         "4b_VR1_signal_region": [hh4b_4b_region, hh4b_VR1_signal_region],
+#         "2b_VR1_signal_region_preW": [hh4b_2b_region, hh4b_VR1_signal_region],
+#         "2b_VR1_signal_region_postW": [hh4b_2b_region, hh4b_VR1_signal_region],
+#     }
+#     if RUN2:
+#         categories_dictRun2 = {
+#             "4b_VR1_control_regionRun2": [hh4b_4b_region, hh4b_VR1_control_region_run2],
+#             "2b_VR1_control_region_preWRun2": [
+#                 hh4b_2b_region,
+#                 hh4b_VR1_control_region_run2,
+#             ],
+#             "2b_VR1_control_region_postWRun2": [
+#                 hh4b_2b_region,
+#                 hh4b_VR1_control_region_run2,
+#             ],
+#             "4b_VR1_signal_regionRun2": [hh4b_4b_region, hh4b_VR1_signal_region_run2],
+#             "2b_VR1_signal_region_preWRun2": [
+#                 hh4b_2b_region,
+#                 hh4b_VR1_signal_region_run2,
+#             ],
+#             "2b_VR1_signal_region_postWRun2": [
+#                 hh4b_2b_region,
+#                 hh4b_VR1_signal_region_run2,
+#             ],
+#         }
+#         categories_dict = categories_dict | categories_dictRun2
+
+## VBF SPECIFIC REGIONS
+# **{f"4b_semiTight_LeadingPt_region": [hh4b_4b_region, semiTight_leadingPt]},
+# **{f"4b_semiTight_LeadingMjj_region": [hh4b_4b_region, semiTight_leadingMjj]},
+# **{f"4b_semiTight_LeadingMjj_region": [hh4b_4b_region, semiTight_leadingMjj]}
+# **{"4b_VBFtight_region": [hh4b_4b_region, VBFtight_region]},
+# **{"4b_VBFtight_region": [hh4b_4b_region, vbf_wrapper()]},
+#
+# **{
+#     f"4b_VBFtight_{list(ab[0].keys())[i]}_region": [
+#         hh4b_4b_region,
+#         vbf_wrapper(ab[i]),
+#     ]
+#     for i in range(0, 6)
+# },
+#
+# **{"4b_VBF_generalSelection_region": [hh4b_4b_region, VBF_generalSelection_region]},
+# **{"4b_VBF_region": [hh4b_4b_region, VBF_region]},
+# **{f"4b_VBF_0{i}qvg_region": [hh4b_4b_region, VBF_region, qvg_regions[f"qvg_0{i}_region"]] for i in range(5, 10)},
+# **{f"4b_VBF_0{i}qvg_generalSelection_region": [hh4b_4b_region, VBF_generalSelection_region, qvg_regions[f"qvg_0{i}_region"]] for i in range(5, 10)},
 
 bycategory_column_dict = {}
 for category in categories_dict.keys():
@@ -231,7 +234,7 @@ for sample in sample_list:
         bysample_bycategory_weight_dict[sample] = {"inclusive": [], "bycategory": {}}
         for category in categories_dict.keys():
             if "postW" in category:
-                if "Run2" in category:
+                if "Run2" not in category:
                     bysample_bycategory_weight_dict[sample]["bycategory"][category] = [
                         "bkg_morphing_dnn_weight"
                     ]
@@ -240,7 +243,7 @@ for sample in sample_list:
                         "bkg_morphing_dnn_weightRun2"
                     ]
 
-print(bysample_bycategory_weight_dict)
+print("bysample_bycategory_weight_dict",bysample_bycategory_weight_dict)
 
 cfg = Configurator(
     parameters=parameters,
@@ -268,8 +271,8 @@ cfg = Configurator(
     ],
     preselections=preselection,
     categories=categories_dict,
-    # weights_classes=common_weights
-    # + [bkg_morphing_dnn_weight, bkg_morphing_dnn_weightRun2],
+    weights_classes=common_weights
+    + [bkg_morphing_dnn_weight, bkg_morphing_dnn_weightRun2],
     weights={
         "common": {
             "inclusive": [
@@ -279,7 +282,7 @@ cfg = Configurator(
             ],
             "bycategory": {},
         },
-        "bysample": {}, #bysample_bycategory_weight_dict,
+        "bysample": bysample_bycategory_weight_dict,
     },
     variations={
         "weights": {
