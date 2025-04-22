@@ -25,13 +25,6 @@ parser.add_argument(
     help="Type of normalisation (num_events, sum_weights)",
     default="sum_weights",
 )
-parser.add_argument(
-    "-r",
-    "--region-suffix",
-    type=str,
-    help="Suffix for the region",
-    default="",
-)
 parser.add_argument("-w", "--workers", type=int, default=8, help="Number of workers")
 parser.add_argument(
     "-l", "--linear", action="store_true", help="Linear scale", default=False
@@ -62,29 +55,32 @@ outputdir = os.path.join(input_dir, args.output) + f"_{args.normalisation}"
 # To mix categories with Run2 and SPANet, put first the Run2 category
 # because first the name of the variables is try with the Run2 string
 # and after without it
-cat_dict = {
-    f"CR{args.region_suffix}": [f"4b{args.region_suffix}_control_region", f"2b{args.region_suffix}_control_region_postW", f"2b{args.region_suffix}_control_region_preW"],
-    f"CR{args.region_suffix}Run2": [
-        f"4b{args.region_suffix}_control_regionRun2",
-        f"2b{args.region_suffix}_control_region_postWRun2",
-        f"2b{args.region_suffix}_control_region_preWRun2",
-    ],
-    f"SR{args.region_suffix}": [f"4b{args.region_suffix}_signal_region", f"2b{args.region_suffix}_signal_region_postW", f"2b{args.region_suffix}_signal_region_preW"],
-    f"SR{args.region_suffix}Run2": [
-        f"4b{args.region_suffix}_signal_regionRun2",
-        f"2b{args.region_suffix}_signal_region_postWRun2",
-        f"2b{args.region_suffix}_signal_region_preWRun2",
-    ],
-    f"CR{args.region_suffix}_2b_Run2SPANet": [f"2b{args.region_suffix}_control_region_preWRun2", f"2b{args.region_suffix}_control_region_preW"],
-    f"CR{args.region_suffix}_4b_Run2SPANet": [f"4b{args.region_suffix}_control_regionRun2", f"4b{args.region_suffix}_control_region"],
-}
+cat_dict={}
+for region_suffix in ["", "_VR1"]:
+    cat_dict |= {
+        f"CR{region_suffix}": [f"4b{region_suffix}_control_region", f"2b{region_suffix}_control_region_postW", f"2b{region_suffix}_control_region_preW"],
+        f"CR{region_suffix}Run2": [
+            f"4b{region_suffix}_control_regionRun2",
+            f"2b{region_suffix}_control_region_postWRun2",
+            f"2b{region_suffix}_control_region_preWRun2",
+        ],
+        f"SR{region_suffix}": [f"4b{region_suffix}_signal_region", f"2b{region_suffix}_signal_region_postW", f"2b{region_suffix}_signal_region_preW"],
+        f"SR{region_suffix}_blind": [f"4b{region_suffix}_signal_region_blind", f"2b{region_suffix}_signal_region_postW_blind", f"2b{region_suffix}_signal_region_preW_blind"],
+        f"SR{region_suffix}Run2": [
+            f"4b{region_suffix}_signal_regionRun2",
+            f"2b{region_suffix}_signal_region_postWRun2",
+            f"2b{region_suffix}_signal_region_preWRun2",
+        ],
+        f"CR{region_suffix}_2b_Run2SPANet": [f"2b{region_suffix}_control_region_preWRun2", f"2b{region_suffix}_control_region_preW"],
+        f"CR{region_suffix}_4b_Run2SPANet": [f"4b{region_suffix}_control_regionRun2", f"4b{region_suffix}_control_region"],
+    }
 
 if args.test:
     cat_dict = {
-        f"CR{args.region_suffix}Run2": [
-            f"4b{args.region_suffix}_control_regionRun2",
-            f"2b{args.region_suffix}_control_region_postWRun2",
-            f"2b{args.region_suffix}_control_region_preWRun2",
+        f"CR": [
+            f"4b_control_region",
+            f"2b_control_region_postW",
+            f"2b_control_region_preW",
         ],
     }
 
@@ -345,10 +341,10 @@ def plot_single_var_from_columns(
         weights_den = weights_den * norm_factor_den
         weights_num = weights_num * norm_factor_num
 
-        print(f"weights_den {weights_den}", type(weights_den))
-        print(f"weights_num {weights_num}")
-        print(f"col_num {col_num}", type(col_num))
-        print(f"col_den {col_den}")
+        # print(f"weights_den {weights_den}", type(weights_den))
+        # print(f"weights_num {weights_num}")
+        # print(f"col_num {col_num}", type(col_num))
+        # print(f"col_den {col_den}")
 
         # h_den, bins = np.histogram(
         #     col_den, bins=30, range=range_4b
@@ -359,13 +355,13 @@ def plot_single_var_from_columns(
         # )
 
         bins = np.linspace(range_4b[0], range_4b[1], 31)
-        print("bins", bins, len(bins))
+        # print("bins", bins, len(bins))
         bins_center = (bins[1:] + bins[:-1]) / 2
-        print("bins_center", bins_center, len(bins_center))
+        # print("bins_center", bins_center, len(bins_center))
         idx_den = np.digitize(col_den, bins)
         idx_num = np.digitize(col_num, bins)
-        print("idx_den", idx_den, len(idx_den))
-        print("idx_num", idx_num, len(idx_num))
+        # print("idx_den", idx_den, len(idx_den))
+        # print("idx_num", idx_num, len(idx_num))
 
         h_den = []
         h_num = []
@@ -377,17 +373,17 @@ def plot_single_var_from_columns(
             h_num.append(np.sum(weights_num[idx_num == j]))
             err_den.append(np.sqrt(np.sum(weights_den[idx_den == j] ** 2)))
             err_num.append(np.sqrt(np.sum(weights_num[idx_num == j] ** 2)))
-            print('weights_den[idx_den == j]', weights_den[idx_den == j])
+            # print('weights_den[idx_den == j]', weights_den[idx_den == j])
 
         h_den = np.array(h_den)
         h_num = np.array(h_num)
         err_den = np.array(err_den)
         err_num = np.array(err_num)
 
-        print("h_den", h_den, len(h_den))
-        print("h_num", h_num, len(h_num))
-        print("err_den", err_den)
-        print("err_num", err_num)
+        # print("h_den", h_den, len(h_den))
+        # print("h_num", h_num, len(h_num))
+        # print("err_den", err_den)
+        # print("err_num", err_num)
 
         chi2_norm = None
         if i > 0 and chi_squared:
@@ -407,7 +403,7 @@ def plot_single_var_from_columns(
             ratio_err = np.sqrt(
                 (err_num / h_den) ** 2 + (h_num * err_den / h_den**2) ** 2
             )
-        print("ratio_err", ratio_err)
+        # print("ratio_err", ratio_err)
 
         if args.density:
             h_den, bins = np.histogram(
@@ -522,9 +518,15 @@ def plot_from_columns(accumulator, norm_factor_dict=None):
             chi_squared = True
             color_list = color_list_orig
         dir_cat = f"{outputdir}/{cats_name}_columns"
+        try:
+            vars_tot = list(col_cat[cat_list[0]].keys())
+        except KeyError:
+            print(
+                f"KeyError: {cat_list[0]} not in {col_cat.keys()}, skipping {cats_name}"
+            )
+            continue
         if not os.path.exists(dir_cat):
             os.makedirs(dir_cat)
-        vars_tot = list(col_cat[cat_list[0]].keys())
         if args.test:
             vars_tot = vars_tot[:3]
         print("vars_tot", vars_tot)
