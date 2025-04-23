@@ -84,8 +84,8 @@ onnx_model_dict={
     #"BKG_MORPHING_DNN": "/work/tharte/datasets/ML_pytorch/out/SPANET_minDelta1em5_LRdropout/state_dict/ratio/average_model_from_onnx.onnx",
     #"BKG_MORPHING_DNN": "/work/tharte/datasets/ML_pytorch/out/bkg_morphing/SPANET_baseline_20_runs/best_models/ratio/average_model_from_onnx.onnx",
     "BKG_MORPHING_DNN": "",
-    #"SIG_BKG_DNN": "/work/tharte/datasets/ML_pytorch/out/sig_bkg_classifier/SPANET_baseline_norm_e5drop75_fixed/state_dict/model_best_epoch_25.onnx",
-    "SIG_BKG_DNN": "",
+    "SIG_BKG_DNN": "/work/tharte/datasets/ML_pytorch/out/sig_bkg_classifier/SPANET_baseline_norm_e5drop75_fixed/state_dict/model_best_epoch_20.onnx",
+    #"SIG_BKG_DNN": "",
     # "SIG_BKG_DNN": "/pnfs/psi.ch/cms/trivcat/store/user/mmalucch/keras_models_SvsB/model_fold0.onnx",
 }
 
@@ -156,7 +156,7 @@ column_listRun2 = create_DNN_columns_list(
     True, not SAVE_CHUNK, total_input_variables, btag=False
 )
 if onnx_model_dict["SIG_BKG_DNN"]:
-    score_dict = get_columns_list({"events": ["sig_bkg_dnn_score"]})
+    score_dict = get_columns_list({"events": ["sig_bkg_dnn_score"]}) if not RUN2 else get_columns_list({"events": ["sig_bkg_dnn_score","sig_bkg_dnn_scoreRun2"]})
     column_list.append(*score_dict)
     column_listRun2.append(*score_dict)
 
