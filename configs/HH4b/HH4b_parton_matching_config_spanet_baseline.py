@@ -25,6 +25,7 @@ from configs.HH4b_common.custom_cuts_common import (
     hh4b_VR1_control_region,
     hh4b_VR1_signal_region_run2,
     hh4b_VR1_control_region_run2,
+    blinded,
 )
 
 from configs.HH4b_common.custom_weights import (
@@ -51,7 +52,7 @@ SAVE_CHUNK = False
 VBF_PRESEL = False
 SEMI_TIGHT_VBF = True
 DNN_VARIABLES = True
-RUN2 = True
+RUN2 = False
 VR1 = False
 RANDOM_PT = False
 
@@ -81,7 +82,9 @@ onnx_model_dict={
     #"BKG_MORPHING_DNN": "/pnfs/psi.ch/cms/trivcat/store/user/mmalucch/keras_models_morphing/average_model_from_keras.onnx",
     #"BKG_MORPHING_DNN": "/work/tharte/datasets/ML_pytorch/out/AN_1e-2_noDropout_e20lrdrop95/state_dict/ratio/average_model_from_onnx.onnx",
     #"BKG_MORPHING_DNN": "/work/tharte/datasets/ML_pytorch/out/SPANET_minDelta1em5_LRdropout/state_dict/ratio/average_model_from_onnx.onnx",
-    "BKG_MORPHING_DNN": "/work/tharte/datasets/ML_pytorch/out/SPANET_baseline_20_runs/best_models/ratio/average_model_from_onnx.onnx",
+    #"BKG_MORPHING_DNN": "/work/tharte/datasets/ML_pytorch/out/bkg_morphing/SPANET_baseline_20_runs/best_models/ratio/average_model_from_onnx.onnx",
+    "BKG_MORPHING_DNN": "",
+    #"SIG_BKG_DNN": "/work/tharte/datasets/ML_pytorch/out/sig_bkg_classifier/SPANET_baseline_norm_e5drop75_fixed/state_dict/model_best_epoch_25.onnx",
     "SIG_BKG_DNN": "",
     # "SIG_BKG_DNN": "/pnfs/psi.ch/cms/trivcat/store/user/mmalucch/keras_models_SvsB/model_fold0.onnx",
 }
@@ -90,11 +93,11 @@ print(onnx_model_dict)
 
 ## Defining the used samples
 samples_list = [
-            #"DATA_JetMET_JMENano_C_skimmed",
-            #"DATA_JetMET_JMENano_D_skimmed",
-            #"DATA_JetMET_JMENano_E_skimmed",
-            #"DATA_JetMET_JMENano_F_skimmed",
-            #"DATA_JetMET_JMENano_G_skimmed",
+            "DATA_JetMET_JMENano_C_skimmed",
+            "DATA_JetMET_JMENano_D_skimmed",
+            "DATA_JetMET_JMENano_E_skimmed",
+            "DATA_JetMET_JMENano_F_skimmed",
+            "DATA_JetMET_JMENano_G_skimmed",
             "GluGlutoHHto4B_spanet"
             # "DATA_JetMET_JMENano_2023_Cv1_skimmed",
             # "DATA_JetMET_JMENano_2023_Cv2_skimmed",
@@ -152,6 +155,10 @@ column_list = create_DNN_columns_list(
 column_listRun2 = create_DNN_columns_list(
     True, not SAVE_CHUNK, total_input_variables, btag=False
 )
+if onnx_model_dict["SIG_BKG_DNN"]:
+    score_dict = get_columns_list({"events": ["sig_bkg_dnn_score"]})
+    column_list.append(*score_dict)
+    column_listRun2.append(*score_dict)
 
 # Define categories based on what parameters are activated
 categories_dict = {
@@ -181,6 +188,15 @@ if RUN2:
             }
         categories_dict |= categories_reweight
     categories_dict |= categories_run2
+if onnx_model_dict["SIG_BKG_DNN"]:
+    categories_dict["4b_signal_region_blinded"] = [hh4b_4b_region, hh4b_signal_region, blinded]
+    categories_dict["2b_signal_region_preW_blinded"] = [hh4b_2b_region, hh4b_signal_region, blinded]
+    if onnx_model_dict["BKG_MORPHING_DNN"]:
+        categories_dict["2b_signal_region_postW_blinded"] = [hh4b_2b_region, hh4b_signal_region, blinded]
+    if RUN2:
+        categories_dict["4b_signal_region_blindedRun2"] = [hh4b_4b_region, hh4b_signal_region_run2, blinded]
+        categories_dict["2b_signal_region_preW_blindedRun2"] = [hh4b_2b_region, hh4b_signal_region_run2, blinded]
+        categories_dict["2b_signal_region_postW_blindedRun2"] = [hh4b_2b_region, hh4b_signal_region_run2, blinded]
 
 print(categories_dict.keys())
 
@@ -197,7 +213,7 @@ for sample in samples_list:
         bysample_bycategory_weight_dict[sample] = {"inclusive": [], "bycategory": {}}
         for category in categories_dict.keys():
             if "postW" in category:
-                if "Run2" in category:
+                if not "Run2" in category:
                     bysample_bycategory_weight_dict[sample]["bycategory"][category] = [
                         "bkg_morphing_dnn_weight"
                     ]
@@ -213,7 +229,6 @@ for sample in samples_list:
 #
 #
 #print(weight_sample_dict)
-print(localdir)
 
 cfg = Configurator(
     # save_skimmed_files="root://t3dcachedb03.psi.ch:1094//pnfs/psi.ch/cms/trivcat/store/user/tharte/HH4b/ntuples/DATA_JetMET_2022_2023_skimmed",
@@ -231,8 +246,8 @@ cfg = Configurator(
         ],
         "filter": {
             "samples": samples_list,
-            #"samples_exclude": [],
-            #            "year": [],
+            "samples_exclude": [],
+            #"year": [],
         },
         "subsamples": {},
     },

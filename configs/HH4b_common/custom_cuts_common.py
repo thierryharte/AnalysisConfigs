@@ -160,7 +160,7 @@ hh4b_VR1_control_region_run2 = Cut(
 blinded = Cut(
     name="blinded",
     params={
-        "score": 0.9,
+        "score": 0.8,
         },
     function=cuts_f.blinding_cuts,
 )

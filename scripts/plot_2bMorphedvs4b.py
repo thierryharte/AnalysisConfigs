@@ -51,7 +51,7 @@ cfg = os.path.join(input_dir, "parameters_dump.yaml")
 log_scale = not args.linear
 outputdir = os.path.join(input_dir, args.output) + f"_{args.normalisation}"
 
-
+blind = "_blinded"
 # To mix categories with Run2 and SPANet, put first the Run2 category
 # because first the name of the variables is try with the Run2 string
 # and after without it
