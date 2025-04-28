@@ -82,8 +82,7 @@ onnx_model_dict={
     # "VBF_GGF_DNN":"/t3home/rcereghetti/ML_pytorch/out/20241212_223142_SemitTightPtLearningRateConstant/models/model_28.onnx",
     #"BKG_MORPHING_DNN": "/pnfs/psi.ch/cms/trivcat/store/user/mmalucch/keras_models_morphing/average_model_from_keras.onnx",
     #"BKG_MORPHING_DNN": "/work/tharte/datasets/ML_pytorch/out/AN_1e-2_noDropout_e20lrdrop95/state_dict/ratio/average_model_from_onnx.onnx",
-
-    "BKG_MORPHING_DNN": "/work/tharte/datasets/ML_pytorch/out/bkg_morphing/DHH_method_20_runs/best_models/ratio/average_model_from_onnx.onnx",
+    "BKG_MORPHING_DNN": "/work/tharte/datasets/ML_pytorch/out/bkg_morphing/DHH_method_20_runs_1e-3_e20drop75_minDelta1em5/best_models/ratio/average_model_from_onnx.onnx",
     "SIG_BKG_DNN": "/work/tharte/datasets/ML_pytorch/out/sig_bkg_classifier/DHH_method_norm_e5drop75_fixed/state_dict/model_best_epoch_18.onnx",
     #"SIG_BKG_DNN": "",
     # "SIG_BKG_DNN": "/pnfs/psi.ch/cms/trivcat/store/user/mmalucch/keras_models_SvsB/model_fold0.onnx",
@@ -93,11 +92,11 @@ print(onnx_model_dict)
 
 ## Defining the used samples
 samples_list = [
-            #"DATA_JetMET_JMENano_C_skimmed",
-            #"DATA_JetMET_JMENano_D_skimmed",
+            "DATA_JetMET_JMENano_C_skimmed",
+            "DATA_JetMET_JMENano_D_skimmed",
             "DATA_JetMET_JMENano_E_skimmed",
-            #"DATA_JetMET_JMENano_F_skimmed",
-            #"DATA_JetMET_JMENano_G_skimmed",
+            "DATA_JetMET_JMENano_F_skimmed",
+            "DATA_JetMET_JMENano_G_skimmed",
             "GluGlutoHHto4B_spanet",
             # "DATA_JetMET_JMENano_2023_Cv1_skimmed",
             # "DATA_JetMET_JMENano_2023_Cv2_skimmed",
@@ -189,14 +188,14 @@ if RUN2:
         categories_dict |= categories_reweight
     categories_dict |= categories_run2
 if onnx_model_dict["SIG_BKG_DNN"]:
-    categories_dict["4b_signal_region_blinded"] = [hh4b_4b_region, hh4b_signal_region, blinded]
-    categories_dict["2b_signal_region_preW_blinded"] = [hh4b_2b_region, hh4b_signal_region, blinded]
+    categories_dict["4b_signal_region_blind"] = [hh4b_4b_region, hh4b_signal_region, blinded]
+    categories_dict["2b_signal_region_preW_blind"] = [hh4b_2b_region, hh4b_signal_region, blinded]
     if onnx_model_dict["BKG_MORPHING_DNN"]:
-        categories_dict["2b_signal_region_postW_blinded"] = [hh4b_2b_region, hh4b_signal_region, blinded]
+        categories_dict["2b_signal_region_postW_blind"] = [hh4b_2b_region, hh4b_signal_region, blinded]
     if RUN2:
-        categories_dict["4b_signal_region_blindedRun2"] = [hh4b_4b_region, hh4b_signal_region_run2, blinded]
-        categories_dict["2b_signal_region_preW_blindedRun2"] = [hh4b_2b_region, hh4b_signal_region_run2, blinded]
-        categories_dict["2b_signal_region_postW_blindedRun2"] = [hh4b_2b_region, hh4b_signal_region_run2, blinded]
+        categories_dict["4b_signal_region_blindRun2"] = [hh4b_4b_region, hh4b_signal_region_run2, blinded]
+        categories_dict["2b_signal_region_preW_blindRun2"] = [hh4b_2b_region, hh4b_signal_region_run2, blinded]
+        categories_dict["2b_signal_region_postW_blindRun2"] = [hh4b_2b_region, hh4b_signal_region_run2, blinded]
 
 print(categories_dict.keys())
 
