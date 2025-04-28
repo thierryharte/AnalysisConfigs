@@ -51,7 +51,6 @@ cfg = os.path.join(input_dir, "parameters_dump.yaml")
 log_scale = not args.linear
 outputdir = os.path.join(input_dir, args.output) + f"_{args.normalisation}"
 
-blind = "_blinded"
 # To mix categories with Run2 and SPANet, put first the Run2 category
 # because first the name of the variables is try with the Run2 string
 # and after without it
@@ -72,8 +71,8 @@ for region_suffix in ["", "_VR1"]:
             f"2b{region_suffix}_signal_region_postWRun2",
             f"2b{region_suffix}_signal_region_preWRun2",
         ],
-        f"CR{region_suffix}_2b_Run2SPANet": [f"2b{region_suffix}_control_region_preWRun2", f"2b{region_suffix}_control_region_preW"],
-        f"CR{region_suffix}_4b_Run2SPANet": [f"4b{region_suffix}_control_regionRun2", f"4b{region_suffix}_control_region"],
+        #f"CR{region_suffix}_2b_Run2SPANet": [f"2b{region_suffix}_control_region_preWRun2", f"2b{region_suffix}_control_region_preW"],
+        #f"CR{region_suffix}_4b_Run2SPANet": [f"4b{region_suffix}_control_regionRun2", f"4b{region_suffix}_control_region"],
     }
 
 if args.test:
@@ -511,6 +510,8 @@ def plot_single_var_from_columns(
 def plot_from_columns(accumulator, norm_factor_dict=None):
     col_cat = accumulator["columns"][sample][dataset]
 
+    print(f"CATEGORIES ARE:")
+    print(f"{cat_dict.keys()}")
     for cats_name, cat_list in cat_dict.items():
         if "Run2SPANet" in cats_name:
             chi_squared = False
