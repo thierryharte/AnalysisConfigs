@@ -12,12 +12,14 @@ from multiprocessing import Pool
 
 hep.style.use("CMS")
 
+import matplotlib
+matplotlib.rcParams['agg.path.chunksize'] = 10000  # or try 5000, depending on size
 
 parser = argparse.ArgumentParser(description="Plot 2b morphed vs 4b data")
 parser.add_argument("-id", "--input-data", type=str, required=True, help="Input coffea file data")
 parser.add_argument("-im", "--input-mc", type=str, required=True, help="Input coffea file monte carlo")
 parser.add_argument(
-    "-o", "--output", type=str, help="Output directory", default="plots_2bVS4b_data_and_mc"
+    "-o", "--output", type=str, help="Output directory", default="plots_DNN_data_and_mc"
 )
 parser.add_argument(
     "-n",
@@ -55,11 +57,9 @@ PAD_VALUE = -999
 
 inputfile_data = args.input_data
 input_dir_data = os.path.dirname(args.input_data)
-cfg_data = os.path.join(input_dir_data, "parameters_dump.yaml")
 
 inputfile_mc = args.input_mc
 input_dir_mc = os.path.dirname(args.input_mc)
-cfg_mc = os.path.join(input_dir_mc, "parameters_dump.yaml")
 
 
 log_scale = not args.linear
@@ -78,12 +78,12 @@ cat_dict = {
         f"2b{args.region_suffix}_control_region_postWRun2",
         # f"2b{args.region_suffix}_control_region_preWRun2",
     ],
-    f"SR{args.region_suffix}": [f"4b{args.region_suffix}_signal_region", f"2b{args.region_suffix}_signal_region_postW", 
+    f"SR{args.region_suffix}_blinded": [f"4b{args.region_suffix}_signal_region_blinded", f"2b{args.region_suffix}_signal_region_postW_blinded", 
         #f"2b{args.region_suffix}_signal_region_preW"
         ],
-    f"SR{args.region_suffix}Run2": [
-        f"4b{args.region_suffix}_signal_regionRun2",
-        f"2b{args.region_suffix}_signal_region_postWRun2",
+    f"SR{args.region_suffix}_blindedRun2": [
+        f"4b{args.region_suffix}_signal_region_blindedRun2",
+        f"2b{args.region_suffix}_signal_region_postW_blindedRun2",
         #    f"2b{args.region_suffix}_signal_region_preWRun2",
     ],
     #    f"CR{args.region_suffix}_2b_Run2SPANet": [f"2b{args.region_suffix}_control_region_preWRun2", f"2b{args.region_suffix}_control_region_preW"],
@@ -146,13 +146,22 @@ def plot_single_var_from_columns(
     weights_plotted = False
     print(var)
     range_4b = (0, 0)
+    
 
+    plotdict = {}
     for i, cat in enumerate(cat_list):
-        
+        # I only want the following columns:
+        # postW data
+        # signal data
+        # signal MC
         cat_plot_name=cat.replace("Run2", "_DHH")
-
-        for data_mc in ["data", "mc"]:
-            print(weight_dict[cat].keys())
+        print(cat_plot_name)
+        for data_mc in ["mc", "data"]:
+            
+            # we dont need the reweighted MC region
+            if data_mc=="mc" and "postW" in cat_plot_name:
+                continue
+            #print(weight_dict[cat].keys())
 
             weights_den = weight_dict[cat][data_mc]
             weights_num = weight_dict[cat_list[0]][data_mc]
@@ -173,7 +182,10 @@ def plot_single_var_from_columns(
             )
 
             # compute the range of the 4b category considering the 0.1% and 99.9% quantile
-            range_4b = tuple(np.quantile(col_den, [0.001, 0.999])) if i == 0 else range_4b
+            if i==0 and data_mc=="mc":
+                range_4b = tuple(np.quantile(col_den, [0.001, 0.999]))
+                nbins = 30
+                bin_edges = np.quantile(col_den,np.linspace(0.001,0.999, nbins+1))
 
             print(f"range_4b {range_4b}")
 
@@ -189,41 +201,41 @@ def plot_single_var_from_columns(
             weights_den = weights_den * norm_factor_den
             weights_num = weights_num * norm_factor_num
 
-            print(f"weights_den {weights_den}", type(weights_den))
-            print(f"weights_num {weights_num}")
-            print(f"col_num {col_num}", type(col_num))
-            print(f"col_den {col_den}")
+            #print(f"weights_den {weights_den}", type(weights_den))
+            #print(f"weights_num {weights_num}")
+            #print(f"col_num {col_num}", type(col_num))
+            #print(f"col_den {col_den}")
 
-            bins = np.linspace(range_4b[0], range_4b[1], 31)
-            print("bins", bins, len(bins))
-            bins_center = (bins[1:] + bins[:-1]) / 2
-            print("bins_center", bins_center, len(bins_center))
-            idx_den = np.digitize(col_den, bins)
-            idx_num = np.digitize(col_num, bins)
-            print("idx_den", idx_den, len(idx_den))
-            print("idx_num", idx_num, len(idx_num))
+            #bins = np.linspace(range_4b[0], range_4b[1], 31)
+            #print("bin_edges", bin_edges, len(bin_edges))
+            bins_center = (bin_edges[1:] + bin_edges[:-1]) / 2
+            #print("bins_center", bins_center, len(bins_center))
+            idx_den = np.digitize(col_den, bin_edges)
+            idx_num = np.digitize(col_num, bin_edges)
+            #print("idx_den", idx_den, len(idx_den))
+            #print("idx_num", idx_num, len(idx_num))
 
             h_den = []
             h_num = []
             err_den = []
             err_num = []
 
-            for j in range(1, len(bins)):
+            for j in range(1, len(bin_edges)):
                 h_den.append(np.sum(weights_den[idx_den == j]))
                 h_num.append(np.sum(weights_num[idx_num == j]))
                 err_den.append(np.sqrt(np.sum(weights_den[idx_den == j] ** 2)))
                 err_num.append(np.sqrt(np.sum(weights_num[idx_num == j] ** 2)))
-                print('weights_den[idx_den == j]', weights_den[idx_den == j])
+                #print('weights_den[idx_den == j]', weights_den[idx_den == j])
 
             h_den = np.array(h_den)
             h_num = np.array(h_num)
             err_den = np.array(err_den)
             err_num = np.array(err_num)
 
-            print("h_den", h_den, len(h_den))
-            print("h_num", h_num, len(h_num))
-            print("err_den", err_den)
-            print("err_num", err_num)
+            #print("h_den", h_den, len(h_den))
+            #print("h_num", h_num, len(h_num))
+            #print("err_den", err_den)
+            #print("err_num", err_num)
 
             chi2_norm = None
             if i > 0 and chi_squared:
@@ -246,20 +258,26 @@ def plot_single_var_from_columns(
             print("ratio_err", ratio_err)
 
             if args.density:
-                h_den, bins = np.histogram(
+                h_den, bin_edges = np.histogram(
                     col_den,
-                    bins=30,
+                    bins=nbins,
                     weights=weights_den,
                     range=range_4b,
                     density=True,
                 )
 
-            if not "post" in cat_plot_name and not data_mc == "mc":
+            print(f"{cat_plot_name}_{data_mc}")
+            if i==0 and data_mc == "mc":
+                print("Found MC signal")
+                #this is the mc data that I want to add to the histogram of the reweighted data
+                mc_signal = f"{cat_plot_name}_{data_mc}"
+            if i == 0 and data_mc == "data":
+                print("Found signal region data")
                 ax.errorbar(
                     bins_center,
                     h_den,
                     yerr=err_den if not args.density else 0,
-                    label=f"{cat_plot_name}_{data_mc}",
+                    label=cat_plot_name,
                     color=color_list[i][0],
                     fmt=".",
                 )
@@ -271,69 +289,78 @@ def plot_single_var_from_columns(
                     color="grey",
                     alpha=0.5,
                 )
+
             else:
-                if "post" in cat_plot_name and data_mc == "mc":
-                    pass
-                elif not "postW" in cat_plot_name and data_mc == "data":
-                    ax.hist(
-                        col_den[-4],
-                        bins=len(col_den[-4]),
-                        histtype="step",
-                        label=f"{cat_plot_name}_{data_mc}",
-                        weights=weights_den[-4],
-                        edgecolor=color_list[i][0],
-                        facecolor=color_list[i][1] if len(color_list[i]) > 1 else None,
-                        fill=True if len(color_list[i]) > 1 else False,
-                        alpha=0.5,
-                        range=range_4b,
-                        density=args.density,
-                    )
-                    ax_ratio.errorbar(
-                        bins_center[-4],
-                        ratio[-4],
-                        yerr=ratio_err[-4],
-                        fmt=".",
-                        label=f"{cat_plot_name}_{data_mc}",
-                        color=color_list[i][0],
-                    )
-
-                else:
-                    ax.hist(
-                        col_den,
-                        bins=len(col_den),
-                        histtype="step",
-                        label=f"{cat_plot_name}_{data_mc}",
-                        weights=weights_den,
-                        edgecolor=color_list[i][0],
-                        facecolor=color_list[i][1] if len(color_list[i]) > 1 else None,
-                        fill=True if len(color_list[i]) > 1 else False,
-                        alpha=0.5,
-                        range=range_4b,
-                        density=args.density,
-                    )
-                    ax_ratio.errorbar(
-                        bins_center,
-                        ratio,
-                        yerr=ratio_err,
-                        fmt=".",
-                        label=f"{cat_plot_name}_{data_mc}",
-                        color=color_list[i][0],
-                    )
-
-            if chi2_norm:
-                ax.text(
-                    0.05,
-                    0.95 - 0.05 * i,
-                    r"$\chi^2$/ndof= {:.1f},".format(chi2_norm)
-                    + f"  p-value= {pvalue:.2f}",
-                    horizontalalignment="left",
-                    verticalalignment="center",
-                    transform=ax.transAxes,
-                    color=color_list[i][0],
-                    fontsize=20,
-                )
-
+                print("Found something to plot")
+                ## Here we should save things
+                plotdict[f"{cat_plot_name}_{data_mc}"] = {
+                "bins_center": bins_center,
+                "h_den": h_den,
+                "err_den": err_den if not args.density else 0,
+                "color": color_list[i],
+                "h_num": h_num,
+                "h_den": h_den,
+                "err_num": err_num,
+                "ratio_err": ratio_err,
+                "col_den": col_den,
+                "weights_den": weights_den,
+                }
             del col_den, col_num
+
+    #if chi2_norm:
+    #    ax.text(
+    #        0.05,
+    #        0.95 - 0.05 * i,
+    #        r"$\chi^2$/ndof= {:.1f},".format(chi2_norm)
+    #        + f"  p-value= {pvalue:.2f}",
+    #        horizontalalignment="left",
+    #        verticalalignment="center",
+    #        transform=ax.transAxes,
+    #        color=color_list[i][0],
+    #        fontsize=20,
+    #    )
+    print(plotdict)
+    for region, values in plotdict.items():
+        print(f"Plotting region {region}")
+        #Trying to add up the reweighted data from 2b with the MC signal
+        #MC is still supposed to be plotted independently.
+        if "postW" in region:
+            values["col_den"] = np.concatenate((values["col_den"], plotdict[mc_signal]["col_den"]))
+            values["weights_den"] = np.concatenate((values["weights_den"], plotdict[mc_signal]["weights_den"]))
+            values["h_den"] = values["h_den"] + plotdict[mc_signal]["h_den"]
+            values["h_num"] = values["h_num"] + plotdict[mc_signal]["h_num"]
+            values["err_den"] = np.sqrt(values["err_den"]**2 + plotdict[mc_signal]["err_den"]**2)
+            values["err_num"] = np.sqrt(values["err_num"]**2 + plotdict[mc_signal]["err_num"]**2)
+        
+        ratio = values["h_num"]/values["h_den"]
+        ratio_err =  np.sqrt((values["err_num"] / values["h_den"]) ** 2 + (values["h_num"] * values["err_den"] / values["h_den"]**2) ** 2)
+        print("These are ratio and ratio error")
+        print(ratio[0])
+        print(ratio_err)
+        print(bin_edges)
+
+        ax.hist(
+            values["col_den"],
+            bins=bin_edges,
+            histtype="step",
+            label=region,
+            weights=values["weights_den"],
+            edgecolor=values["color"][0],
+            facecolor=values["color"][1] if len(values["color"]) > 1 else None,
+            fill=True if len(values["color"]) > 1 else False,
+            alpha=0.5,
+            range=range_4b,
+            density=args.density,
+        )
+        ax_ratio.errorbar(
+            values["bins_center"],
+            ratio,
+            yerr=ratio_err,
+            fmt=".",
+            label=region,
+            color=values["color"][0],
+        )
+
 
     ax.legend(loc="upper right")
     ax.set_yscale("log" if log_scale else "linear")
@@ -357,6 +384,8 @@ def plot_single_var_from_columns(
             else ax.get_ylim()[1] ** (1.3 if not args.density else -1.3)
         )
     )
+    print(os.path.join(dir_cat, f"{var}.png"))
+    print("That was the plotname")
     fig.savefig(
         os.path.join(dir_cat, f"{var}.png"),
         bbox_inches="tight",
@@ -387,7 +416,7 @@ def plot_from_columns(col_cats, genweight):
             vars_tot = list(col_cat[cat_list[0]].keys())
             if args.test:
                 vars_tot = vars_tot[:3]
-            print("vars_tot", vars_tot)
+            #print("vars_tot", vars_tot)
             vars = []
             # vars_tot = [v for v in vars_tot if "add" in v or "weight"  in v]
             for v in vars_tot:
@@ -455,7 +484,7 @@ def plot_from_columns(col_cats, genweight):
                         chi_squared,
                         color_list,
                     )
-                    for var in vars
+                    for var in vars if "score" in var
                 ],
             )
         del col_dict
@@ -464,24 +493,6 @@ def plot_from_columns(col_cats, genweight):
 if __name__ == "__main__":
     
     ## For data:
-    # Load yaml file with OmegaConf
-    if cfg_data[-5:] == ".yaml":
-        parameters_dump = OmegaConf.load(cfg_data)
-    else:
-        raise Exception(
-            "The input file format is not valid. The config file should be a in .yaml format."
-        )
-
-    parameters_data = parameters_dump
-
-    # Resolving the OmegaConf
-    try:
-        OmegaConf.resolve(parameters_data)
-    except Exception as e:
-        print(
-            "Error during resolution of OmegaConf parameters magic, please check your parameters files."
-        )
-        raise (e)
     
     print(f"InputFile: {inputfile_data}")
     if os.path.isfile(inputfile_data):
@@ -490,24 +501,6 @@ if __name__ == "__main__":
         sys.exit(f"Input file '{inputfile_data}' does not exist")
     
     ## For MC:
-    # Load yaml file with OmegaConf
-    if cfg_mc[-5:] == ".yaml":
-        parameters_dump = OmegaConf.load(cfg_mc)
-    else:
-        raise Exception(
-            "The input file format is not valid. The config file should be a in .yaml format."
-        )
-
-    parameters_mc = parameters_dump
-
-    # Resolving the OmegaConf
-    try:
-        OmegaConf.resolve(parameters_mc)
-    except Exception as e:
-        print(
-            "Error during resolution of OmegaConf parameters magic, please check your parameters files."
-        )
-        raise (e)
     
     print(f"InputFile: {inputfile_mc}")
     if os.path.isfile(inputfile_mc):
