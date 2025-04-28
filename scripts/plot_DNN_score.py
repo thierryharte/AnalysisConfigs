@@ -183,9 +183,9 @@ def plot_single_var_from_columns(
 
             # compute the range of the 4b category considering the 0.1% and 99.9% quantile
             if i==0 and data_mc=="mc":
-                range_4b = tuple(np.quantile(col_den, [0.001, 0.999]))
+                range_4b = tuple(np.quantile(col_den, [0, 1]))
                 nbins = 30
-                bin_edges = np.quantile(col_den,np.linspace(0.001,0.999, nbins+1))
+                bin_edges = np.quantile(col_den,np.linspace(min(col_den),max(col_den), nbins+1))
 
             print(f"range_4b {range_4b}")
 
