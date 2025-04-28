@@ -45,6 +45,9 @@ parser.add_argument(
 parser.add_argument(
     "-t", "--test", action="store_true", help="Test on one variable", default=False
 )
+parser.add_argument(
+    "-r2", "--run2", action="store_true", help="Also run run2 regions", default=True
+)
 args = parser.parse_args()
 
 if args.test:
@@ -73,22 +76,15 @@ cat_dict = {
     f"CR{args.region_suffix}": [f"4b{args.region_suffix}_control_region", f"2b{args.region_suffix}_control_region_postW", 
         #f"2b{args.region_suffix}_control_region_preW"
         ],
-    f"CR{args.region_suffix}Run2": [
-        f"4b{args.region_suffix}_control_regionRun2",
-        f"2b{args.region_suffix}_control_region_postWRun2",
-        # f"2b{args.region_suffix}_control_region_preWRun2",
-    ],
     f"SR{args.region_suffix}_blinded": [f"4b{args.region_suffix}_signal_region_blinded", f"2b{args.region_suffix}_signal_region_postW_blinded", 
         #f"2b{args.region_suffix}_signal_region_preW"
         ],
-    f"SR{args.region_suffix}_blindedRun2": [
-        f"4b{args.region_suffix}_signal_region_blindedRun2",
-        f"2b{args.region_suffix}_signal_region_postW_blindedRun2",
-        #    f"2b{args.region_suffix}_signal_region_preWRun2",
-    ],
     #    f"CR{args.region_suffix}_2b_Run2SPANet": [f"2b{args.region_suffix}_control_region_preWRun2", f"2b{args.region_suffix}_control_region_preW"],
     #    f"CR{args.region_suffix}_4b_Run2SPANet": [f"4b{args.region_suffix}_control_regionRun2", f"4b{args.region_suffix}_control_region"],
 }
+if args.run2:
+    cat_dict[f"CR{args.region_suffix}Run2"] = [f"4b{args.region_suffix}_control_regionRun2", f"2b{args.region_suffix}_control_region_postWRun2"]
+    cat_dict[f"SR{args.region_suffix}_blindedRun2"] = [f"4b{args.region_suffix}_signal_region_blindedRun2", f"2b{args.region_suffix}_signal_region_postW_blindedRun2"]
 
 if args.test:
     cat_dict = {
