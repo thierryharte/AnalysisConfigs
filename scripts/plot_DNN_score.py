@@ -2,6 +2,7 @@ import os
 import sys
 from matplotlib import pyplot as plt
 from coffea.util import load
+from coffea.processor.accumulator import column_accumulator
 from omegaconf import OmegaConf
 import numpy as np
 from scipy.stats.distributions import chi2
@@ -17,6 +18,8 @@ matplotlib.rcParams['agg.path.chunksize'] = 10000  # or try 5000, depending on s
 
 parser = argparse.ArgumentParser(description="Plot 2b morphed vs 4b data")
 parser.add_argument("-id", "--input-data", type=str, required=True, help="Input coffea file data")
+parser.add_argument("-ds", "--sample-data", type=list, required=False, help="List of samples to be used", default=["DATA_JetMET_JMENano_E_skimmed","DATA_JetMET_JMENano_F_skimmed","DATA_JetMET_JMENano_G_skimmed"])
+parser.add_argument("-dd", "--dataset-data", type=list, required=False, help="List containing datasets for each sample (has to match length of samples)", default=["DATA_JetMET_JMENano_E_2022_postEE_EraE", "DATA_JetMET_JMENano_F_2022_postEE_EraF", "DATA_JetMET_JMENano_G_2022_postEE_EraG"])
 parser.add_argument("-im", "--input-mc", type=str, required=True, help="Input coffea file monte carlo")
 parser.add_argument(
     "-o", "--output", type=str, help="Output directory", default="plots_DNN_data_and_mc"
@@ -72,19 +75,22 @@ outputdir = os.path.join(input_dir_data, args.output) + f"_{args.normalisation}"
 # To mix categories with Run2 and SPANet, put first the Run2 category
 # because first the name of the variables is try with the Run2 string
 # and after without it
+# First region: data 4b
+# Second region: mc 4b (unblinded)
+# Third region: data reweighted
 cat_dict = {
-    f"CR{args.region_suffix}": [f"4b{args.region_suffix}_control_region", f"2b{args.region_suffix}_control_region_postW", 
+    f"CR{args.region_suffix}": [f"4b{args.region_suffix}_control_region", f"4b{args.region_suffix}_control_region", f"2b{args.region_suffix}_control_region_postW", 
         #f"2b{args.region_suffix}_control_region_preW"
         ],
-    f"SR{args.region_suffix}_blinded": [f"4b{args.region_suffix}_signal_region_blinded", f"2b{args.region_suffix}_signal_region_postW_blinded", 
+    f"SR{args.region_suffix}_blinded": [f"4b{args.region_suffix}_signal_region_blinded", f"4b{args.region_suffix}_signal_region", f"2b{args.region_suffix}_signal_region_postW", 
         #f"2b{args.region_suffix}_signal_region_preW"
         ],
     #    f"CR{args.region_suffix}_2b_Run2SPANet": [f"2b{args.region_suffix}_control_region_preWRun2", f"2b{args.region_suffix}_control_region_preW"],
     #    f"CR{args.region_suffix}_4b_Run2SPANet": [f"4b{args.region_suffix}_control_regionRun2", f"4b{args.region_suffix}_control_region"],
 }
 if args.run2:
-    cat_dict[f"CR{args.region_suffix}Run2"] = [f"4b{args.region_suffix}_control_regionRun2", f"2b{args.region_suffix}_control_region_postWRun2"]
-    cat_dict[f"SR{args.region_suffix}_blindedRun2"] = [f"4b{args.region_suffix}_signal_region_blindedRun2", f"2b{args.region_suffix}_signal_region_postW_blindedRun2"]
+    cat_dict[f"CR{args.region_suffix}Run2"] = [f"4b{args.region_suffix}_control_regionRun2", f"4b{args.region_suffix}_control_regionRun2", f"2b{args.region_suffix}_control_region_postWRun2"]
+    cat_dict[f"SR{args.region_suffix}_blindedRun2"] = [f"4b{args.region_suffix}_signal_region_blindedRun2", f"4b{args.region_suffix}_signal_regionRun2", f"2b{args.region_suffix}_signal_region_postWRun2"]
 
 if args.test:
     cat_dict = {
@@ -96,7 +102,7 @@ if args.test:
     }
 
 
-color_list_orig = [("black",), ("blue", "dodgerblue"), ("red",)]
+color_list_orig = [("black",), ("black",), ("blue", "dodgerblue"), ("red",)]
 color_list_alt = [("purple",), ("darkorange", "orange"), ("green",)]
 
 
@@ -145,6 +151,20 @@ def plot_single_var_from_columns(
     
 
     plotdict = {}
+
+    # the range for the score can be inclusively all the range.
+    # I still have to define it this way to make up for different ranges of blinded histograms.
+    # range_4b is basically a global variable. It is calculated only once.
+    # Same as bin_edges. Both depend on the MC signal
+    col_den = col_dict[cat_list[1]]["mc"]
+    range_4b = tuple(np.quantile(col_den, [0, 1]))
+    nbins = 30
+    bin_edges = np.quantile(col_den,np.linspace(0,1, nbins+1))
+    print(f"range_4b {range_4b}")
+
+    #this is the mc data that I want to add to the histogram of the reweighted data
+    mc_signal = f"{cat_list[1].replace('Run2', '_DHH')}_mc"
+
     for i, cat in enumerate(cat_list):
         # I only want the following columns:
         # postW data
@@ -155,6 +175,10 @@ def plot_single_var_from_columns(
         for data_mc in ["mc", "data"]:
             # we dont need the reweighted MC region
             if data_mc=="mc" and "postW" in cat_plot_name:
+                continue
+            if data_mc=="mc" and "blind" in cat_plot_name:
+                continue
+            if i==1 and data_mc=="data":
                 continue
 
             weights_den = weight_dict[cat][data_mc]
@@ -169,15 +193,6 @@ def plot_single_var_from_columns(
             col_den = col_den[col_den != PAD_VALUE]
             col_num = col_num[col_num != PAD_VALUE]
 
-            # the range for the score can be inclusively all the range.
-            # I still have to define it this way to make up for different ranges of blinded histograms.
-            # range_4b is basically a global variable. It is calculated only once.
-            # Same as bin_edges. Both depend on the MC signal
-            if i==0 and data_mc=="mc":
-                range_4b = tuple(np.quantile(col_den, [0, 1]))
-                nbins = 30
-                bin_edges = np.quantile(col_den,np.linspace(min(col_den),max(col_den), nbins+1))
-                print(f"range_4b {range_4b}")
 
             #mask_num_range4b = (col_num > range_4b[0]) & (col_num < range_4b[1])
             #weights_num = weights_num[mask_num_range4b]
@@ -206,11 +221,6 @@ def plot_single_var_from_columns(
             bins_center = (bin_edges[1:] + bin_edges[:-1]) / 2
             print("bins_center", bins_center, len(bins_center))
 
-            print(f"{cat_plot_name}_{data_mc}")
-            if i==0 and data_mc == "mc":
-                print("Found MC signal")
-                #this is the mc data that I want to add to the histogram of the reweighted data
-                mc_signal = f"{cat_plot_name}_{data_mc}"
 
             print("Found something to plot")
             # Here we save the MC and the bg reweighted
@@ -332,6 +342,38 @@ def plot_single_var_from_columns(
                     color=values["color"][0],
                     fontsize=20,
                 )
+                # Calculating binwise s/sqrt(b).
+                # our background (reweighted 2b contains the signal at this point.
+                # Therefore the function needs to be:
+                # s/np.sqrt(bg-s) with s being the MC_signal and bg being the reweighted data
+                # Assuming the mc did already go through
+                s = plotdict[mc_signal]["h_den"]
+                b = values["h_den"]
+                s_err = plotdict[mc_signal]["err_den"]
+                b_err = values["err_den"]
+                sob_list = s / np.sqrt(b - s)
+                sob = np.sqrt(np.sum(sob_list**2))
+                
+                dds = -(s-2*b)/(2*(b-s)**(3/2)) #d(sob)/ds
+                ddb = s*(b-s)**(-3/2) #d(sob)/db
+                sob_err_list = np.sqrt((dds*s_err)**2+(ddb*b_err)**2)
+                sob_err_sq = 0
+                for sob_ele, sob_err_ele in zip(sob_list, sob_err_list):
+                    sob_err_sq+=(sob_err_ele*sob_ele/sob)**2
+                sob_err = np.sqrt(sob_err_sq)
+
+
+                ax.text(
+                    0.05,
+                    0.95 - 0.15,
+                    r"$s/\sqrt{{{{b}}}}$ = {:.2f} $\pm$ {:.2f},".format(sob, sob_err),
+                    horizontalalignment="left",
+                    verticalalignment="center",
+                    transform=ax.transAxes,
+                    color="k",
+                    fontsize=20,
+                )
+
 
 
             ax.hist(
@@ -507,23 +549,33 @@ if __name__ == "__main__":
     if not os.path.exists(outputdir):
         os.makedirs(outputdir)
 
-    sample_data = "DATA_JetMET_JMENano_E_skimmed"
-    dataset_data = "DATA_JetMET_JMENano_E_2022_postEE_EraE"
+    ## Collecting MC dataset
     sample_mc = "GluGlutoHHto4B_spanet"
     dataset_mc = "GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_spanet__2022_postEE"
-    
-    print(accumulator_data["columns"].keys())
     print(accumulator_mc["columns"].keys())
-    assert sample_data in list(accumulator_data["columns"].keys())
     assert sample_mc in list(accumulator_mc["columns"].keys())
-    
-    print(accumulator_data["columns"][sample_data].keys())
     print(accumulator_mc["columns"][sample_mc].keys())
-    assert dataset_data in list(accumulator_data["columns"][sample_data].keys())
     assert dataset_mc in list(accumulator_mc["columns"][sample_mc].keys())
-   
-    col_cat_data = accumulator_data["columns"][sample_data][dataset_data]
     col_cat_mc = accumulator_mc["columns"][sample_mc][dataset_mc]
+   
+    ## Collecting data dataset
+    sample_data = args.sample_data
+    dataset_data = args.dataset_data
+    assert len(sample_data) == len(dataset_data)
+
+    col_cat_data_list = []
+    for sample, dataset in zip(sample_data, dataset_data):
+        col_cat_data_list.append(accumulator_data["columns"][sample][dataset])
+    col_cat_data = {}
+    for region in col_cat_data_list[0].keys():
+        col_cat_data[region] = {}
+        for column in col_cat_data_list[0][region].keys():
+            print(f"Length one file: {col_cat_data_list[0][region][column]}")
+            for cat in col_cat_data_list:
+                print(cat[region][column])
+            temp = np.concatenate([cat[region][column].value for cat in col_cat_data_list])
+            col_cat_data[region][column] = column_accumulator(temp)
+            print(f"Length all files: {col_cat_data[region][column]}")
     
     print(accumulator_mc["sum_genweights"][dataset_mc])
     ############# Actual plotting command. Now a list with [datastuff, mcstuff] ######################33
