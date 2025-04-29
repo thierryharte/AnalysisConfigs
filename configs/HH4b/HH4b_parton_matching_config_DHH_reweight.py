@@ -26,6 +26,7 @@ from configs.HH4b_common.custom_cuts_common import (
     hh4b_VR1_signal_region_run2,
     hh4b_VR1_control_region_run2,
     blinded,
+    blindedRun2,
 )
 
 from configs.HH4b_common.custom_weights import (
@@ -193,9 +194,9 @@ if onnx_model_dict["SIG_BKG_DNN"]:
     if onnx_model_dict["BKG_MORPHING_DNN"]:
         categories_dict["2b_signal_region_postW_blind"] = [hh4b_2b_region, hh4b_signal_region, blinded]
     if RUN2:
-        categories_dict["4b_signal_region_blindRun2"] = [hh4b_4b_region, hh4b_signal_region_run2, blinded]
-        categories_dict["2b_signal_region_preW_blindRun2"] = [hh4b_2b_region, hh4b_signal_region_run2, blinded]
-        categories_dict["2b_signal_region_postW_blindRun2"] = [hh4b_2b_region, hh4b_signal_region_run2, blinded]
+        categories_dict["4b_signal_region_blindRun2"] = [hh4b_4b_region, hh4b_signal_region_run2, blindedRun2]
+        categories_dict["2b_signal_region_preW_blindRun2"] = [hh4b_2b_region, hh4b_signal_region_run2, blindedRun2]
+        categories_dict["2b_signal_region_postW_blindRun2"] = [hh4b_2b_region, hh4b_signal_region_run2, blindedRun2]
 
 print(categories_dict.keys())
 

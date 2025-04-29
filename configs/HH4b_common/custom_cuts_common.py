@@ -161,6 +161,16 @@ blinded = Cut(
     name="blinded",
     params={
         "score": 0.9,
+        "score_variable": "sig_bkg_dnn_score",
+        },
+    function=cuts_f.blinding_cuts,
+)
+
+blindedRun2 = Cut(
+    name="blindedRun2",
+    params={
+        "score": 0.9,
+        "score_variable": "sig_bkg_dnn_scoreRun2",
         },
     function=cuts_f.blinding_cuts,
 )
