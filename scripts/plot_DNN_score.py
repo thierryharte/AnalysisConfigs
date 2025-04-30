@@ -82,7 +82,7 @@ cat_dict = {
     f"CR{args.region_suffix}": [f"4b{args.region_suffix}_control_region", f"4b{args.region_suffix}_control_region", f"2b{args.region_suffix}_control_region_postW", 
         #f"2b{args.region_suffix}_control_region_preW"
         ],
-    f"SR{args.region_suffix}_blind": [f"4b{args.region_suffix}_signal_region_blind", f"4b{args.region_suffix}_signal_region", f"2b{args.region_suffix}_signal_region_postW"],
+    #f"SR{args.region_suffix}_blind": [f"4b{args.region_suffix}_signal_region_blind", f"4b{args.region_suffix}_signal_region", f"2b{args.region_suffix}_signal_region_postW"],
     f"SR{args.region_suffix}": [f"4b{args.region_suffix}_signal_region", f"4b{args.region_suffix}_signal_region", f"2b{args.region_suffix}_signal_region_postW"],
         #f"2b{args.region_suffix}_signal_region_preW"
     #    f"CR{args.region_suffix}_2b_Run2SPANet": [f"2b{args.region_suffix}_control_region_preWRun2", f"2b{args.region_suffix}_control_region_preW"],
@@ -90,7 +90,7 @@ cat_dict = {
 }
 if args.run2:
     cat_dict[f"CR{args.region_suffix}Run2"] = [f"4b{args.region_suffix}_control_regionRun2", f"4b{args.region_suffix}_control_regionRun2", f"2b{args.region_suffix}_control_region_postWRun2"]
-    cat_dict[f"SR{args.region_suffix}_blindRun2"] = [f"4b{args.region_suffix}_signal_region_blindRun2", f"4b{args.region_suffix}_signal_regionRun2", f"2b{args.region_suffix}_signal_region_postWRun2"]
+    #cat_dict[f"SR{args.region_suffix}_blindRun2"] = [f"4b{args.region_suffix}_signal_region_blindRun2", f"4b{args.region_suffix}_signal_regionRun2", f"2b{args.region_suffix}_signal_region_postWRun2"]
     cat_dict[f"SR{args.region_suffix}Run2"] = [f"4b{args.region_suffix}_signal_regionRun2", f"4b{args.region_suffix}_signal_regionRun2", f"2b{args.region_suffix}_signal_region_postWRun2"]
 
 if args.test:
@@ -163,6 +163,7 @@ def plot_single_var_from_columns(
     nbins = 20
     bin_edges = np.quantile(col_den,np.linspace(0,1, nbins+1))
     print(f"range_4b {range_4b}")
+    print(f"bin_edges {bin_edges}")
 
     #this is the mc data that I want to add to the histogram of the reweighted data
     mc_signal = f"{cat_list[1].replace('Run2', '_DHH')}_mc"
@@ -306,25 +307,31 @@ def plot_single_var_from_columns(
         print(ratio[0])
         print(ratio_err)
         print(values["bin_edges"])
-        
+       
+        # Thanks chatGPT. Try to mask the bins, where both edges are above 0.9:
+        if not "control" in region:
+            mask_blind09 = ~((bin_edges[:-1] > 0.9) & (bin_edges[1:] > 0.9))
+        else:
+            mask_blind09 = ~((bin_edges[:-1] > 1) & (bin_edges[1:] > 1)) #hacked - so not blinded
+
         # Reference dataset (data in 4b)
         if not "postW" in region and "data" in region:
             print("Found signal region data")
-            ratio = values["h_num"] / values["h_den"]
-            ratio_err = values["err_num"] / values["h_num"]
+            ratio = values["h_num"][mask_blind09] / values["h_den"][mask_blind09]
+            ratio_err = values["err_num"][mask_blind09] / values["h_num"][mask_blind09]
             print("ratio_err", ratio_err)
 
             ax.errorbar(
-                values["bins_center"],
-                values["h_den"],
-                yerr=values["err_den"] if not args.density else 0,
+                values["bins_center"][mask_blind09],
+                values["h_den"][mask_blind09],
+                yerr=values["err_den"][mask_blind09] if not args.density else 0,
                 label=region,
                 color=values["color"][0],
                 fmt=".",
             )
             ax_ratio.axhline(y=1, color=values["color"][0], linestyle="--")
             ax_ratio.fill_between(
-                values["bins_center"],
+                values["bins_center"][mask_blind09],
                 1 - ratio_err,
                 1 + ratio_err,
                 color="grey",
@@ -333,18 +340,11 @@ def plot_single_var_from_columns(
         else:
             chi2_norm = None
             if "postW" in region and chi_squared:
-                # Find index at which the nominator becomes 0 (where we blind)
-                zerobins = np.where(values["h_num"]==0)[0]
-                if zerobins.size>0:
-                    first0bin = zerobins[0]
-                else:
-                    first0bin = len(values["h_num"])
-                print(f"Calculating chi2 until bin {first0bin}")
                 # compute the chi square between the two histograms (divide by the error on data)
                 chi2_value = np.sum(
-                    ((values["h_den"][:first0bin] - values["h_num"][:first0bin]) / np.where(values["err_num"][:first0bin] == 0, 1, values["err_num"][:first0bin])) ** 2
+                    ((values["h_den"][mask_blind09] - values["h_num"][mask_blind09]) / np.where(values["err_num"][mask_blind09] == 0, 1, values["err_num"][mask_blind09])) ** 2
                 )
-                ndof = len(values["h_den"][:first0bin]) - 1
+                ndof = len(values["h_den"][mask_blind09]) - 1
                 chi2_norm = chi2_value / ndof
                 pvalue = chi2.sf(chi2_value, ndof)
 
@@ -374,9 +374,7 @@ def plot_single_var_from_columns(
                 dds = -(s-2*b)/(2*(b-s)**(3/2)) #derivative d(sob)/ds
                 ddb = s*(b-s)**(-3/2) #derivative d(sob)/db
                 sob_err_list = np.sqrt((dds*s_err)**2+(ddb*b_err)**2)
-                sob_err_sq = 0
-                for sob_ele, sob_err_ele in zip(sob_list, sob_err_list):
-                    sob_err_sq+=(sob_err_ele*sob_ele/sob)**2
+                sob_err_sq = np.sum((sob_err_list*sob_list/sob)**2)
                 sob_err = np.sqrt(sob_err_sq)
                 print("====== S/B list bin-by-bin: =======")
                 print(sob_list)
@@ -413,9 +411,9 @@ def plot_single_var_from_columns(
                 density=args.density,
             )
             ax_ratio.errorbar(
-                values["bins_center"],
-                ratio,
-                yerr=ratio_err,
+                values["bins_center"][mask_blind09],
+                ratio[mask_blind09],
+                yerr=ratio_err[mask_blind09],
                 fmt=".",
                 label=region+namesuffix,
                 color=values["color"][0],
@@ -466,20 +464,20 @@ def plot_from_columns(col_cats, genweight):
     print(cat_dict[f"CR{args.region_suffix}"])
     CR_region_keys = cat_dict[f"CR{args.region_suffix}"]
     print(CR_region_keys)
-    CRratio_4b_2bpostW = len(col_cats[0][CR_region_keys[0]]["weight"].value)/len(col_cats[0][CR_region_keys[2]]["weight"].value)
+    CRratio_4b_2bpostW = sum(col_cats[0][CR_region_keys[0]]["weight"].value)/sum(col_cats[0][CR_region_keys[2]]["weight"].value)
     
     SR_region_keys = cat_dict[f"SR{args.region_suffix}"]
-    SRratio_4b_2bpostW = len(col_cats[0][SR_region_keys[0]]["weight"].value)/len(col_cats[0][SR_region_keys[2]]["weight"].value)
+    SRratio_4b_2bpostW = sum(col_cats[0][SR_region_keys[0]]["weight"].value)/sum(col_cats[0][SR_region_keys[2]]["weight"].value)
     
     print(f"CR ratio: {CRratio_4b_2bpostW}")
     print(f"SR ratio: {SRratio_4b_2bpostW}")
     
     if args.run2:
         CR_region_keys = cat_dict[f"CR{args.region_suffix}Run2"]
-        CRratio_4b_2bpostW_Run2 = len(col_cats[0][CR_region_keys[0]]["weight"].value)/len(col_cats[0][CR_region_keys[2]]["weight"].value)
+        CRratio_4b_2bpostW_Run2 = sum(col_cats[0][CR_region_keys[0]]["weight"].value)/sum(col_cats[0][CR_region_keys[2]]["weight"].value)
         
         SR_region_keys = cat_dict[f"SR{args.region_suffix}Run2"]
-        SRratio_4b_2bpostW_Run2 = len(col_cats[0][SR_region_keys[0]]["weight"].value)/len(col_cats[0][SR_region_keys[2]]["weight"].value)
+        SRratio_4b_2bpostW_Run2 = sum(col_cats[0][SR_region_keys[0]]["weight"].value)/sum(col_cats[0][SR_region_keys[2]]["weight"].value)
         
         print(f"CR ratio Run2: {CRratio_4b_2bpostW_Run2}")
         print(f"SR ratio Run2: {SRratio_4b_2bpostW_Run2}")
