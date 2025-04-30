@@ -160,7 +160,7 @@ def plot_single_var_from_columns(
     # Same as bin_edges. Both depend on the MC signal
     col_den = col_dict[cat_list[1]]["mc"]
     range_4b = tuple(np.quantile(col_den, [0, 1]))
-    nbins = 30
+    nbins = 20
     bin_edges = np.quantile(col_den,np.linspace(0,1, nbins+1))
     print(f"range_4b {range_4b}")
 
@@ -228,7 +228,7 @@ def plot_single_var_from_columns(
             print("bins_center", bins_center, len(bins_center))
 
 
-            print("Found something to plot")
+            print(f"Found something to plot {cat_plot_name}_{data_mc}")
             # Here we save the MC and the bg reweighted
             # The signal was already plotted and we don't need it anymore
             plotdict[f"{cat_plot_name}_{data_mc}"] = {
@@ -241,7 +241,7 @@ def plot_single_var_from_columns(
             "weights_num": weights_num,
             }
             del col_den, col_num
-
+    
     print(plotdict)
     for region, values in plotdict.items():
         print(f"Plotting region {region}")
@@ -333,11 +333,18 @@ def plot_single_var_from_columns(
         else:
             chi2_norm = None
             if "postW" in region and chi_squared:
+                # Find index at which the nominator becomes 0 (where we blind)
+                zerobins = np.where(values["h_num"]==0)[0]
+                if zerobins.size>0:
+                    first0bin = zerobins[0]
+                else:
+                    first0bin = len(values["h_num"])
+                print(f"Calculating chi2 until bin {first0bin}")
                 # compute the chi square between the two histograms (divide by the error on data)
                 chi2_value = np.sum(
-                    ((values["h_den"] - values["h_num"]) / np.where(values["err_num"] == 0, 1, values["err_num"])) ** 2
+                    ((values["h_den"][:first0bin] - values["h_num"][:first0bin]) / np.where(values["err_num"][:first0bin] == 0, 1, values["err_num"][:first0bin])) ** 2
                 )
-                ndof = len(values["h_den"]) - 1
+                ndof = len(values["h_den"][:first0bin]) - 1
                 chi2_norm = chi2_value / ndof
                 pvalue = chi2.sf(chi2_value, ndof)
 
@@ -364,13 +371,19 @@ def plot_single_var_from_columns(
                 sob_list = s / np.sqrt(b - s)
                 sob = np.sqrt(np.sum(sob_list**2))
                 
-                dds = -(s-2*b)/(2*(b-s)**(3/2)) #d(sob)/ds
-                ddb = s*(b-s)**(-3/2) #d(sob)/db
+                dds = -(s-2*b)/(2*(b-s)**(3/2)) #derivative d(sob)/ds
+                ddb = s*(b-s)**(-3/2) #derivative d(sob)/db
                 sob_err_list = np.sqrt((dds*s_err)**2+(ddb*b_err)**2)
                 sob_err_sq = 0
                 for sob_ele, sob_err_ele in zip(sob_list, sob_err_list):
                     sob_err_sq+=(sob_err_ele*sob_ele/sob)**2
                 sob_err = np.sqrt(sob_err_sq)
+                print("====== S/B list bin-by-bin: =======")
+                print(sob_list)
+                print("Errors also as a list")
+                print(sob_err_list)
+                print("S/B and errors combined")
+                print(f"sob: {sob}, error: {sob_err}")
 
 
                 ax.text(
