@@ -82,15 +82,16 @@ cat_dict = {
     f"CR{args.region_suffix}": [f"4b{args.region_suffix}_control_region", f"4b{args.region_suffix}_control_region", f"2b{args.region_suffix}_control_region_postW", 
         #f"2b{args.region_suffix}_control_region_preW"
         ],
-    f"SR{args.region_suffix}_blinded": [f"4b{args.region_suffix}_signal_region_blinded", f"4b{args.region_suffix}_signal_region", f"2b{args.region_suffix}_signal_region_postW", 
+    f"SR{args.region_suffix}_blind": [f"4b{args.region_suffix}_signal_region_blind", f"4b{args.region_suffix}_signal_region", f"2b{args.region_suffix}_signal_region_postW"],
+    f"SR{args.region_suffix}": [f"4b{args.region_suffix}_signal_region", f"4b{args.region_suffix}_signal_region", f"2b{args.region_suffix}_signal_region_postW"],
         #f"2b{args.region_suffix}_signal_region_preW"
-        ],
     #    f"CR{args.region_suffix}_2b_Run2SPANet": [f"2b{args.region_suffix}_control_region_preWRun2", f"2b{args.region_suffix}_control_region_preW"],
     #    f"CR{args.region_suffix}_4b_Run2SPANet": [f"4b{args.region_suffix}_control_regionRun2", f"4b{args.region_suffix}_control_region"],
 }
 if args.run2:
     cat_dict[f"CR{args.region_suffix}Run2"] = [f"4b{args.region_suffix}_control_regionRun2", f"4b{args.region_suffix}_control_regionRun2", f"2b{args.region_suffix}_control_region_postWRun2"]
-    cat_dict[f"SR{args.region_suffix}_blindedRun2"] = [f"4b{args.region_suffix}_signal_region_blindedRun2", f"4b{args.region_suffix}_signal_regionRun2", f"2b{args.region_suffix}_signal_region_postWRun2"]
+    cat_dict[f"SR{args.region_suffix}_blindRun2"] = [f"4b{args.region_suffix}_signal_region_blindRun2", f"4b{args.region_suffix}_signal_regionRun2", f"2b{args.region_suffix}_signal_region_postWRun2"]
+    cat_dict[f"SR{args.region_suffix}Run2"] = [f"4b{args.region_suffix}_signal_regionRun2", f"4b{args.region_suffix}_signal_regionRun2", f"2b{args.region_suffix}_signal_region_postWRun2"]
 
 if args.test:
     cat_dict = {
@@ -137,6 +138,7 @@ def plot_single_var_from_columns(
     dir_cat,
     chi_squared=True,
     color_list=color_list_orig,
+    ratio2b4b=1,
 ):
     fig, (ax, ax_ratio) = plt.subplots(
         2,
@@ -203,6 +205,10 @@ def plot_single_var_from_columns(
             #col_den = col_den[mask_den_range4b]
 
             norm_factor_den = weights_num.sum() / weights_den.sum()
+            print("Difference between the different normings")
+            print(norm_factor_den)
+            print(ratio2b4b)
+            norm_factor_den = 1.0 #ratio2b4b
             norm_factor_num = 1.0
             print(
                 f"Plotting from columns {var} for {cat} with norm {norm_factor_den} and weights sum {weights_den.sum()}"
@@ -245,9 +251,13 @@ def plot_single_var_from_columns(
         # Essentially the idea is:
         # -> events are appended with np.concatenate()
         # -> histograms are added binwise with +
+        namesuffix=""
         if "postW" in region:
+            # Applying reweighting weight to 2b reweighted signal
+            values["weights_den"] = values["weights_den"]*ratio2b4b
             values["col_den"] = np.concatenate((values["col_den"], plotdict[mc_signal]["col_den"]))
             values["weights_den"] = np.concatenate((values["weights_den"], plotdict[mc_signal]["weights_den"]))
+            namesuffix=" + mc signal"
 
         # Filling the histograms
         idx_den = np.digitize(values["col_den"], values["bin_edges"])
@@ -380,7 +390,7 @@ def plot_single_var_from_columns(
                 values["col_den"],
                 bins=bin_edges,
                 histtype="step",
-                label=region,
+                label=region+namesuffix,
                 weights=values["weights_den"],
                 edgecolor=values["color"][0],
                 facecolor=values["color"][1] if len(values["color"]) > 1 else None,
@@ -394,7 +404,7 @@ def plot_single_var_from_columns(
                 ratio,
                 yerr=ratio_err,
                 fmt=".",
-                label=region,
+                label=region+namesuffix,
                 color=values["color"][0],
             )
     del plotdict
@@ -431,6 +441,36 @@ def plot_single_var_from_columns(
 
 
 def plot_from_columns(col_cats, genweight):
+    
+    ## Calculating a ratio between the 2b-reweighted and the 4b region
+    # Needs to be done here, as afterwards, we don't have access to all the regions anymore...
+    # This will be calculated in the CR and also applied to SR. But in order to make sure that it makes sense, I also calculate both weights.
+    print("Calculating ratios as weight from 2b-reweighted to 4b region")
+    # HARDCODED:
+    # - First region is CR
+    # - In this region, 1st element is 4b, 3rd element is 2b-reweighted
+    print(cat_dict.keys())
+    print(cat_dict[f"CR{args.region_suffix}"])
+    CR_region_keys = cat_dict[f"CR{args.region_suffix}"]
+    print(CR_region_keys)
+    CRratio_4b_2bpostW = len(col_cats[0][CR_region_keys[0]]["weight"].value)/len(col_cats[0][CR_region_keys[2]]["weight"].value)
+    
+    SR_region_keys = cat_dict[f"SR{args.region_suffix}"]
+    SRratio_4b_2bpostW = len(col_cats[0][SR_region_keys[0]]["weight"].value)/len(col_cats[0][SR_region_keys[2]]["weight"].value)
+    
+    print(f"CR ratio: {CRratio_4b_2bpostW}")
+    print(f"SR ratio: {SRratio_4b_2bpostW}")
+    
+    if args.run2:
+        CR_region_keys = cat_dict[f"CR{args.region_suffix}Run2"]
+        CRratio_4b_2bpostW_Run2 = len(col_cats[0][CR_region_keys[0]]["weight"].value)/len(col_cats[0][CR_region_keys[2]]["weight"].value)
+        
+        SR_region_keys = cat_dict[f"SR{args.region_suffix}Run2"]
+        SRratio_4b_2bpostW_Run2 = len(col_cats[0][SR_region_keys[0]]["weight"].value)/len(col_cats[0][SR_region_keys[2]]["weight"].value)
+        
+        print(f"CR ratio Run2: {CRratio_4b_2bpostW_Run2}")
+        print(f"SR ratio Run2: {SRratio_4b_2bpostW_Run2}")
+
     
     # cat_dict defined on top (global variable)
     for cats_name, cat_list in cat_dict.items():
@@ -508,6 +548,12 @@ def plot_from_columns(col_cats, genweight):
         print(vars)
 
         with Pool(args.workers) as p:
+            print(f"Category name: {cats_name}")
+            if "SR" in cats_name:
+                ratio2b4b = SRratio_4b_2bpostW_Run2 if "Run2" in cats_name else SRratio_4b_2bpostW
+            else:
+                ratio2b4b = CRratio_4b_2bpostW_Run2 if "Run2" in cats_name else CRratio_4b_2bpostW
+                
             p.starmap(
                 plot_single_var_from_columns,
                 [
@@ -519,6 +565,7 @@ def plot_from_columns(col_cats, genweight):
                         dir_cat,
                         chi_squared,
                         color_list,
+                        ratio2b4b,
                     )
                     for var in vars if "score" in var
                 ],
