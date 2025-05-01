@@ -86,7 +86,7 @@ def blinding_cuts(events, params, **kwargs):
         Function to apply a cut based on the dnn score.
         The idea is, to look at the data in the low score sideband to compare performance.
     '''
-    mask = (events.sig_bkg_dnn_score < params["score"])
+    mask = (events[params["score_variable"]] < params["score"])
     
     # Pad None values with False
     return ak.where(ak.is_none(mask), False, mask)
