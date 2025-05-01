@@ -65,7 +65,7 @@ for region_suffix in ["", "_VR1"]:
         ],
         f"SR{region_suffix}": [f"4b{region_suffix}_signal_region", f"2b{region_suffix}_signal_region_postW", f"2b{region_suffix}_signal_region_preW"],
         f"SR{region_suffix}_blind": [f"4b{region_suffix}_signal_region_blind", f"2b{region_suffix}_signal_region_postW_blind", f"2b{region_suffix}_signal_region_preW_blind"],
-        f"SR{region_suffix}Run2_blind": [f"4b{region_suffix}_signal_region_blindRun2", f"2b{region_suffix}_signal_region_postW_blindRun2", f"2b{region_suffix}_signal_region_preW_blindRun2"],
+        f"SR{region_suffix}_blindRun2": [f"4b{region_suffix}_signal_region_blindRun2", f"2b{region_suffix}_signal_region_postW_blindRun2", f"2b{region_suffix}_signal_region_preW_blindRun2"],
         f"SR{region_suffix}Run2": [
             f"4b{region_suffix}_signal_regionRun2",
             f"2b{region_suffix}_signal_region_postWRun2",
@@ -520,13 +520,16 @@ def plot_from_columns(accumulator, norm_factor_dict=None):
             chi_squared = True
             color_list = color_list_orig
         dir_cat = f"{outputdir}/{cats_name}_columns"
+        
+        # check if the categories are in the accumulator
         try:
-            vars_tot = list(col_cat[cat_list[0]].keys())
+            for cat in cat_list:
+                col_cat[cat]
         except KeyError:
-            print(
-                f"KeyError: {cat_list[0]} not in {col_cat.keys()}, skipping {cats_name}"
-            )
+            print(f"KeyError: {cat} not in {col_cat.keys()}, skipping {cats_name}")
             continue
+        
+        vars_tot = list(col_cat[cat_list[0]].keys())
         if not os.path.exists(dir_cat):
             os.makedirs(dir_cat)
         if args.test:

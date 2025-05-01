@@ -130,9 +130,9 @@ sample_list = [
     # "DATA_JetMET_JMENano_C_skimmed",
     # "DATA_JetMET_JMENano_D_skimmed",
     "DATA_JetMET_JMENano_E_skimmed",
-    # "DATA_JetMET_JMENano_F_skimmed",
-    # "DATA_JetMET_JMENano_G_skimmed",
-    # "GluGlutoHHto4B",
+    "DATA_JetMET_JMENano_F_skimmed",
+    "DATA_JetMET_JMENano_G_skimmed",
+    "GluGlutoHHto4B",
     # "VBF_HHto4B",
 ]
 
@@ -147,61 +147,6 @@ categories_dict = define_categories(
 print("categories_dict", categories_dict)
 
 
-# if not VR1:
-#     categories_dict = {
-#         "4b_control_region": [hh4b_4b_region, hh4b_control_region],
-#         "2b_control_region_preW": [hh4b_2b_region, hh4b_control_region],
-#         "2b_control_region_postW": [hh4b_2b_region, hh4b_control_region],
-#         #
-#         "4b_signal_region": [hh4b_4b_region, hh4b_signal_region],
-#         "2b_signal_region_preW": [hh4b_2b_region, hh4b_signal_region],
-#         "2b_signal_region_postW": [hh4b_2b_region, hh4b_signal_region],
-#         #
-#         # "4b_region": [hh4b_4b_region],
-#         # "2b_region": [hh4b_2b_region],
-#     }
-#     if RUN2:
-#         categories_dictRun2 = {
-#             "4b_control_regionRun2": [hh4b_4b_region, hh4b_control_region_run2],
-#             "2b_control_region_preWRun2": [hh4b_2b_region, hh4b_control_region_run2],
-#             "2b_control_region_postWRun2": [hh4b_2b_region, hh4b_control_region_run2],
-#             "4b_signal_regionRun2": [hh4b_4b_region, hh4b_signal_region_run2],
-#             "2b_signal_region_preWRun2": [hh4b_2b_region, hh4b_signal_region_run2],
-#             "2b_signal_region_postWRun2": [hh4b_2b_region, hh4b_signal_region_run2],
-#         }
-#         categories_dict = categories_dict | categories_dictRun2
-# else:
-#     categories_dict = {
-#         "4b_VR1_control_region": [hh4b_4b_region, hh4b_VR1_control_region],
-#         "2b_VR1_control_region_preW": [hh4b_2b_region, hh4b_VR1_control_region],
-#         "2b_VR1_control_region_postW": [hh4b_2b_region, hh4b_VR1_control_region],
-#         #
-#         "4b_VR1_signal_region": [hh4b_4b_region, hh4b_VR1_signal_region],
-#         "2b_VR1_signal_region_preW": [hh4b_2b_region, hh4b_VR1_signal_region],
-#         "2b_VR1_signal_region_postW": [hh4b_2b_region, hh4b_VR1_signal_region],
-#     }
-#     if RUN2:
-#         categories_dictRun2 = {
-#             "4b_VR1_control_regionRun2": [hh4b_4b_region, hh4b_VR1_control_region_run2],
-#             "2b_VR1_control_region_preWRun2": [
-#                 hh4b_2b_region,
-#                 hh4b_VR1_control_region_run2,
-#             ],
-#             "2b_VR1_control_region_postWRun2": [
-#                 hh4b_2b_region,
-#                 hh4b_VR1_control_region_run2,
-#             ],
-#             "4b_VR1_signal_regionRun2": [hh4b_4b_region, hh4b_VR1_signal_region_run2],
-#             "2b_VR1_signal_region_preWRun2": [
-#                 hh4b_2b_region,
-#                 hh4b_VR1_signal_region_run2,
-#             ],
-#             "2b_VR1_signal_region_postWRun2": [
-#                 hh4b_2b_region,
-#                 hh4b_VR1_signal_region_run2,
-#             ],
-#         }
-#         categories_dict = categories_dict | categories_dictRun2
 
 ## VBF SPECIFIC REGIONS
 # **{f"4b_semiTight_LeadingPt_region": [hh4b_4b_region, semiTight_leadingPt]},
