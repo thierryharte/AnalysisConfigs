@@ -30,9 +30,6 @@ parser.add_argument(
     "-l", "--linear", action="store_true", help="Linear scale", default=False
 )
 parser.add_argument(
-    "-d", "--density", action="store_true", help="Normalize plots to 1", default=False
-)
-parser.add_argument(
     "-t", "--test", action="store_true", help="Test on one variable", default=False
 )
 args = parser.parse_args()
@@ -41,13 +38,11 @@ if args.test:
     args.workers = 1
     args.output = "test"
 
-NORMALIZE_WEIGHTS = False
 PAD_VALUE = -999
 
 
 inputfile = args.input
 input_dir = os.path.dirname(args.input)
-cfg = os.path.join(input_dir, "parameters_dump.yaml")
 log_scale = not args.linear
 outputdir = os.path.join(input_dir, args.output) + f"_{args.normalisation}"
 
@@ -113,149 +108,6 @@ def plot_weights(weights_list, suffix):
     plt.close(fig)
 
 
-def plot_single_var_from_hist(
-    var, plotter, cat_list, year, dir_cat, norm_factor_dict=None
-):
-    # if "Jet" in var: continue
-    fig, (ax, ax_ratio) = plt.subplots(
-        2,
-        1,
-        figsize=[13, 13],
-        sharex=True,
-        gridspec_kw={"height_ratios": [2.5, 1]},
-    )
-    for i, cat in enumerate(cat_list):
-        shape = plotter.shape_objects[f"{var}_{year}"]
-
-        sample = list(shape.h_dict.keys())[0]
-
-        h = shape.h_dict[sample][{"cat": cat}]
-        h_num = shape.h_dict[sample][{"cat": cat_list[0]}]
-
-        h_den = h
-        if norm_factor_dict:
-            norm_factor = norm_factor_dict[cat]
-        else:
-            norm_factor = h_num.values().sum() / h_den.values().sum()
-        h_den = h_den * norm_factor
-        h_ratio = (
-            h_num.values() / h_den.values()
-        )  # *(h_den.values().sum()/h.values().sum())
-
-        err_num = np.sqrt(h_num.values())
-        err_den = np.sqrt(h_den.values())
-        ratio_err = np.sqrt(
-            (err_num / h_den.values()) ** 2
-            + (h_num.values() * err_den / h_den.values() ** 2) ** 2
-        )
-
-        print(f"Plotting from histograms {var} for {cat} with norm {norm_factor}")
-
-        if "4b" in cat:
-            ax.errorbar(
-                h.axes[0].centers,
-                h.values(),
-                yerr=np.sqrt(h.values()),
-                label=cat,
-                color=color_list_orig[i][0],
-                fmt=".",
-            )
-        else:
-            ax.step(
-                h.axes[0].edges,
-                np.append(h_den.values(), h_den.values()[-1]),
-                where="post",
-                label=cat,
-                color=color_list_orig[i][0],
-            )
-
-        if "4b" not in cat:
-            ax_ratio.errorbar(
-                h.axes[0].centers,
-                h_ratio,
-                yerr=ratio_err,
-                fmt=".",
-                label=cat,
-                color=color_list_orig[i][0],
-            )
-        else:
-            ax_ratio.axhline(y=1, color=color_list_orig[i][0], linestyle="--")
-            ax_ratio.fill_between(
-                h.axes[0].centers,
-                1 - ratio_err,
-                1 + ratio_err,
-                color="grey",
-                alpha=0.5,
-            )
-
-    ax.legend(loc="upper right")
-    ax.set_yscale("log" if log_scale else "linear")
-    ax.set_ylim(
-        top=1.5 * ax.get_ylim()[1] if not log_scale else ax.get_ylim()[1] ** 1.5
-    )
-    ax_ratio.set_ylim(0.5, 1.5)
-
-    # hep.cms.lumitext("(13.6 TeV)", ax=ax)
-    hep.cms.lumitext(r"22EE Era E, 6 $fb^{-1}$, (13.6 TeV)", ax=ax)
-    hep.cms.text(text="Preliminary", ax=ax)
-    
-    ax.grid()
-    ax_ratio.grid()
-
-    ax_ratio.set_xlabel(var)
-    ax.set_ylabel("Events")
-    ax_ratio.set_ylabel("Data/Pred.")
-
-    # save figure
-    fig.savefig(
-        os.path.join(dir_cat, f"{var}.png"),
-        bbox_inches="tight",
-        dpi=300,
-    )
-    plt.close(fig)
-
-
-def plot_from_hist(accumulator, norm_factor_dict=None):
-    variables = accumulator["variables"].keys()
-    only_cat = None
-    log = False
-    density = True
-    verbose = 1
-    index_file = None
-    year = "2022_postEE"
-    style_cfg = parameters["plotting_style"]
-    hist_objs = {v: accumulator["variables"][v] for v in variables}
-
-    plotter = PlotManager(
-        variables=variables,
-        hist_objs=hist_objs,
-        datasets_metadata=accumulator["datasets_metadata"],
-        plot_dir=outputdir,
-        style_cfg=style_cfg,
-        only_cat=only_cat,
-        only_year=year,
-        workers=args.workers,
-        log=log,
-        density=density,
-        verbose=verbose,
-        save=False,
-        index_file=index_file,
-    )
-
-    for cats_name, cat_list in cat_dict.items():
-        dir_cat = f"{outputdir}/{cats_name}_histograms"
-        if not os.path.exists(dir_cat):
-            os.makedirs(dir_cat)
-        with Pool(args.workers) as p:
-            p.starmap(
-                plot_single_var_from_hist,
-                [
-                    (var, plotter, cat_list, year, dir_cat, norm_factor_dict)
-                    for var in variables
-                ],
-            )
-
-
 def plot_single_var_from_columns(
     var,
     col_dict,
@@ -287,26 +139,6 @@ def plot_single_var_from_columns(
         col_den = col_dict[cat]
         col_num = col_dict[cat_list[0]]
 
-        # renormalize the weights
-        if NORMALIZE_WEIGHTS and "Run2" not in cat and i != 0 and "postW" in cat:
-            mean_weight = np.mean(weights_den)
-            # mean_weight = np.std(weights)
-            # std_weight = np.std(weights)
-            std_weight = np.mean(weights_den)
-            # std_weight = 1.
-
-            print(
-                f"Normalizing weights for {cat} with mean {mean_weight} and std {std_weight}"
-            )
-            original_weights = weights_den
-            weights_den = (weights_den - mean_weight) / std_weight + 1.0
-            print(f"New mean: {np.mean(weights_den)} and std: {np.std(weights_den)}")
-            if not weights_plotted:
-                plot_weights([original_weights, weights_den], f"{cat}_normalized")
-                weights_plotted = True
-
-        # mask_w = weights > -1
-        # weights = weights[mask_w]
 
         # remove padded values
         weights_den = weights_den[col_den != PAD_VALUE]
@@ -346,13 +178,6 @@ def plot_single_var_from_columns(
         # print(f"col_num {col_num}", type(col_num))
         # print(f"col_den {col_den}")
 
-        # h_den, bins = np.histogram(
-        #     col_den, bins=30, range=range_4b
-        # )
-        # # draw the ratio
-        # h_num, _ = np.histogram(
-        #     col_num, bins=bins, range=range_4b
-        # )
 
         bins = np.linspace(range_4b[0], range_4b[1], 31)
         # print("bins", bins, len(bins))
@@ -405,27 +230,11 @@ def plot_single_var_from_columns(
             )
         # print("ratio_err", ratio_err)
 
-        if args.density:
-            h_den, bins = np.histogram(
-                col_den,
-                bins=30,
-                weights=weights_den,
-                range=range_4b,
-                density=True,
-            )
-            h_num, bins = np.histogram(
-                col_num,
-                bins=30,
-                weights=weights_num,
-                range=range_4b,
-                density=True,
-            )
-
         if i == 0:
             ax.errorbar(
                 bins_center,
                 h_den,
-                yerr=err_den if not args.density else 0,
+                yerr=err_den,
                 label=cat_plot_name,
                 color=color_list[i][0],
                 fmt=".",
@@ -451,7 +260,6 @@ def plot_single_var_from_columns(
                 fill=True if len(color_list[i]) > 1 else False,
                 alpha=0.5,
                 range=range_4b,
-                density=args.density,
             )
             ax_ratio.errorbar(
                 bins_center,
@@ -496,7 +304,7 @@ def plot_single_var_from_columns(
         top=(
             1.3 * ax.get_ylim()[1]
             if not log_scale
-            else ax.get_ylim()[1] ** (1.3 if not args.density else -1.3)
+            else ax.get_ylim()[1] ** 1.3
         )
     )
     fig.savefig(
@@ -606,24 +414,6 @@ def plot_from_columns(accumulator, norm_factor_dict=None):
 
 if __name__ == "__main__":
 
-    # Load yaml file with OmegaConf
-    if cfg[-5:] == ".yaml":
-        parameters_dump = OmegaConf.load(cfg)
-    else:
-        raise Exception(
-            "The input file format is not valid. The config file should be a in .yaml format."
-        )
-
-    parameters = parameters_dump
-
-    # Resolving the OmegaConf
-    try:
-        OmegaConf.resolve(parameters)
-    except Exception as e:
-        print(
-            "Error during resolution of OmegaConf parameters magic, please check your parameters files."
-        )
-        raise (e)
 
     if os.path.isfile(inputfile):
         accumulator = load(inputfile)
@@ -699,7 +489,6 @@ if __name__ == "__main__":
 
     print("norm_factor_dict", norm_factor_dict)
 
-    # plot_from_hist(accumulator, norm_factor_dict)
     plot_from_columns(accumulator, norm_factor_dict)
 
     print(f"\nPlots saved in {outputdir}")
