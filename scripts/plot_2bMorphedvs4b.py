@@ -114,7 +114,6 @@ def plot_single_var_from_columns(
     weight_dict,
     cat_list,
     dir_cat,
-    norm_factor_dict=None,
     chi_squared=True,
     color_list=color_list_orig,
 ):
@@ -146,9 +145,9 @@ def plot_single_var_from_columns(
         col_den = col_den[col_den != PAD_VALUE]
         col_num = col_num[col_num != PAD_VALUE]
 
-        if norm_factor_dict:
-            norm_factor_den = norm_factor_dict[cat]
-            norm_factor_num = norm_factor_dict[cat_list[0]]
+        if args.normalisation == "num_events":
+            norm_factor_den = len(weights_den) / len(weights_num)
+            norm_factor_num = 1.0
         else:
             norm_factor_den = weights_num.sum() / weights_den.sum()
             norm_factor_num = 1.0
@@ -315,7 +314,7 @@ def plot_single_var_from_columns(
     plt.close(fig)
 
 
-def plot_from_columns(accumulator, norm_factor_dict=None):
+def plot_from_columns(accumulator):
     col_cat = accumulator["columns"][sample][dataset]
 
     print(f"CATEGORIES ARE:")
@@ -402,7 +401,6 @@ def plot_from_columns(accumulator, norm_factor_dict=None):
                         col_dict["weight"],
                         cat_list,
                         dir_cat,
-                        norm_factor_dict,
                         chi_squared,
                         color_list,
                     )
@@ -430,65 +428,6 @@ if __name__ == "__main__":
         weights = accumulator["columns"][sample][dataset][category]["weight"].value
         plot_weights([weights], category)
 
-    if args.normalisation == "sum_weights":
-        norm_factor_dict = None
-    elif args.normalisation == "num_events":
-        num_ev_dict = {}
-        # Get the normalization factors
-        num_ev_dict["num_4b_CR"] = accumulator["cutflow"]["4b_control_region"][
-            "DATA_JetMET_JMENano_2022_postEE_EraE"
-        ]["DATA_JetMET_JMENano_skimmed"]
-        num_ev_dict["num_2b_CR"] = accumulator["cutflow"]["2b_control_region_preW"][
-            "DATA_JetMET_JMENano_2022_postEE_EraE"
-        ]["DATA_JetMET_JMENano_skimmed"]
-        num_ev_dict["num_4b_SR"] = accumulator["cutflow"]["4b_signal_region"][
-            "DATA_JetMET_JMENano_2022_postEE_EraE"
-        ]["DATA_JetMET_JMENano_skimmed"]
-        num_ev_dict["num_2b_SR"] = accumulator["cutflow"]["2b_signal_region_preW"][
-            "DATA_JetMET_JMENano_2022_postEE_EraE"
-        ]["DATA_JetMET_JMENano_skimmed"]
-        num_ev_dict["num_4b_CRRun2"] = accumulator["cutflow"]["4b_control_regionRun2"][
-            "DATA_JetMET_JMENano_2022_postEE_EraE"
-        ]["DATA_JetMET_JMENano_skimmed"]
-        num_ev_dict["num_2b_CRRun2"] = accumulator["cutflow"][
-            "2b_control_region_preWRun2"
-        ]["DATA_JetMET_JMENano_2022_postEE_EraE"]["DATA_JetMET_JMENano_skimmed"]
-        num_ev_dict["num_4b_SRRun2"] = accumulator["cutflow"]["4b_signal_regionRun2"][
-            "DATA_JetMET_JMENano_2022_postEE_EraE"
-        ]["DATA_JetMET_JMENano_skimmed"]
-        num_ev_dict["num_2b_SRRun2"] = accumulator["cutflow"][
-            "2b_signal_region_preWRun2"
-        ]["DATA_JetMET_JMENano_2022_postEE_EraE"]["DATA_JetMET_JMENano_skimmed"]
-
-        print("num_ev_dict", num_ev_dict)
-
-        norm_factor_dict = {
-            "4b_control_region": 1,
-            "2b_control_region_preW": num_ev_dict["num_4b_CR"]
-            / num_ev_dict["num_2b_CR"],
-            "2b_control_region_postW": num_ev_dict["num_4b_CR"]
-            / num_ev_dict["num_2b_CR"],
-            "4b_signal_region": 1,
-            "2b_signal_region_preW": num_ev_dict["num_4b_CR"]
-            / (num_ev_dict["num_2b_CR"]),
-            "2b_signal_region_postW": num_ev_dict["num_4b_CR"]
-            / (num_ev_dict["num_2b_CR"]),
-            "4b_control_regionRun2": 1,
-            "2b_control_region_preWRun2": num_ev_dict["num_4b_CRRun2"]
-            / num_ev_dict["num_2b_CRRun2"],
-            "2b_control_region_postWRun2": num_ev_dict["num_4b_CRRun2"]
-            / num_ev_dict["num_2b_CRRun2"],
-            "4b_signal_regionRun2": 1,
-            "2b_signal_region_preWRun2": num_ev_dict["num_4b_CRRun2"]
-            / (num_ev_dict["num_2b_CRRun2"]),
-            "2b_signal_region_postWRun2": num_ev_dict["num_4b_CRRun2"]
-            / (num_ev_dict["num_2b_CRRun2"]),
-        }
-    else:
-        raise ValueError(f"Normalisation type {args.normalisation} not recognised")
-
-    print("norm_factor_dict", norm_factor_dict)
-
-    plot_from_columns(accumulator, norm_factor_dict)
+    plot_from_columns(accumulator)
 
     print(f"\nPlots saved in {outputdir}")
