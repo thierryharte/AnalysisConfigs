@@ -258,9 +258,20 @@ def plot_single_var_from_columns(
         if "postW" in region:
             # Applying reweighting weight to 2b reweighted signal
             values["weights_den"] = values["weights_den"]*ratio2b4b
+            values["col_den_onlybg"] = values["col_den"]
+            values["weights_den_onlybg"] = values["weights_den"]
             values["col_den"] = np.concatenate((values["col_den"], plotdict[mc_signal]["col_den"]))
             values["weights_den"] = np.concatenate((values["weights_den"], plotdict[mc_signal]["weights_den"]))
             namesuffix=" + mc signal"
+
+            idx_den_onlybg = np.digitize(values["col_den_onlybg"], values["bin_edges"])
+            values["h_den_onlybg"] = []
+            values["err_den_onlybg"] = []
+            for j in range(1, len(values["bin_edges"])):
+                values["h_den_onlybg"].append(np.sum(values["weights_den_onlybg"][idx_den_onlybg == j]))
+                values["err_den_onlybg"].append(np.sqrt(np.sum(values["weights_den_onlybg"][idx_den_onlybg == j] ** 2)))
+            values["h_den_onlybg"] = np.array(values["h_den_onlybg"])
+            values["err_den_onlybg"] = np.array(values["err_den_onlybg"]) if not args.density else 0
 
         # Filling the histograms
         idx_den = np.digitize(values["col_den"], values["bin_edges"])
@@ -373,12 +384,37 @@ def plot_single_var_from_columns(
                 sob_list = s / np.sqrt(b - s)
                 sob = np.sqrt(np.sum(sob_list**2))
                 
-                dds = -(s-2*b)/(2*(b-s)**(3/2)) #derivative d(sob)/ds
-                ddb = s*(b-s)**(-3/2) #derivative d(sob)/db
+                dds = -(s-2*b)*(2*(b-s)**(-3/2)) #derivative d(sob)/ds
+                ddb = -(s/2)*(b-s)**(-3/2) #derivative d(sob)/db
                 sob_err_list = np.sqrt((dds*s_err)**2+(ddb*b_err)**2)
-                sob_err_sq = np.sum((sob_err_list*sob_list/sob)**2)
+                sob_err_sq = np.sum((2*sob_list*sob_err_list/sob)**2)
                 sob_err = np.sqrt(sob_err_sq)
                 print("====== S/B list bin-by-bin: =======")
+                print(sob_list)
+                print("Errors also as a list")
+                print(sob_err_list)
+                print("S/B and errors combined")
+                print(f"sob: {sob}, error: {sob_err}")
+                
+                ########## alternative approach #############
+                # Calculating binwise s/sqrt(b).
+                # our background (reweighted 2b contains the signal at this point.
+                # Therefore the function needs to be:
+                # s/np.sqrt(bg-s) with s being the MC_signal and bg being the reweighted data
+                # Assuming the mc did already go through
+                s = plotdict[mc_signal]["h_den"]
+                b = values["h_den_onlybg"]
+                s_err = plotdict[mc_signal]["err_den"]
+                b_err = values["err_den_onlybg"]
+                sob_list = s / np.sqrt(b)
+                sob = np.sqrt(np.sum(sob_list**2))
+                
+                dds = 1/np.sqrt(b) #derivative d(sob)/ds
+                ddb = -(s/2)*(b)**(-3/2) #derivative d(sob)/db
+                sob_err_list = np.sqrt((dds*s_err)**2+(ddb*b_err)**2)
+                sob_err_sq = np.sum((2*sob_list*sob_err_list/sob)**2)
+                sob_err = np.sqrt(sob_err_sq)
+                print("====== S/B list bin-by-bin ALTERNATIVE APPROACH: =======")
                 print(sob_list)
                 print("Errors also as a list")
                 print(sob_err_list)
