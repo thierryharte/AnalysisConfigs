@@ -18,8 +18,8 @@ matplotlib.rcParams['agg.path.chunksize'] = 10000  # or try 5000, depending on s
 
 parser = argparse.ArgumentParser(description="Plot 2b morphed vs 4b data")
 parser.add_argument("-id", "--input-data", type=str, required=True, help="Input coffea file data")
-parser.add_argument("-ds", "--sample-data", type=list, required=False, help="List of samples to be used", default=["DATA_JetMET_JMENano_E_skimmed","DATA_JetMET_JMENano_F_skimmed","DATA_JetMET_JMENano_G_skimmed"])
-parser.add_argument("-dd", "--dataset-data", type=list, required=False, help="List containing datasets for each sample (has to match length of samples)", default=["DATA_JetMET_JMENano_E_2022_postEE_EraE", "DATA_JetMET_JMENano_F_2022_postEE_EraF", "DATA_JetMET_JMENano_G_2022_postEE_EraG"])
+parser.add_argument("-ds", "--sample-data", type=str, nargs='+', required=False, help="List of samples to be used", default=["DATA_JetMET_JMENano_E_skimmed","DATA_JetMET_JMENano_F_skimmed","DATA_JetMET_JMENano_G_skimmed"])
+parser.add_argument("-dd", "--dataset-data", type=str, nargs='+', required=False, help="List containing datasets for each sample (has to match length of samples)", default=["DATA_JetMET_JMENano_E_2022_postEE_EraE", "DATA_JetMET_JMENano_F_2022_postEE_EraF", "DATA_JetMET_JMENano_G_2022_postEE_EraG"])
 parser.add_argument("-im", "--input-mc", type=str, required=True, help="Input coffea file monte carlo")
 parser.add_argument(
     "-o", "--output", type=str, help="Output directory", default="plots_DNN_data_and_mc"
@@ -729,6 +729,8 @@ if __name__ == "__main__":
     ## Collecting data dataset
     sample_data = args.sample_data
     dataset_data = args.dataset_data
+    print(sample_data)
+    print(dataset_data)
     assert len(sample_data) == len(dataset_data)
 
     col_cat_data_list = []
