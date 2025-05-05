@@ -389,7 +389,7 @@ def plot_single_var_from_columns(
                 dds = -(s-2*b)*(2*(b-s)**(-3/2)) #derivative d(sob)/ds
                 ddb = -(s/2)*(b-s)**(-3/2) #derivative d(sob)/db
                 sob_err_list = np.sqrt((dds*s_err)**2+(ddb*b_err)**2)
-                sob_err_sq = np.sum((2*sob_list*sob_err_list/sob)**2)
+                sob_err_sq = np.sum((sob_list*sob_err_list/sob)**2)
                 sob_err = np.sqrt(sob_err_sq)
                 print("====== S/B list bin-by-bin: =======")
                 print(sob_list)
@@ -398,8 +398,8 @@ def plot_single_var_from_columns(
                 print("S/B and errors combined")
                 print(f"sob: {sob}, error: {sob_err}")
                 
-                ########## alternative approach #############
-                # Calculating binwise s/sqrt(b).
+                ########## Easier approach #############
+                # Calculating binwise s/sqrt(b).h_den_onlybg
                 # our background (reweighted 2b contains the signal at this point.
                 # Therefore the function needs to be:
                 # s/np.sqrt(bg-s) with s being the MC_signal and bg being the reweighted data
@@ -414,7 +414,7 @@ def plot_single_var_from_columns(
                 dds = 1/np.sqrt(b) #derivative d(sob)/ds
                 ddb = -(s/2)*(b)**(-3/2) #derivative d(sob)/db
                 sob_err_list = np.sqrt((dds*s_err)**2+(ddb*b_err)**2)
-                sob_err_sq = np.sum((2*sob_list*sob_err_list/sob)**2)
+                sob_err_sq = np.sum((sob_list*sob_err_list/sob)**2)
                 sob_err = np.sqrt(sob_err_sq)
                 print("====== S/B list bin-by-bin ALTERNATIVE APPROACH: =======")
                 print(sob_list)
@@ -594,7 +594,8 @@ def plot_from_columns(col_cats, genweight, lumi, era_string):
                         except KeyError:
                             col_dict[v][cat][data_mc] = col_cat[cat][v.replace("Run2", "")].value
                         if v == "weight":
-                            col_dict[v][cat][data_mc] = col_dict[v][cat][data_mc] / (genweight if data_mc == "mc" else 1)
+                            # Note that the total luminosity is hardcoded here for 2022postEE
+                            col_dict[v][cat][data_mc] = col_dict[v][cat][data_mc] / (genweight*((5.79+17.6+2.88)/lumi) if data_mc == "mc" else 1)
         print(col_dict)
         print(vars)
 
@@ -651,12 +652,18 @@ if __name__ == "__main__":
         os.makedirs(outputdir)
 
     ## Collecting MC dataset
-    sample_mc = "GluGlutoHHto4B_spanet"
-    dataset_mc = "GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_spanet__2022_postEE"
-    print(accumulator_mc["columns"].keys())
-    assert sample_mc in list(accumulator_mc["columns"].keys())
-    print(accumulator_mc["columns"][sample_mc].keys())
-    assert dataset_mc in list(accumulator_mc["columns"][sample_mc].keys())
+    
+    # sample_mc = "GluGlutoHHto4B"
+    # dataset_mc = "GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_spanet__2022_postEE"
+    # print(accumulator_mc["columns"].keys())
+    # assert sample_mc in list(accumulator_mc["columns"].keys())
+    # print(accumulator_mc["columns"][sample_mc].keys())
+    # assert dataset_mc in list(accumulator_mc["columns"][sample_mc].keys())
+    
+    sample_mc=list(accumulator_mc["columns"].keys())[0]
+    dataset_mc=list(accumulator_mc["columns"][sample_mc].keys())[0]
+    print(f"Sample: {sample_mc}")
+    print(f"Dataset: {dataset_mc}")
     col_cat_mc = accumulator_mc["columns"][sample_mc][dataset_mc]
    
     ## Collecting data dataset
