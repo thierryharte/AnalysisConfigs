@@ -37,3 +37,9 @@ pocket-coffea run --cfg HH4b_parton_matching_config.py -e dask@T3_CH_PSI --custo
 cd configs/VBF_HH4b
 pocket-coffea run --cfg VBF_HH4b_test_config.py -e dask@T3_CH_PSI --custom-run-options params/t3_run_options_spanet_predict.yaml -o /work/mmalucch/out_hh4b/out_vbf_jets_candidates/  --executor-custom-setup onnx_executor.py
 ```
+
+## Run plot 2bvs4b
+
+```python
+sbatch -p short --account=t3 --time=00:05:00 --mem 25gb --cpus-per-task=8 --wrap="python plot_2bMorphedvs4b.py -i <input_directory> -o <output_directory>"
+```
