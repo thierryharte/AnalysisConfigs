@@ -139,6 +139,8 @@ def plot_single_var_from_columns(
     chi_squared=True,
     color_list=color_list_orig,
     ratio2b4b=1,
+    lumi=5.79,
+    era_string="22 E"
 ):
     fig, (ax, ax_ratio) = plt.subplots(
         2,
@@ -256,9 +258,20 @@ def plot_single_var_from_columns(
         if "postW" in region:
             # Applying reweighting weight to 2b reweighted signal
             values["weights_den"] = values["weights_den"]*ratio2b4b
+            values["col_den_onlybg"] = values["col_den"]
+            values["weights_den_onlybg"] = values["weights_den"]
             values["col_den"] = np.concatenate((values["col_den"], plotdict[mc_signal]["col_den"]))
             values["weights_den"] = np.concatenate((values["weights_den"], plotdict[mc_signal]["weights_den"]))
             namesuffix=" + mc signal"
+
+            idx_den_onlybg = np.digitize(values["col_den_onlybg"], values["bin_edges"])
+            values["h_den_onlybg"] = []
+            values["err_den_onlybg"] = []
+            for j in range(1, len(values["bin_edges"])):
+                values["h_den_onlybg"].append(np.sum(values["weights_den_onlybg"][idx_den_onlybg == j]))
+                values["err_den_onlybg"].append(np.sqrt(np.sum(values["weights_den_onlybg"][idx_den_onlybg == j] ** 2)))
+            values["h_den_onlybg"] = np.array(values["h_den_onlybg"])
+            values["err_den_onlybg"] = np.array(values["err_den_onlybg"]) if not args.density else 0
 
         # Filling the histograms
         idx_den = np.digitize(values["col_den"], values["bin_edges"])
@@ -371,12 +384,37 @@ def plot_single_var_from_columns(
                 sob_list = s / np.sqrt(b - s)
                 sob = np.sqrt(np.sum(sob_list**2))
                 
-                dds = -(s-2*b)/(2*(b-s)**(3/2)) #derivative d(sob)/ds
-                ddb = s*(b-s)**(-3/2) #derivative d(sob)/db
+                dds = -(s-2*b)*(2*(b-s)**(-3/2)) #derivative d(sob)/ds
+                ddb = -(s/2)*(b-s)**(-3/2) #derivative d(sob)/db
                 sob_err_list = np.sqrt((dds*s_err)**2+(ddb*b_err)**2)
-                sob_err_sq = np.sum((sob_err_list*sob_list/sob)**2)
+                sob_err_sq = np.sum((2*sob_list*sob_err_list/sob)**2)
                 sob_err = np.sqrt(sob_err_sq)
                 print("====== S/B list bin-by-bin: =======")
+                print(sob_list)
+                print("Errors also as a list")
+                print(sob_err_list)
+                print("S/B and errors combined")
+                print(f"sob: {sob}, error: {sob_err}")
+                
+                ########## alternative approach #############
+                # Calculating binwise s/sqrt(b).
+                # our background (reweighted 2b contains the signal at this point.
+                # Therefore the function needs to be:
+                # s/np.sqrt(bg-s) with s being the MC_signal and bg being the reweighted data
+                # Assuming the mc did already go through
+                s = plotdict[mc_signal]["h_den"]
+                b = values["h_den_onlybg"]
+                s_err = plotdict[mc_signal]["err_den"]
+                b_err = values["err_den_onlybg"]
+                sob_list = s / np.sqrt(b)
+                sob = np.sqrt(np.sum(sob_list**2))
+                
+                dds = 1/np.sqrt(b) #derivative d(sob)/ds
+                ddb = -(s/2)*(b)**(-3/2) #derivative d(sob)/db
+                sob_err_list = np.sqrt((dds*s_err)**2+(ddb*b_err)**2)
+                sob_err_sq = np.sum((2*sob_list*sob_err_list/sob)**2)
+                sob_err = np.sqrt(sob_err_sq)
+                print("====== S/B list bin-by-bin ALTERNATIVE APPROACH: =======")
                 print(sob_list)
                 print("Errors also as a list")
                 print(sob_err_list)
@@ -424,7 +462,7 @@ def plot_single_var_from_columns(
     ax.set_yscale("log" if log_scale else "linear")
     
     # hep.cms.lumitext(r"2022 (13.6 TeV)", ax=ax)
-    hep.cms.lumitext(r"22EE Era E, 6 $fb^{-1}$, (13.6 TeV)", ax=ax)
+    hep.cms.lumitext(f"{era_string}, {lumi}"+r" $fb^{-1}$, (13.6 TeV)", ax=ax)
     hep.cms.text(text="Preliminary", ax=ax)
 
     var_plot_name = var.replace("Run2", "")
@@ -451,7 +489,7 @@ def plot_single_var_from_columns(
     plt.close(fig)
 
 
-def plot_from_columns(col_cats, genweight):
+def plot_from_columns(col_cats, genweight, lumi, era_string):
     
     ## Calculating a ratio between the 2b-reweighted and the 4b region
     # Needs to be done here, as afterwards, we don't have access to all the regions anymore...
@@ -577,12 +615,84 @@ def plot_from_columns(col_cats, genweight):
                         chi_squared,
                         color_list,
                         ratio2b4b,
+                        lumi,
+                        era_string,
                     )
                     for var in vars if "score" in var
                 ],
             )
         del col_dict
 
+def get_era_lumi(dataset_data):
+    era_lumi_dict = {
+            "22 Era C" : 4.95,
+            "22 Era D" : 2.92,
+            "22 Era E" : 5.79,
+            "22 Era F" : 17.6,
+            "22 Era G" : 2.88,
+            "23 Era Cv1" : 4.43,
+            "23 Era Cv2" : 1.28,
+            "23 Era Cv3" : 1.57,
+            "23 Era Cv4" : 10.68,
+            "23 Era Dv1" : 7.83,
+            "23 Era Dv2" : 1.67,
+            }
+    era_list = []
+    for dataset in dataset_data:
+        if "2022" in dataset:
+            if "EraC" in dataset:
+                era_list.append("22 Era C")
+            elif "EraD" in dataset:
+                era_list.append("22 Era D")
+            elif "EraE" in dataset:
+                era_list.append("22 Era E")
+            elif "EraF" in dataset:
+                era_list.append("22 Era F")
+            elif "EraG" in dataset:
+                era_list.append("22 Era G")
+            else:
+                print("2022 data, but not identified")
+        elif "2023" in dataset:
+            if "EraCv1" in dataset:
+                era_list.append("23 Era Cv1")
+            elif "EraCv2" in dataset:
+                era_list.append("23 Era Cv2")
+            elif "EraCv3" in dataset:
+                era_list.append("23 Era Cv3")
+            elif "EraCv4" in dataset:
+                era_list.append("23 Era Cv4")
+            elif "EraDv1" in dataset:
+                era_list.append("23 Era Dv1")
+            elif "EraDv1" in dataset:
+                era_list.append("23 Era Dv1")
+            else:
+                print("2023 data, but not identified")
+    print("Found eras in datasets")
+    print(era_list)
+    assert len(era_list) > 0
+    lumi = sum([era_lumi_dict[era] for era in era_list])
+    # If nothing else will be satisfied:
+    era_string = ", ".join(era_list)
+    # If only one Era
+    if len(era_list) == 1:
+        era_string = era_list[0]
+    # If not a full year is taken
+    elif all([era in era_list for era in ["22 Era C", "22 Era D"]]): 
+        era_string = "22 preEE"
+    elif all([era in era_list for era in ["22 Era E", "22 Era F", "22 Era G"]]): 
+        era_string = "22 postEE"
+    elif all([era in era_list for era in ["23 Era Cv1", "22 Era Cv2"]]): 
+        era_string = "23 preParkingHH"
+    elif all([era in era_list for era in ["23 Era Cv3", "23 Era Cv4", "23 Era Dv1", "23 Era Dv2"]]): 
+        era_string = "23 postParkingHH"
+    # If full years were taken
+    if all([era in era_list for era in ["22 Era C", "22 Era D", "22 Era E", "22 Era F", "22 Era G"]]): 
+        era_string = "2022"
+    elif all([era in era_list for era in ["23 Era Cv1", "23 Era Cv2", "23 Era Cv3", "23 Era Cv4", "23 Era Dv1", "23 Era Dv2"]]): 
+        era_string = "2023"
+    elif all([era in era_list for era in era_lumi_dict]):
+        era_string = "2022, 2023"
+    return lumi, era_string
 
 if __name__ == "__main__":
     
@@ -636,7 +746,11 @@ if __name__ == "__main__":
             print(f"Length all files: {col_cat_data[region][column]}")
     
     print(accumulator_mc["sum_genweights"][dataset_mc])
-    ############# Actual plotting command. Now a list with [datastuff, mcstuff] ######################33
-    plot_from_columns([col_cat_data,col_cat_mc],accumulator_mc["sum_genweights"][dataset_mc])
+
+    ## Generating the lumi and era_string for the plots:
+    lumi, era_string = get_era_lumi(args.dataset_data)
+
+    ############# Actual plotting command. Now a list with [datastuff, mcstuff] ######################
+    plot_from_columns([col_cat_data,col_cat_mc],accumulator_mc["sum_genweights"][dataset_mc], lumi, era_string)
 
     print(f"\nPlots saved in {outputdir}")
