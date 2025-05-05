@@ -104,14 +104,14 @@ input_dir = os.path.dirname(args.input)
 log_scale = not args.linear
 outputdir = (
     os.path.join(input_dir, args.output)
-    + f"_{args.normalisation}_{'ConstSigBin' if args.const_bin else ''}"
+    + f"_{args.normalisation}{'_ConstSigBin' if args.const_bin else ''}"
 )
 if args.input.endswith(".coffea"):
     inputfiles = [args.input]
 else:
     # get list of coffea files
     inputfiles = [
-        input_dir + file
+        os.path.join(input_dir, file)
         for file in os.listdir(input_dir)
         if file.endswith(".coffea") and "DATA" in file
     ]
