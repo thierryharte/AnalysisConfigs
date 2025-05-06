@@ -196,13 +196,13 @@ cfg = Configurator(
     parameters=parameters,
     datasets={
         "jsons": [
-            # f"{localdir}/datasets/QCD.json",
-            f"{localdir}/datasets/signal_VBF_HH4b.json",
-            # f"{localdir}/datasets/signal_ggF_HH4b_local.json",
-            # f"{localdir}/datasets/signal_ggF_HH4b_local_rucio.json",
-            f"{localdir}/datasets/signal_ggF_HH4b_altSite.json",
-            # f"{localdir}/datasets/signal_ggF_HH4b_test.json",
-            f"{localdir}/datasets/DATA_JetMET_skimmed.json",
+            # f"{localdir}/../HH4b_common/datasets/QCD.json",
+            f"{localdir}/../HH4b_common/datasets/signal_VBF_HH4b.json",
+            # f"{localdir}/../HH4b_common/datasets/signal_ggF_HH4b_local.json",
+            # f"{localdir}/../HH4b_common/datasets/signal_ggF_HH4b_local_rucio.json",
+            f"{localdir}/../HH4b_common/datasets/signal_ggF_HH4b_altSite.json",
+            # f"{localdir}/../HH4b_common/datasets/signal_ggF_HH4b_test.json",
+            f"{localdir}/../HH4b_common/datasets/DATA_JetMET_skimmed.json",
         ],
         "filter": {
             "samples": sample_list,

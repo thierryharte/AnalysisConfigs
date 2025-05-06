@@ -56,11 +56,11 @@ cfg = Configurator(
     parameters=parameters,
     datasets={
         "jsons": [
-            f"{localdir}/datasets/DATA_JetMET.json",
-            f"{localdir}/datasets/QCD.json",
-            f"{localdir}/datasets/SPANet_classification.json",
-            f"{localdir}/datasets/signal_ggF_HH4b_local.json",
-            f"{localdir}/datasets/signal_VBF_HH4b_local.json",
+            f"{localdir}/../HH4b_common/datasets/DATA_JetMET.json",
+            f"{localdir}/../HH4b_common/datasets/QCD.json",
+            f"{localdir}/../HH4b_common/datasets/SPANet_classification.json",
+            f"{localdir}/../HH4b_common/datasets/signal_ggF_HH4b_local.json",
+            f"{localdir}/../HH4b_common/datasets/signal_VBF_HH4b_local.json",
         ],
         "filter": {
             "samples": (
