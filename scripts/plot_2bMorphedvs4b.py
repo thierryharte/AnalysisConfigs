@@ -15,6 +15,7 @@ from utils.get_era_lumi import get_era_lumi
 hep.style.use("CMS")
 
 NUMBER_OF_BINS = 20
+#constant signal bins for the model using SPANet pt flatten
 CONSTANT_SIGNAL_BLIND_BINS = np.array(
     [
         1.34472444e-04,

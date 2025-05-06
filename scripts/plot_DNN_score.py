@@ -155,6 +155,7 @@ def plot_single_var_from_columns(
     print(var)
     range_4b = (0, 0)
     
+    var_plot_name = var.replace("Run2", "")
 
     plotdict = {}
 
@@ -434,9 +435,38 @@ def plot_single_var_from_columns(
                     color="k",
                     fontsize=20,
                 )
-
-
-
+                
+                # plot the sob for each bin
+                fig_sob, ax_sob = plt.subplots(figsize=[13, 13])
+                ax_sob.errorbar(
+                    values["bins_center"],
+                    sob_list,
+                    yerr=sob_err_list,
+                    fmt=".",
+                    label=region+namesuffix,
+                    color=values["color"][0],
+                )
+                ax_sob.fill_between(
+                    values["bins_center"],
+                    sob_list - sob_err_list,
+                    sob_list + sob_err_list,
+                    color="grey",
+                    alpha=0.5,
+                )
+                ax_sob.legend(loc="upper left")
+                ax_sob.set_yscale("linear")
+                hep.cms.lumitext(f"{era_string}, {lumi}"+r" $fb^{-1}$, (13.6 TeV)", ax=ax_sob)
+                ax_sob.set_xlabel(var_plot_name)
+                ax_sob.set_ylabel(r"$s/\sqrt{{{{b}}}}$")
+                ax_sob.grid()
+                fig_sob.savefig(
+                    os.path.join(dir_cat, f"{var}_sob.png"),
+                    bbox_inches="tight",
+                    dpi=300,
+                )
+                plt.close(fig_sob)
+                    
+                
             ax.hist(
                 values["col_den"],
                 bins=bin_edges,
@@ -467,7 +497,6 @@ def plot_single_var_from_columns(
     hep.cms.lumitext(f"{era_string}, {lumi}"+r" $fb^{-1}$, (13.6 TeV)", ax=ax)
     hep.cms.text(text="Preliminary", ax=ax)
 
-    var_plot_name = var.replace("Run2", "")
     ax_ratio.set_xlabel(var_plot_name)
     ax.set_ylabel("Events")
     ax_ratio.set_ylabel("Data/Pred.")
