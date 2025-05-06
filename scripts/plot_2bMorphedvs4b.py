@@ -57,7 +57,7 @@ CONSTANT_SIGNAL_BINS = np.array(
         9.99923229e-01,
     ]
 )
-
+CONST_BIN=True
 
 parser = argparse.ArgumentParser(description="Plot 2b morphed vs 4b data")
 parser.add_argument(
@@ -84,13 +84,7 @@ parser.add_argument(
 parser.add_argument(
     "-t", "--test", action="store_true", help="Test on one variable", default=False
 )
-parser.add_argument(
-    "-c",
-    "--const-bin",
-    action="store_true",
-    help="Use constant signal binning",
-    default=False,
-)
+
 args = parser.parse_args()
 
 if args.test:
@@ -104,7 +98,7 @@ input_dir = os.path.dirname(args.input)
 log_scale = not args.linear
 outputdir = (
     os.path.join(input_dir, args.output)
-    + f"_{args.normalisation}{'_ConstSigBin' if args.const_bin else ''}"
+    + f"_{args.normalisation}"
 )
 if args.input.endswith(".coffea"):
     inputfiles = [args.input]
@@ -252,7 +246,7 @@ def plot_single_var_from_columns(
         weights_num = weights_num * norm_factor_num
 
         # fix the bins and range
-        if "sig_bkg_dnn" in var or args.const_bin:
+        if "sig_bkg_dnn" in var and CONST_BIN:
             bins = (
                 CONSTANT_SIGNAL_BINS
                 if "blind" not in cat
@@ -440,8 +434,6 @@ def plot_from_columns(cat_col, lumi, era_string):
         if not os.path.exists(dir_cat):
             os.makedirs(dir_cat)
 
-        if args.const_bin:
-            vars_tot = [v for v in vars_tot if "sig_bkg_dnn" in v or "weight" in v]
         if args.test:
             vars_tot = vars_tot[:3]
         print("vars_tot", vars_tot)
