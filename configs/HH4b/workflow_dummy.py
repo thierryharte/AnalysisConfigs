@@ -3,17 +3,9 @@ import awkward as ak
 from pocket_coffea.workflows.base import BaseProcessorABC
 
 
-class HH4bbQuarkMatchingProcessor(BaseProcessorABC):
+class HH4bbQuarkMatchingProcessorDummy(BaseProcessorABC):
     def __init__(self, cfg) -> None:
         super().__init__(cfg=cfg)
-        self.dr_min = self.workflow_options["parton_jet_min_dR"]
-        self.max_num_jets = self.workflow_options["max_num_jets"]
-        self.which_bquark = self.workflow_options["which_bquark"]
-        self.fifth_jet = self.workflow_options["fifth_jet"]
-        self.tight_cuts = self.workflow_options["tight_cuts"]
-        self.classification = self.workflow_options["classification"]
-        self.spanet_model = self.workflow_options["spanet_model"]
-        self.random_pt = self.workflow_options["random_pt"]
 
     def apply_object_preselection(self, variation):
         variation = variation
