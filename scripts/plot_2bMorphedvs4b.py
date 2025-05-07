@@ -183,8 +183,6 @@ def plot_weights(weights_list, suffix, lumi, era_string):
     ax.set_xlabel("Morphing weights")
     ax.set_ylabel("Events")
 
-    # hep.cms.lumitext(r"22EE Era E, 6 $fb^{-1}$, (13.6 TeV)", ax=ax)
-    # hep.cms.lumitext(r"22EE, (13.6 TeV)", ax=ax)
     hep.cms.lumitext(f"{era_string}, {lumi}" + r" $fb^{-1}$, (13.6 TeV)", ax=ax)
     hep.cms.text(text="Preliminary", ax=ax)
 
@@ -386,8 +384,6 @@ def plot_single_var_from_columns(
     ax.legend(loc="upper right")
     ax.set_yscale("log" if log_scale else "linear")
 
-    # hep.cms.lumitext(r"22EE Era E, 6 $fb^{-1}$, (13.6 TeV)", ax=ax)
-    # hep.cms.lumitext(r"22EE, (13.6 TeV)", ax=ax)
     hep.cms.lumitext(f"{era_string}, {lumi}" + r" $fb^{-1}$, (13.6 TeV)", ax=ax)
     hep.cms.text(text="Preliminary", ax=ax)
 

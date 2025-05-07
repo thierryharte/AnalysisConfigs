@@ -1,17 +1,17 @@
 def get_era_lumi(dataset_data):
     era_lumi_dict = {
-            "22 Era C" : 4.95,
-            "22 Era D" : 2.92,
-            "22 Era E" : 5.79,
-            "22 Era F" : 17.6,
-            "22 Era G" : 2.88,
-            "23 Era Cv1" : 4.43,
-            "23 Era Cv2" : 1.28,
-            "23 Era Cv3" : 1.57,
-            "23 Era Cv4" : 10.68,
-            "23 Era Dv1" : 7.83,
-            "23 Era Dv2" : 1.67,
-            }
+        "22 Era C": 4.95,
+        "22 Era D": 2.92,
+        "22 Era E": 5.79,
+        "22 Era F": 17.6,
+        "22 Era G": 2.88,
+        "23 Era Cv1": 4.43,
+        "23 Era Cv2": 1.28,
+        "23 Era Cv3": 1.57,
+        "23 Era Cv4": 10.68,
+        "23 Era Dv1": 7.83,
+        "23 Era Dv2": 1.67,
+    }
     era_list = []
     for dataset in dataset_data:
         if "2022" in dataset:
@@ -52,18 +52,40 @@ def get_era_lumi(dataset_data):
     if len(era_list) == 1:
         era_string = era_list[0]
     # If not a full year is taken
-    elif all([era in era_list for era in ["22 Era C", "22 Era D"]]): 
+    elif all([era in era_list for era in ["22 Era C", "22 Era D"]]):
         era_string = "22 preEE"
-    elif all([era in era_list for era in ["22 Era E", "22 Era F", "22 Era G"]]): 
+    elif all([era in era_list for era in ["22 Era E", "22 Era F", "22 Era G"]]):
         era_string = "22 postEE"
-    elif all([era in era_list for era in ["23 Era Cv1", "22 Era Cv2"]]): 
+    elif all([era in era_list for era in ["23 Era Cv1", "22 Era Cv2"]]):
         era_string = "23 preParkingHH"
-    elif all([era in era_list for era in ["23 Era Cv3", "23 Era Cv4", "23 Era Dv1", "23 Era Dv2"]]): 
+    elif all(
+        [
+            era in era_list
+            for era in ["23 Era Cv3", "23 Era Cv4", "23 Era Dv1", "23 Era Dv2"]
+        ]
+    ):
         era_string = "23 postParkingHH"
     # If full years were taken
-    if all([era in era_list for era in ["22 Era C", "22 Era D", "22 Era E", "22 Era F", "22 Era G"]]): 
+    if all(
+        [
+            era in era_list
+            for era in ["22 Era C", "22 Era D", "22 Era E", "22 Era F", "22 Era G"]
+        ]
+    ):
         era_string = "2022"
-    elif all([era in era_list for era in ["23 Era Cv1", "23 Era Cv2", "23 Era Cv3", "23 Era Cv4", "23 Era Dv1", "23 Era Dv2"]]): 
+    elif all(
+        [
+            era in era_list
+            for era in [
+                "23 Era Cv1",
+                "23 Era Cv2",
+                "23 Era Cv3",
+                "23 Era Cv4",
+                "23 Era Dv1",
+                "23 Era Dv2",
+            ]
+        ]
+    ):
         era_string = "2023"
     elif all([era in era_list for era in era_lumi_dict]):
         era_string = "2022, 2023"

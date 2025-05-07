@@ -200,7 +200,7 @@ cfg = Configurator(
             f"{localdir}/../HH4b_common/datasets/signal_VBF_HH4b.json",
             # f"{localdir}/../HH4b_common/datasets/signal_ggF_HH4b_local.json",
             # f"{localdir}/../HH4b_common/datasets/signal_ggF_HH4b_local_rucio.json",
-            f"{localdir}/../HH4b_common/datasets/signal_ggF_HH4b_altSite.json",
+            f"{localdir}/../HH4b_common/datasets/signal_ggF_HH4b_SM_local_rucio_redirector.json",
             # f"{localdir}/../HH4b_common/datasets/signal_ggF_HH4b_test.json",
             f"{localdir}/../HH4b_common/datasets/DATA_JetMET_skimmed.json",
         ],
