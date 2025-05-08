@@ -99,7 +99,7 @@ else:
             f"4b{args.region_suffix}_control_region",
             f"2b{args.region_suffix}_control_region_postW",
             # f"2b{args.region_suffix}_control_region_preW"
-        ],
+        ]
     )
     # f"SR{args.region_suffix}_blind": [f"4b{args.region_suffix}_signal_region_blind", f"4b{args.region_suffix}_signal_region", f"2b{args.region_suffix}_signal_region_postW"],
     cat_dict[f"SR{args.region_suffix}"] = (
@@ -107,7 +107,7 @@ else:
             f"4b{args.region_suffix}_signal_region",
             f"4b{args.region_suffix}_signal_region",
             f"2b{args.region_suffix}_signal_region_postW",
-        ],
+        ]
     )
     # f"2b{args.region_suffix}_signal_region_preW"
     #    f"CR{args.region_suffix}_2b_Run2SPANet": [f"2b{args.region_suffix}_control_region_preWRun2", f"2b{args.region_suffix}_control_region_preW"],
@@ -536,29 +536,10 @@ def plot_from_columns(cat_cols, lumi, era_string):
     # HARDCODED:
     # - First region is CR
     # - In this region, 1st element is 4b, 3rd element is 2b-reweighted
-    print(cat_dict.keys())
-    print(cat_dict[f"CR{args.region_suffix}"])
-    CR_region_keys = cat_dict[f"CR{args.region_suffix}"]
-    print(CR_region_keys)
-
-    if args.normalisation == "sum_weigths":
+    if args.normalisation == "sum_weights":
         op_norm = lambda x, y: sum(x) / sum(y)
     else:
         op_norm = lambda x, y: len(x) / len(y)
-
-    CRratio_4b_2bpostW = op_norm(
-        cat_cols[0][CR_region_keys[0]]["weight"],
-        cat_cols[0][CR_region_keys[2]]["weight"],
-    )
-
-    SR_region_keys = cat_dict[f"SR{args.region_suffix}"]
-    SRratio_4b_2bpostW = op_norm(
-        cat_cols[0][SR_region_keys[0]]["weight"],
-        cat_cols[0][SR_region_keys[2]]["weight"],
-    )
-
-    print(f"CR ratio: {CRratio_4b_2bpostW}")
-    print(f"SR ratio: {SRratio_4b_2bpostW}")
 
     if args.run2:
         CR_region_keys = cat_dict[f"CR{args.region_suffix}Run2"]
@@ -575,6 +556,25 @@ def plot_from_columns(cat_cols, lumi, era_string):
 
         print(f"CR ratio Run2: {CRratio_4b_2bpostW_Run2}")
         print(f"SR ratio Run2: {SRratio_4b_2bpostW_Run2}")
+    else:
+        print(cat_dict.keys())
+        CR_region_keys = cat_dict[f"CR{args.region_suffix}"]
+        print(CR_region_keys)
+
+        CRratio_4b_2bpostW = op_norm(
+            cat_cols[0][CR_region_keys[0]]["weight"],
+            cat_cols[0][CR_region_keys[2]]["weight"],
+        )
+
+        SR_region_keys = cat_dict[f"SR{args.region_suffix}"]
+        SRratio_4b_2bpostW = op_norm(
+            cat_cols[0][SR_region_keys[0]]["weight"],
+            cat_cols[0][SR_region_keys[2]]["weight"],
+        )
+
+        print(f"CR ratio: {CRratio_4b_2bpostW}")
+        print(f"SR ratio: {SRratio_4b_2bpostW}")
+
 
     # cat_dict defined on top (global variable)
     for cats_name, cat_list in cat_dict.items():
