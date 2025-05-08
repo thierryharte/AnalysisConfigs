@@ -28,32 +28,6 @@ parser.add_argument(
     required=True,
     help="Input directory for data with coffea files or coffea file itself",
 )
-# parser.add_argument(
-#     "-ds",
-#     "--sample-data",
-#     type=str,
-#     nargs="+",
-#     required=False,
-#     help="List of samples to be used",
-#     default=[
-#         "DATA_JetMET_JMENano_E_skimmed",
-#         "DATA_JetMET_JMENano_F_skimmed",
-#         "DATA_JetMET_JMENano_G_skimmed",
-#     ],
-# )
-# parser.add_argument(
-#     "-dd",
-#     "--dataset-data",
-#     type=str,
-#     nargs="+",
-#     required=False,
-#     help="List containing datasets for each sample (has to match length of samples)",
-#     default=[
-#         "DATA_JetMET_JMENano_E_2022_postEE_EraE",
-#         "DATA_JetMET_JMENano_F_2022_postEE_EraF",
-#         "DATA_JetMET_JMENano_G_2022_postEE_EraG",
-#     ],
-# )
 parser.add_argument(
     "-im", "--input-mc", type=str, required=True, help="Input coffea file monte carlo"
 )
@@ -77,9 +51,6 @@ parser.add_argument(
 parser.add_argument("-w", "--workers", type=int, default=1, help="Number of workers")
 parser.add_argument(
     "-l", "--linear", action="store_true", help="Linear scale", default=False
-)
-parser.add_argument(
-    "-d", "--density", action="store_true", help="Normalize plots to 1", default=False
 )
 parser.add_argument(
     "-t", "--test", action="store_true", help="Test on one variable", default=False
@@ -108,23 +79,7 @@ outputdir = os.path.join(input_dir_data, args.output) + f"_{args.normalisation}"
 # First region: data 4b
 # Second region: mc 4b (unblinded)
 # Third region: data reweighted
-cat_dict = {
-    f"CR{args.region_suffix}": [
-        f"4b{args.region_suffix}_control_region",
-        f"4b{args.region_suffix}_control_region",
-        f"2b{args.region_suffix}_control_region_postW",
-        # f"2b{args.region_suffix}_control_region_preW"
-    ],
-    # f"SR{args.region_suffix}_blind": [f"4b{args.region_suffix}_signal_region_blind", f"4b{args.region_suffix}_signal_region", f"2b{args.region_suffix}_signal_region_postW"],
-    f"SR{args.region_suffix}": [
-        f"4b{args.region_suffix}_signal_region",
-        f"4b{args.region_suffix}_signal_region",
-        f"2b{args.region_suffix}_signal_region_postW",
-    ],
-    # f"2b{args.region_suffix}_signal_region_preW"
-    #    f"CR{args.region_suffix}_2b_Run2SPANet": [f"2b{args.region_suffix}_control_region_preWRun2", f"2b{args.region_suffix}_control_region_preW"],
-    #    f"CR{args.region_suffix}_4b_Run2SPANet": [f"4b{args.region_suffix}_control_regionRun2", f"4b{args.region_suffix}_control_region"],
-}
+cat_dict = {}
 if args.run2:
     cat_dict[f"CR{args.region_suffix}Run2"] = [
         f"4b{args.region_suffix}_control_regionRun2",
@@ -137,13 +92,33 @@ if args.run2:
         f"4b{args.region_suffix}_signal_regionRun2",
         f"2b{args.region_suffix}_signal_region_postWRun2",
     ]
+else:
+    cat_dict[f"CR{args.region_suffix}"] = (
+        [
+            f"4b{args.region_suffix}_control_region",
+            f"4b{args.region_suffix}_control_region",
+            f"2b{args.region_suffix}_control_region_postW",
+            # f"2b{args.region_suffix}_control_region_preW"
+        ],
+    )
+    # f"SR{args.region_suffix}_blind": [f"4b{args.region_suffix}_signal_region_blind", f"4b{args.region_suffix}_signal_region", f"2b{args.region_suffix}_signal_region_postW"],
+    cat_dict[f"SR{args.region_suffix}"] = (
+        [
+            f"4b{args.region_suffix}_signal_region",
+            f"4b{args.region_suffix}_signal_region",
+            f"2b{args.region_suffix}_signal_region_postW",
+        ],
+    )
+    # f"2b{args.region_suffix}_signal_region_preW"
+    #    f"CR{args.region_suffix}_2b_Run2SPANet": [f"2b{args.region_suffix}_control_region_preWRun2", f"2b{args.region_suffix}_control_region_preW"],
+    #    f"CR{args.region_suffix}_4b_Run2SPANet": [f"4b{args.region_suffix}_control_regionRun2", f"4b{args.region_suffix}_control_region"],
 
 if args.test:
     cat_dict = {
-        f"CR{args.region_suffix}Run2": [
-            f"4b{args.region_suffix}_control_regionRun2",
-            f"2b{args.region_suffix}_control_region_postWRun2",
-            #  f"2b{args.region_suffix}_control_region_preWRun2",
+        f"CR{args.region_suffix}": [
+            f"4b{args.region_suffix}_control_region",
+            f"2b{args.region_suffix}_control_region_postW",
+            #  f"2b{args.region_suffix}_control_region_preW",
         ],
     }
 
@@ -302,9 +277,7 @@ def plot_single_var_from_columns(
                     )
                 )
             values["h_den_onlybg"] = np.array(values["h_den_onlybg"])
-            values["err_den_onlybg"] = (
-                np.array(values["err_den_onlybg"]) if not args.density else 0
-            )
+            values["err_den_onlybg"] = np.array(values["err_den_onlybg"])
 
         # Filling the histograms
         idx_den = np.digitize(values["col_den"], values["bin_edges"])
@@ -336,23 +309,13 @@ def plot_single_var_from_columns(
 
         values["h_den"] = np.array(values["h_den"])
         values["h_num"] = np.array(values["h_num"])
-        values["err_den"] = np.array(values["err_den"]) if not args.density else 0
+        values["err_den"] = np.array(values["err_den"])
         values["err_num"] = np.array(values["err_num"])
 
         print("h_den", values["h_den"], len(values["h_den"]))
         print("h_num", values["h_num"], len(values["h_num"]))
         print("err_den", values["err_den"])
         print("err_num", values["err_num"])
-
-        # I don't fully get this part actually, but copied as it is from the other plotting script
-        if args.density:
-            values["h_den"], values["bin_edges"] = np.histogram(
-                col_den,
-                bins=nbins,
-                weights=weights_den,
-                range=range_4b,
-                density=True,
-            )
 
         ratio = values["h_num"] / values["h_den"]
         ratio_err = np.sqrt(
@@ -382,7 +345,7 @@ def plot_single_var_from_columns(
             ax.errorbar(
                 values["bins_center"][mask_blind09],
                 values["h_den"][mask_blind09],
-                yerr=values["err_den"][mask_blind09] if not args.density else 0,
+                yerr=values["err_den"][mask_blind09],
                 label=region,
                 color=values["color"][0],
                 fmt=".",
@@ -528,7 +491,6 @@ def plot_single_var_from_columns(
                 fill=True if len(values["color"]) > 1 else False,
                 alpha=0.5,
                 range=range_4b,
-                density=args.density,
             )
             ax_ratio.errorbar(
                 values["bins_center"][mask_blind09],
@@ -554,11 +516,7 @@ def plot_single_var_from_columns(
     ax_ratio.grid()
     ax_ratio.set_ylim(0.5, 1.5)
     ax.set_ylim(
-        top=(
-            1.3 * ax.get_ylim()[1]
-            if not log_scale
-            else ax.get_ylim()[1] ** (1.3 if not args.density else -1.3)
-        )
+        top=(1.3 * ax.get_ylim()[1] if not log_scale else ax.get_ylim()[1] ** 1.3)
     )
     print(f"Plotname: {os.path.join(dir_cat, f'{var}.png')}")
     fig.savefig(
@@ -582,13 +540,21 @@ def plot_from_columns(cat_cols, lumi, era_string):
     print(cat_dict[f"CR{args.region_suffix}"])
     CR_region_keys = cat_dict[f"CR{args.region_suffix}"]
     print(CR_region_keys)
-    CRratio_4b_2bpostW = sum(cat_cols[0][CR_region_keys[0]]["weight"]) / sum(
-        cat_cols[0][CR_region_keys[2]]["weight"]
+
+    if args.normalisation == "sum_weigths":
+        op_norm = lambda x, y: sum(x) / sum(y)
+    else:
+        op_norm = lambda x, y: len(x) / len(y)
+
+    CRratio_4b_2bpostW = op_norm(
+        cat_cols[0][CR_region_keys[0]]["weight"],
+        cat_cols[0][CR_region_keys[2]]["weight"],
     )
 
     SR_region_keys = cat_dict[f"SR{args.region_suffix}"]
-    SRratio_4b_2bpostW = sum(cat_cols[0][SR_region_keys[0]]["weight"]) / sum(
-        cat_cols[0][SR_region_keys[2]]["weight"]
+    SRratio_4b_2bpostW = op_norm(
+        cat_cols[0][SR_region_keys[0]]["weight"],
+        cat_cols[0][SR_region_keys[2]]["weight"],
     )
 
     print(f"CR ratio: {CRratio_4b_2bpostW}")
@@ -596,14 +562,16 @@ def plot_from_columns(cat_cols, lumi, era_string):
 
     if args.run2:
         CR_region_keys = cat_dict[f"CR{args.region_suffix}Run2"]
-        CRratio_4b_2bpostW_Run2 = sum(
-            cat_cols[0][CR_region_keys[0]]["weight"]
-        ) / sum(cat_cols[0][CR_region_keys[2]]["weight"])
+        CRratio_4b_2bpostW_Run2 = op_norm(
+            cat_cols[0][CR_region_keys[0]]["weight"],
+            cat_cols[0][CR_region_keys[2]]["weight"],
+        )
 
         SR_region_keys = cat_dict[f"SR{args.region_suffix}Run2"]
-        SRratio_4b_2bpostW_Run2 = sum(
-            cat_cols[0][SR_region_keys[0]]["weight"]
-        ) / sum(cat_cols[0][SR_region_keys[2]]["weight"])
+        SRratio_4b_2bpostW_Run2 = op_norm(
+            cat_cols[0][SR_region_keys[0]]["weight"],
+            cat_cols[0][SR_region_keys[2]]["weight"],
+        )
 
         print(f"CR ratio Run2: {CRratio_4b_2bpostW_Run2}")
         print(f"SR ratio Run2: {SRratio_4b_2bpostW_Run2}")
@@ -653,18 +621,14 @@ def plot_from_columns(cat_cols, lumi, era_string):
                             if not cat in col_dict[f"{v}_{idx}"].keys():
                                 col_dict[f"{v}_{idx}"][cat] = {}
                             try:
-                                col_dict[f"{v}_{idx}"][cat][data_mc] = cat_col[cat][
-                                    v
-                                ][
+                                col_dict[f"{v}_{idx}"][cat][data_mc] = cat_col[cat][v][
                                     np.arange(len(cat_col[cat][v])) % N == idx
                                 ]
                             except KeyError:
                                 col_dict[f"{v}_{idx}"][cat][data_mc] = cat_col[cat][
                                     v.replace("Run2", "")
                                 ][
-                                    np.arange(
-                                        len(cat_col[cat][v.replace("Run2", "")])
-                                    )
+                                    np.arange(len(cat_col[cat][v.replace("Run2", "")]))
                                     % N
                                     == idx
                                 ]
@@ -730,27 +694,9 @@ def plot_from_columns(cat_cols, lumi, era_string):
 
 if __name__ == "__main__":
 
-    ## For data:
-
-    # print(f"InputFile: {inputfile_data}")
-    # if os.path.isfile(inputfile_data):
-    #     accumulator_data = load(inputfile_data)
-    # else:
-    #     sys.exit(f"Input file '{inputfile_data}' does not exist")
-
-    ## For MC:
-
-    # print(f"InputFile: {inputfile_mc}")
-    # if os.path.isfile(inputfile_mc):
-    #     accumulator_mc = load(inputfile_mc)
-    # else:
-    #     sys.exit(f"Input file '{inputfile_mc}' does not exist")
-
-    ## Finished loading files
-
     if not os.path.exists(outputdir):
         os.makedirs(outputdir)
-        
+
     if args.input_data.endswith(".coffea"):
         inputfiles_data = [args.input_data]
     else:
@@ -761,61 +707,25 @@ if __name__ == "__main__":
             if file.endswith(".coffea") and "DATA" in file
         ]
 
-
     inputfile_mc = args.input_mc
     input_dir_mc = os.path.dirname(args.input_mc)
 
+    filter_lambda = lambda x: (
+        "weight" in x
+        or ("score" in x and ("Run2" in x if args.run2 else "Run2" not in x))
+    )
 
     ## Collecting MC dataset
-
-    # sample_mc = "GluGlutoHHto4B"
-    # dataset_mc = "GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00_spanet__2022_postEE"
-    # print(accumulator_mc["columns"].keys())
-    # assert sample_mc in list(accumulator_mc["columns"].keys())
-    # print(accumulator_mc["columns"][sample_mc].keys())
-    # assert dataset_mc in list(accumulator_mc["columns"][sample_mc].keys())
-
-    # sample_mc = list(accumulator_mc["columns"].keys())[0]
-    # dataset_mc = list(accumulator_mc["columns"][sample_mc].keys())[0]
-    # print(f"Sample: {sample_mc}")
-    # print(f"Dataset: {dataset_mc}")
-    # cat_col_mc = accumulator_mc["columns"][sample_mc][dataset_mc]
-
-    filter_lambda=lambda x: "weight" in x or "score" in x 
-    cat_col_mc, total_datasets_list_mc = get_columns_from_files([inputfile_mc], filter_lambda)
+    cat_col_mc, total_datasets_list_mc = get_columns_from_files(
+        [inputfile_mc], filter_lambda
+    )
 
     ## Collecting DATA dataset
-    # sample_data = args.sample_data
-    # dataset_data = args.dataset_data
-    # print(sample_data)
-    # print(dataset_data)
-    # assert len(sample_data) == len(dataset_data)
-
-    # cat_col_data_list = []
-    # for sample, dataset in zip(sample_data, dataset_data):
-    #     cat_col_data_list.append(accumulator_data["columns"][sample][dataset])
-    # cat_col_data = {}
-    # for region in cat_col_data_list[0].keys():
-    #     cat_col_data[region] = {}
-    #     for column in cat_col_data_list[0][region].keys():
-    #         if "weight" not in column and "score" not in column:
-    #             continue
-    #         for cat in cat_col_data_list:
-    #             print(cat[region][column])
-    #         print(
-    #             f"Length for sample {sample_data}, dataset {dataset_data} and region {region} column {column} is {[len(cat[region][column]) for cat in cat_col_data_list]}"
-    #         )
-    #         temp = np.concatenate(
-    #             [cat[region][column] for cat in cat_col_data_list]
-    #         )
-    #         cat_col_data[region][column] = column_accumulator(temp)
-    #         print(f"Length all files: {cat_col_data[region][column]}")
-
-    cat_col_data, total_datasets_list_data = get_columns_from_files(inputfiles_data, filter_lambda)
+    cat_col_data, total_datasets_list_data = get_columns_from_files(
+        inputfiles_data, filter_lambda
+    )
 
     print(cat_col_data)
-
-    # print(accumulator_mc["sum_genweights"][dataset_mc])
 
     ## Generating the lumi and era_string for the plots:
     lumi, era_string = get_era_lumi(total_datasets_list_data)
