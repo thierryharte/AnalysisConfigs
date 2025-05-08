@@ -109,29 +109,6 @@ color_list_orig = [("black",), ("black",), ("blue", "dodgerblue"), ("red",)]
 color_list_alt = [("purple",), ("darkorange", "orange"), ("green",)]
 
 
-def plot_weights(weights_list, suffix):
-    fig, ax = plt.subplots(figsize=[13, 13])
-    for i, weights in enumerate(weights_list):
-        ax.hist(
-            weights,
-            bins=np.logspace(-3, 2, 100),
-            histtype="step",
-            label="Morphing weights "
-            + (f"{i}" if len(weights_list)>1 else "")
-            + "\nmean: {:.2f}\nstd: {:.2f}".format(np.mean(weights), np.std(weights)),
-        )
-    ax.set_xscale("log")
-    ax.set_yscale("log")
-    ax.legend()
-    ax.set_xlabel("Morphing weights")
-    ax.set_ylabel("Events")
-    
-    hep.cms.lumitext(r"22EE Era E, 6 $fb^{-1}$, (13.6 TeV)", ax=ax)
-    hep.cms.text(text="Preliminary", ax=ax)
-    
-    fig.savefig(os.path.join(outputdir, f"weights_{suffix}.png"))
-    plt.close(fig)
-
 def plot_single_var_from_columns(
     var,
     col_dict,
