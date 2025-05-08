@@ -83,9 +83,11 @@ onnx_model_dict={
     # "VBF_GGF_DNN":"/t3home/rcereghetti/ML_pytorch/out/20241212_223142_SemitTightPtLearningRateConstant/models/model_28.onnx",
     #"BKG_MORPHING_DNN": "/pnfs/psi.ch/cms/trivcat/store/user/mmalucch/keras_models_morphing/average_model_from_keras.onnx",
     #"BKG_MORPHING_DNN": "/work/tharte/datasets/ML_pytorch/out/AN_1e-2_noDropout_e20lrdrop95/state_dict/ratio/average_model_from_onnx.onnx",
-    "BKG_MORPHING_DNN": "/work/tharte/datasets/ML_pytorch/out/bkg_morphing/DHH_method_20_runs_1e-3_e20drop75_minDelta1em5/best_models/ratio/average_model_from_onnx.onnx",
-    "SIG_BKG_DNN": "/work/tharte/datasets/ML_pytorch/out/sig_bkg_classifier/DHH_method_norm_e5drop75_fixed/state_dict/model_best_epoch_18.onnx",
+    #"BKG_MORPHING_DNN": "/work/tharte/datasets/ML_pytorch/out/bkg_morphing/DHH_method_20_runs_1e-3_e20drop75_minDelta1em5/best_models/ratio/average_model_from_onnx.onnx",
+    "BKG_MORPHING_DNN": "/work/tharte/datasets/ML_pytorch/out/bkg_reweighting/DHH_method_20_runs_postEE/best_models/ratio/average_model_from_onnx.onnx", # --> training on postEE
+    #"SIG_BKG_DNN": "/work/tharte/datasets/ML_pytorch/out/sig_bkg_classifier/DHH_method_norm_e5drop75_fixed/state_dict/model_best_epoch_18.onnx",
     #"SIG_BKG_DNN": "",
+    "SIG_BKG_DNN": "/work/tharte/datasets/ML_pytorch/out/sig_bkg_classifier/DHH_method_norm_e5drop75_postEE/state_dict/model_best_epoch_18.onnx",
     # "SIG_BKG_DNN": "/pnfs/psi.ch/cms/trivcat/store/user/mmalucch/keras_models_SvsB/model_fold0.onnx",
 }
 
@@ -93,8 +95,8 @@ print(onnx_model_dict)
 
 ## Defining the used samples
 samples_list = [
-            "DATA_JetMET_JMENano_C_skimmed",
-            "DATA_JetMET_JMENano_D_skimmed",
+            # "DATA_JetMET_JMENano_C_skimmed",
+            # "DATA_JetMET_JMENano_D_skimmed",
             "DATA_JetMET_JMENano_E_skimmed",
             "DATA_JetMET_JMENano_F_skimmed",
             "DATA_JetMET_JMENano_G_skimmed",
@@ -235,6 +237,7 @@ cfg = Configurator(
     parameters=parameters,
     datasets={
         "jsons": [
+            f"{localdir}/../HH4b_common/datasets/signal_ggF_HH4b_spanet_redirector.json",
             f"{localdir}/../HH4b_common/datasets/signal_ggF_HH4b.json",
             f"{localdir}/../HH4b_common/datasets/DATA_JetMET_skimmed.json",
             #f"{localdir}/../HH4b_common/datasets/QCD.json",
