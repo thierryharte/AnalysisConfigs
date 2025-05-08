@@ -11,6 +11,7 @@ import mplhep as hep
 from multiprocessing import Pool
 
 from utils.get_era_lumi import get_era_lumi
+from utils.get_columns_from_files import get_columns_from_files
 
 hep.style.use("CMS")
 
@@ -101,15 +102,7 @@ outputdir = (
     os.path.join(input_dir, args.output)
     + f"_{args.normalisation}"
 )
-if args.input.endswith(".coffea"):
-    inputfiles = [args.input]
-else:
-    # get list of coffea files
-    inputfiles = [
-        os.path.join(input_dir, file)
-        for file in os.listdir(input_dir)
-        if file.endswith(".coffea") and "DATA" in file
-    ]
+
 
 
 # To mix categories with Run2 and SPANet, put first the Run2 category
@@ -504,54 +497,18 @@ def plot_from_columns(cat_col, lumi, era_string):
 
 if __name__ == "__main__":
 
-    cat_col = {}
-    # for cat_dict_value in cat_dict.values():
-    #     cat_col |= {cat: {} for cat in cat_dict_value}
-
-    # print("cat_col", cat_col)
-
     if not os.path.exists(outputdir):
         os.makedirs(outputdir)
-
-    total_datasets_list = []
-
-    # get the columns
-    for inputfile in inputfiles:
-        accumulator = load(inputfile)
-        samples = list(accumulator["columns"].keys())
-        print(f"inputfile {inputfile}")
-        for sample in samples:
-            print(f"sample {sample}")
-            datasets = list(accumulator["columns"][sample].keys())
-            for dataset in datasets:
-                if dataset not in total_datasets_list:
-                    total_datasets_list.append(dataset)
-                print(f"dataset {dataset}")
-                categories = list(accumulator["columns"][sample][dataset].keys())
-                for category in categories:
-                    print(f"category {category}")
-                    if category not in cat_col:
-                        cat_col[category] = {}
-                    columns = list(
-                        accumulator["columns"][sample][dataset][category].keys()
-                    )
-                    for i, column in enumerate(columns):
-                        column_array = accumulator["columns"][sample][dataset][
-                            category
-                        ][column].value
-                        if column not in cat_col[category]:
-                            cat_col[category][column] = column_array
-                        else:
-                            cat_col[category][column] = np.concatenate(
-                                (cat_col[category][column], column_array)
-                            )
-
-                        if i == 0:
-                            print(
-                                f"column {column}",
-                                column_array.shape,
-                                cat_col[category][column].shape,
-                            )
+    if args.input.endswith(".coffea"):
+        inputfiles = [args.input]
+    else:
+        # get list of coffea files
+        inputfiles = [
+            os.path.join(input_dir, file)
+            for file in os.listdir(input_dir)
+            if file.endswith(".coffea") and "DATA" in file
+        ]
+    cat_col, total_datasets_list=get_columns_from_files(inputfiles)
 
     print(cat_col)
     lumi, era_string = get_era_lumi(total_datasets_list)
