@@ -410,7 +410,6 @@ def plot_from_columns(cat_col, lumi, era_string):
         else:
             chi_squared = True
             color_list = color_list_orig
-        dir_cat = f"{outputdir}/{cats_name}_columns"
 
         # check if the categories are in the accumulator
         try:
@@ -421,6 +420,7 @@ def plot_from_columns(cat_col, lumi, era_string):
             continue
 
         vars_tot = list(cat_col[cat_list[0]].keys())
+        dir_cat = f"{outputdir}/{cats_name}_columns"
         if not os.path.exists(dir_cat):
             os.makedirs(dir_cat)
 
@@ -428,7 +428,7 @@ def plot_from_columns(cat_col, lumi, era_string):
             vars_tot = vars_tot[:3]
         print("vars_tot", vars_tot)
 
-        vars = []
+        vars_to_plot = []
 
         col_dict = {}
         for v in vars_tot:
@@ -447,7 +447,7 @@ def plot_from_columns(cat_col, lumi, era_string):
 
                 for idx in range(N):
                     col_dict[f"{v}_{idx}"] = {}
-                    vars.append(f"{v}_{idx}")
+                    vars_to_plot.append(f"{v}_{idx}")
                     for cat in cat_list:
                         print(v, cat)
                         try:
@@ -464,7 +464,7 @@ def plot_from_columns(cat_col, lumi, era_string):
             else:
                 col_dict[v] = {}
                 if v != "weight":
-                    vars.append(v)
+                    vars_to_plot.append(v)
                 for cat in cat_list:
                     # swap the dict keys
                     print(v, cat)
@@ -489,7 +489,7 @@ def plot_from_columns(cat_col, lumi, era_string):
                         lumi,
                         era_string,
                     )
-                    for var in vars
+                    for var in vars_to_plot
                 ],
             )
         del col_dict

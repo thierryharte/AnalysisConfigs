@@ -13,6 +13,9 @@ from multiprocessing import Pool
 
 from utils.get_era_lumi import get_era_lumi
 from utils.get_columns_from_files import get_columns_from_files
+from utils.inference_session_onnx import get_model_session
+from utils.get_DNN_input_list import get_DNN_input_list
+from configs.HH4b_common.dnn_input_variables import sig_bkg_dnn_input_variables
 
 hep.style.use("CMS")
 
@@ -40,6 +43,13 @@ parser.add_argument(
     type=str,
     help="Type of normalisation (num_events, sum_weights)",
     default="sum_weights",
+)
+parser.add_argument(
+    "-om",
+    "--onnx-model",
+    type=str,
+    help="Path to the onnx containing the DNN model for SvB",
+    default="",
 )
 parser.add_argument(
     "-r",
@@ -93,22 +103,18 @@ if args.run2:
         f"2b{args.region_suffix}_signal_region_postWRun2",
     ]
 else:
-    cat_dict[f"CR{args.region_suffix}"] = (
-        [
-            f"4b{args.region_suffix}_control_region",
-            f"4b{args.region_suffix}_control_region",
-            f"2b{args.region_suffix}_control_region_postW",
-            # f"2b{args.region_suffix}_control_region_preW"
-        ]
-    )
+    cat_dict[f"CR{args.region_suffix}"] = [
+        f"4b{args.region_suffix}_control_region",
+        f"4b{args.region_suffix}_control_region",
+        f"2b{args.region_suffix}_control_region_postW",
+        # f"2b{args.region_suffix}_control_region_preW"
+    ]
     # f"SR{args.region_suffix}_blind": [f"4b{args.region_suffix}_signal_region_blind", f"4b{args.region_suffix}_signal_region", f"2b{args.region_suffix}_signal_region_postW"],
-    cat_dict[f"SR{args.region_suffix}"] = (
-        [
-            f"4b{args.region_suffix}_signal_region",
-            f"4b{args.region_suffix}_signal_region",
-            f"2b{args.region_suffix}_signal_region_postW",
-        ]
-    )
+    cat_dict[f"SR{args.region_suffix}"] = [
+        f"4b{args.region_suffix}_signal_region",
+        f"4b{args.region_suffix}_signal_region",
+        f"2b{args.region_suffix}_signal_region_postW",
+    ]
     # f"2b{args.region_suffix}_signal_region_preW"
     #    f"CR{args.region_suffix}_2b_Run2SPANet": [f"2b{args.region_suffix}_control_region_preWRun2", f"2b{args.region_suffix}_control_region_preW"],
     #    f"CR{args.region_suffix}_4b_Run2SPANet": [f"4b{args.region_suffix}_control_regionRun2", f"4b{args.region_suffix}_control_region"],
@@ -121,6 +127,18 @@ if args.test:
             #  f"2b{args.region_suffix}_control_region_preW",
         ],
     }
+
+
+## Load the onnx model
+if args.onnx_model:
+    (
+        model_session_SIG_BKG_DNN,
+        input_name_SIG_BKG_DNN,
+        output_name_SIG_BKG_DNN,
+    ) = get_model_session(args.onnx_model, "SIG_BKG_DNN")
+    # load the variables for the DNN
+    dnn_input_list = get_DNN_input_list(args.run2, sig_bkg_dnn_input_variables)
+    print(f"Input list for DNN: {dnn_input_list}")
 
 
 color_list_orig = [("black",), ("black",), ("blue", "dodgerblue"), ("red",)]
@@ -480,6 +498,15 @@ def plot_single_var_from_columns(
                 )
                 plt.close(fig_sob)
 
+                ax_ratio.errorbar(
+                    values["bins_center"][mask_blind09],
+                    ratio[mask_blind09],
+                    yerr=ratio_err[mask_blind09],
+                    fmt=".",
+                    label=region + namesuffix,
+                    color=values["color"][0],
+                )
+                
             ax.hist(
                 values["col_den"],
                 bins=bin_edges,
@@ -491,14 +518,6 @@ def plot_single_var_from_columns(
                 fill=True if len(values["color"]) > 1 else False,
                 alpha=0.5,
                 range=range_4b,
-            )
-            ax_ratio.errorbar(
-                values["bins_center"][mask_blind09],
-                ratio[mask_blind09],
-                yerr=ratio_err[mask_blind09],
-                fmt=".",
-                label=region + namesuffix,
-                color=values["color"][0],
             )
     del plotdict
 
@@ -575,7 +594,6 @@ def plot_from_columns(cat_cols, lumi, era_string):
         print(f"CR ratio: {CRratio_4b_2bpostW}")
         print(f"SR ratio: {SRratio_4b_2bpostW}")
 
-
     # cat_dict defined on top (global variable)
     for cats_name, cat_list in cat_dict.items():
         if "Run2SPANet" in cats_name:
@@ -597,7 +615,7 @@ def plot_from_columns(cat_cols, lumi, era_string):
             if args.test:
                 vars_tot = vars_tot[:3]
             # print("vars_tot", vars_tot)
-            vars = []
+            vars_to_plot = []
             # vars_tot = [v for v in vars_tot if "add" in v or "weight"  in v]
             for v in vars_tot:
                 if "_N" in v:
@@ -616,7 +634,7 @@ def plot_from_columns(cat_cols, lumi, era_string):
                     for idx in range(N):
                         if not f"{v}_{idx}" in col_dict.keys():
                             col_dict[f"{v}_{idx}"] = {}
-                        vars.append(f"{v}_{idx}")
+                        vars_to_plot.append(f"{v}_{idx}")
                         for cat in cat_list:
                             if not cat in col_dict[f"{v}_{idx}"].keys():
                                 col_dict[f"{v}_{idx}"][cat] = {}
@@ -636,7 +654,7 @@ def plot_from_columns(cat_cols, lumi, era_string):
                     if not v in col_dict.keys():
                         col_dict[v] = {}
                     if v != "weight":
-                        vars.append(v)
+                        vars_to_plot.append(v)
                     for cat in cat_list:
                         if not cat in col_dict[v].keys():
                             col_dict[v][cat] = {}
@@ -652,8 +670,46 @@ def plot_from_columns(cat_cols, lumi, era_string):
                                 lumi / (5.79 + 17.6 + 2.88) if data_mc == "mc" else 1
                             )
 
-        print(col_dict)
-        print(vars)
+            # compute the DNN score if onnx model is given
+            if args.onnx_model:
+                if any(["score" in v for v in vars_to_plot]):
+                    print("Found score variables and onnx model")
+                    print("The score will be overwritten by the onnx model")
+                    # raise ValueError(
+                    #     "onnx model and score variables are not compatible"
+                    # )
+
+                v = f"events_sig_bkg_dnn_score{'Run2' if args.run2 else ''}"
+                if not v in col_dict.keys():
+                    col_dict[v] = {}
+                if not v in vars_to_plot:
+                    vars_to_plot.append(v)
+                    
+
+                for cat in cat_list:
+                    if not cat in col_dict[v].keys():
+                        col_dict[v][cat] = {}
+                    # if data_mc in col_dict[v][cat].keys():
+                    #     continue
+                    input_variables_array = []
+                    for input_var in dnn_input_list:
+                        input_variables_array.append(
+                            np.array(
+                                col_dict[input_var][cat][data_mc], dtype=np.float32
+                            )
+                        )
+                    input_variables_array = np.stack(input_variables_array, axis=-1)
+                    inputs_complete = {input_name_SIG_BKG_DNN[0]: input_variables_array}
+                    outputs = model_session_SIG_BKG_DNN.run(
+                        output_name_SIG_BKG_DNN, inputs_complete
+                    )
+                    # print("events_sig_bkg_dnn_score", col_dict["events_sig_bkg_dnn_score"][cat][data_mc])
+                    col_dict[v][cat][data_mc] = outputs[0][:, -1]
+
+                    # print("outputs", cat, data_mc, outputs[0].shape, outputs[0])
+
+        print("col_dict", col_dict)
+        print("vars_to_plot",vars_to_plot)
 
         with Pool(args.workers) as p:
             print(f"Category name: {cats_name}")
@@ -685,7 +741,7 @@ def plot_from_columns(cat_cols, lumi, era_string):
                         lumi,
                         era_string,
                     )
-                    for var in vars
+                    for var in vars_to_plot
                     if "score" in var
                 ],
             )
@@ -710,9 +766,15 @@ if __name__ == "__main__":
     inputfile_mc = args.input_mc
     input_dir_mc = os.path.dirname(args.input_mc)
 
-    filter_lambda = lambda x: (
-        "weight" in x
-        or ("score" in x and ("Run2" in x if args.run2 else "Run2" not in x))
+    filter_lambda = (
+        (
+            lambda x: (
+                "weight" in x
+                or ("score" in x and ("Run2" in x if args.run2 else "Run2" not in x))
+            )
+        )
+        if not args.onnx_model
+        else None
     )
 
     ## Collecting MC dataset
@@ -725,7 +787,9 @@ if __name__ == "__main__":
         inputfiles_data, filter_lambda
     )
 
-    print(cat_col_data)
+    print("cat_col_data")
+    for key, value in cat_col_data.items():
+        print(key, value.keys())
 
     ## Generating the lumi and era_string for the plots:
     lumi, era_string = get_era_lumi(total_datasets_list_data)
