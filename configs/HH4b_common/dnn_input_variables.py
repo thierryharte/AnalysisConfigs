@@ -103,7 +103,7 @@ bkg_morphing_dnn_input_variables_altOrder = OrderedDict(
 
 sig_bkg_dnn_input_variables = OrderedDict(
     [
-        # ("era", ["events", "era"]),
+        # ("year", ["events", "year"]),
         ("HT", ["events", "HT"]),
         ("hh_vec_mass", ["HH", "mass"]),
         ("hh_vec_pt", ["HH", "pt"]),

@@ -46,6 +46,13 @@ era_dict = {
     "2023_postBPix_MC":-4,
 }
 
+year_dict = {
+    "2022_preEE": 0,
+    "2022_postEE": 1,
+    "2023_preBPix": 2,
+    "2023_postBPix": 3,
+}
+
 
 class HH4bCommonProcessor(BaseProcessorABC):
     def __init__(self, cfg) -> None:
@@ -486,6 +493,9 @@ class HH4bCommonProcessor(BaseProcessorABC):
         self.events["era"] = ak.full_like(
             self.events.HT, era_dict[f"{self._year}_{self._era}"]
         )
+        self.events["year"] = ak.full_like(
+            self.events.HT, year_dict[f"{self._year}"]
+        )
 
         self.events["JetNotFromHiggs"] = self.get_jets_no_higgs(jet_higgs_idx_per_event)
 
@@ -725,7 +735,7 @@ class HH4bCommonProcessor(BaseProcessorABC):
                 + (self.events.HiggsSubLeading.mass - 120) ** 2
             )
 
-        # reconstruct the higgs candidates for Run2 method'
+        # reconstruct the higgs candidates for Run2 method
         if self.RUN2:
             (
                 self.events["delta_dhh"],
