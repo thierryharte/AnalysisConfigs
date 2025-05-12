@@ -48,7 +48,7 @@ parameters = defaults.merge_parameters_from_files(
     default_parameters,
     f"{localdir}/params/object_preselection.yaml",
     f"{localdir}/params/triggers.yaml",
-    f"{localdir}/params/jets_calibration_withVariations.yaml",
+    f"{localdir}/params/jets_calibration_withoutVariations.yaml",
     update=True,
 )
 
@@ -62,11 +62,10 @@ CLASSIFICATION = False
 SAVE_CHUNK = False
 VBF_PRESEL = False
 SEMI_TIGHT_VBF = True
-
 DNN_VARIABLES = True
-RUN2 = False
 VR1 = False
 BLIND = True if onnx_model_dict["SIG_BKG_DNN"] else False
+RUN2 = False
 
 workflow_options = {
     "parton_jet_min_dR": 0.4,
@@ -90,6 +89,7 @@ if SAVE_CHUNK:
     pass
 
 
+## Define the variables to save
 # variables_dict = get_variables_dict(
 #     CLASSIFICATION=CLASSIFICATION,
 #     VBF_VARIABLES=False,
@@ -97,45 +97,26 @@ if SAVE_CHUNK:
 # )
 variables_dict = {}
 
-if DNN_VARIABLES:
-    total_input_variables = (
-        sig_bkg_dnn_input_variables | bkg_morphing_dnn_input_variables
-    )
-    print(total_input_variables)
-
-    column_list = create_DNN_columns_list(
-        False, not SAVE_CHUNK, total_input_variables, btag=False
-    )
-    column_listRun2 = create_DNN_columns_list(
-        True, not SAVE_CHUNK, total_input_variables, btag=False
-    )
-
-else:
-    column_list = get_columns_list()
-    column_listRun2 = get_columns_list()
-    
-    
-if workflow_options["SIG_BKG_DNN"] and workflow_options["SPANET"]:
-    column_list+=get_columns_list({"events": ["sig_bkg_dnn_score"]})
-if workflow_options["SIG_BKG_DNN"] and RUN2:
-    column_list+=get_columns_list({"events": ["sig_bkg_dnn_scoreRun2"]})
-
+## Define the preselection to apply
 preselection = (
     [vbf_hh4b_presel if TIGHT_CUTS is False else vbf_hh4b_presel_tight]
     if VBF_PRESEL
     else [cuts.hh4b_presel if TIGHT_CUTS is False else cuts.hh4b_presel_tight]
 )
 
+## Define the samples to process
 sample_list = [
     # "DATA_JetMET_JMENano_C_skimmed",
     # "DATA_JetMET_JMENano_D_skimmed",
     "DATA_JetMET_JMENano_E_skimmed",
     "DATA_JetMET_JMENano_F_skimmed",
     "DATA_JetMET_JMENano_G_skimmed",
-    "GluGlutoHHto4B",
+    # "GluGlutoHHto4B",
+    "GluGlutoHHto4B_spanet_skimmed",
     # "VBF_HHto4B",
 ]
 
+## Define the categories to save
 categories_dict = define_categories(
     bkg_morphing_dnn=workflow_options["BKG_MORPHING_DNN"],
     blind=BLIND,
@@ -145,8 +126,6 @@ categories_dict = define_categories(
     vr1=VR1,
 )
 print("categories_dict", categories_dict)
-
-
 
 ## VBF SPECIFIC REGIONS
 # **{f"4b_semiTight_LeadingPt_region": [hh4b_4b_region, semiTight_leadingPt]},
@@ -168,6 +147,30 @@ print("categories_dict", categories_dict)
 # **{f"4b_VBF_0{i}qvg_region": [hh4b_4b_region, VBF_region, qvg_regions[f"qvg_0{i}_region"]] for i in range(5, 10)},
 # **{f"4b_VBF_0{i}qvg_generalSelection_region": [hh4b_4b_region, VBF_generalSelection_region, qvg_regions[f"qvg_0{i}_region"]] for i in range(5, 10)},
 
+
+## Define the columns to save
+if DNN_VARIABLES:
+    total_input_variables = (
+        sig_bkg_dnn_input_variables | bkg_morphing_dnn_input_variables
+    )
+    print(total_input_variables)
+
+    column_list = create_DNN_columns_list(
+        False, not SAVE_CHUNK, total_input_variables, btag=False
+    )
+    column_listRun2 = create_DNN_columns_list(
+        True, not SAVE_CHUNK, total_input_variables, btag=False
+    )
+else:
+    column_list = get_columns_list()
+    column_listRun2 = get_columns_list()
+if workflow_options["SIG_BKG_DNN"] and workflow_options["SPANET"]:
+    column_list+=get_columns_list({"events": ["sig_bkg_dnn_score"]})
+if workflow_options["SIG_BKG_DNN"] and RUN2:
+    column_list+=get_columns_list({"events": ["sig_bkg_dnn_scoreRun2"]})
+
+column_list+=get_columns_list({"events": ["year"]})
+
 bycategory_column_dict = {}
 for category in categories_dict.keys():
     if "Run2" in category:
@@ -175,19 +178,21 @@ for category in categories_dict.keys():
     else:
         bycategory_column_dict[category] = column_list
 
+
+## Define the weights to apply
 bysample_bycategory_weight_dict = {}
 for sample in sample_list:
     if "DATA" in sample:
         bysample_bycategory_weight_dict[sample] = {"inclusive": [], "bycategory": {}}
         for category in categories_dict.keys():
             if "postW" in category:
-                if "Run2" not in category:
+                if "Run2" in category:
                     bysample_bycategory_weight_dict[sample]["bycategory"][category] = [
-                        "bkg_morphing_dnn_weight"
+                        "bkg_morphing_dnn_weightRun2"
                     ]
                 else:
                     bysample_bycategory_weight_dict[sample]["bycategory"][category] = [
-                        "bkg_morphing_dnn_weightRun2"
+                        "bkg_morphing_dnn_weight"
                     ]
 
 print("bysample_bycategory_weight_dict",bysample_bycategory_weight_dict)
@@ -201,6 +206,7 @@ cfg = Configurator(
             # f"{localdir}/../HH4b_common/datasets/signal_ggF_HH4b_local.json",
             # f"{localdir}/../HH4b_common/datasets/signal_ggF_HH4b_local_rucio.json",
             f"{localdir}/../HH4b_common/datasets/signal_ggF_HH4b_SM_local_rucio_redirector.json",
+            f"{localdir}/../HH4b_common/datasets/GluGlutoHHto4B_spanet_skimmed.json",
             # f"{localdir}/../HH4b_common/datasets/signal_ggF_HH4b_test.json",
             f"{localdir}/../HH4b_common/datasets/DATA_JetMET_skimmed.json",
         ],
