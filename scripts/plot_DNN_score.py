@@ -76,6 +76,7 @@ if args.test:
 
 NORMALIZE_WEIGHTS = False
 PAD_VALUE = -999
+BLIND_VALUE=0.9
 
 input_dir_data = os.path.dirname(args.input_data)
 
@@ -345,32 +346,32 @@ def plot_single_var_from_columns(
         print(ratio_err)
         print(values["bin_edges"])
 
-        # Thanks chatGPT. Try to mask the bins, where both edges are above 0.9:
+        # Thanks chatGPT. Try to mask the bins, where both edges are above BLIND_VALUE:
         if not "control" in region:
-            mask_blind09 = ~((bin_edges[:-1] > 0.9) & (bin_edges[1:] > 0.9))
+            mask_blind = ~((bin_edges[:-1] > BLIND_VALUE) & (bin_edges[1:] > BLIND_VALUE))
         else:
-            mask_blind09 = ~(
+            mask_blind = ~(
                 (bin_edges[:-1] > 1) & (bin_edges[1:] > 1)
             )  # hacked - so not blinded
 
         # Reference dataset (data in 4b)
         if not "postW" in region and "data" in region:
             print("Found signal region data")
-            ratio = values["h_num"][mask_blind09] / values["h_den"][mask_blind09]
-            ratio_err = values["err_num"][mask_blind09] / values["h_num"][mask_blind09]
+            ratio = values["h_num"][mask_blind] / values["h_den"][mask_blind]
+            ratio_err = values["err_num"][mask_blind] / values["h_num"][mask_blind]
             print("ratio_err", ratio_err)
 
             ax.errorbar(
-                values["bins_center"][mask_blind09],
-                values["h_den"][mask_blind09],
-                yerr=values["err_den"][mask_blind09],
+                values["bins_center"][mask_blind],
+                values["h_den"][mask_blind],
+                yerr=values["err_den"][mask_blind],
                 label=region,
                 color=values["color"][0],
                 fmt=".",
             )
             ax_ratio.axhline(y=1, color=values["color"][0], linestyle="--")
             ax_ratio.fill_between(
-                values["bins_center"][mask_blind09],
+                values["bins_center"][mask_blind],
                 1 - ratio_err,
                 1 + ratio_err,
                 color="grey",
@@ -382,16 +383,16 @@ def plot_single_var_from_columns(
                 # compute the chi square between the two histograms (divide by the error on data)
                 chi2_value = np.sum(
                     (
-                        (values["h_den"][mask_blind09] - values["h_num"][mask_blind09])
+                        (values["h_den"][mask_blind] - values["h_num"][mask_blind])
                         / np.where(
-                            values["err_num"][mask_blind09] == 0,
+                            values["err_num"][mask_blind] == 0,
                             1,
-                            values["err_num"][mask_blind09],
+                            values["err_num"][mask_blind],
                         )
                     )
                     ** 2
                 )
-                ndof = len(values["h_den"][mask_blind09]) - 1
+                ndof = len(values["h_den"][mask_blind]) - 1
                 chi2_norm = chi2_value / ndof
                 pvalue = chi2.sf(chi2_value, ndof)
 
@@ -499,9 +500,9 @@ def plot_single_var_from_columns(
                 plt.close(fig_sob)
 
                 ax_ratio.errorbar(
-                    values["bins_center"][mask_blind09],
-                    ratio[mask_blind09],
-                    yerr=ratio_err[mask_blind09],
+                    values["bins_center"][mask_blind],
+                    ratio[mask_blind],
+                    yerr=ratio_err[mask_blind],
                     fmt=".",
                     label=region + namesuffix,
                     color=values["color"][0],
