@@ -13,7 +13,7 @@ from .custom_object_preselection_common import lepton_selection, jet_selection_n
 from .dnn_input_variables import (
     bkg_morphing_dnn_input_variables,
     sig_bkg_dnn_input_variables,
-    bkg_morphing_dnn_input_variables_altOrder
+    bkg_morphing_dnn_input_variables_altOrder,
 )
 
 from utils.parton_matching_function import get_parton_last_copy
@@ -40,10 +40,10 @@ era_dict = {
     "2023_preBPix_Cv4": 8,
     "2023_postBPix_Dv1": 9,
     "2023_postBPix_Dv2": 10,
-    "2022_preEE_MC":-1,
-    "2022_postEE_MC":-2,
-    "2023_preBPix_MC":-3,
-    "2023_postBPix_MC":-4,
+    "2022_preEE_MC": -1,
+    "2022_postEE_MC": -2,
+    "2023_preBPix_MC": -3,
+    "2023_postBPix_MC": -4,
 }
 
 year_dict = {
@@ -63,9 +63,11 @@ class HH4bCommonProcessor(BaseProcessorABC):
         self.fifth_jet = self.workflow_options["fifth_jet"]
         self.tight_cuts = self.workflow_options["tight_cuts"]
         self.classification = self.workflow_options["classification"]
+
         # onnx models
         self.SPANET = self.workflow_options["SPANET"]
         self.BKG_MORPHING_DNN = self.workflow_options["BKG_MORPHING_DNN"]
+        self.BKG_MORPHING_SPREAD_DNN = self.workflow_options["BKG_MORPHING_SPREAD_DNN"]
         self.SIG_BKG_DNN = self.workflow_options["SIG_BKG_DNN"]
         self.VBF_GGF_DNN = self.workflow_options["VBF_GGF_DNN"]
 
@@ -448,8 +450,8 @@ class HH4bCommonProcessor(BaseProcessorABC):
         )
         jet2_sigma_conc = ak.concatenate((jet2_up_sigma, jet2_down_sigma), axis=1)
         sigma_hbbCand_B = ak.max(jet2_sigma_conc, axis=1)
-        
-        #breakpoint()
+
+        # breakpoint()
 
         return ak.flatten(np.sqrt(sigma_hbbCand_A**2 + sigma_hbbCand_B**2), axis=None)
 
@@ -493,9 +495,7 @@ class HH4bCommonProcessor(BaseProcessorABC):
         self.events["era"] = ak.full_like(
             self.events.HT, era_dict[f"{self._year}_{self._era}"]
         )
-        self.events["year"] = ak.full_like(
-            self.events.HT, year_dict[f"{self._year}"]
-        )
+        self.events["year"] = ak.full_like(self.events.HT, year_dict[f"{self._year}"])
 
         self.events["JetNotFromHiggs"] = self.get_jets_no_higgs(jet_higgs_idx_per_event)
 
@@ -751,10 +751,10 @@ class HH4bCommonProcessor(BaseProcessorABC):
                 (self.events.HiggsLeadingRun2.mass - 125) ** 2
                 + (self.events.HiggsSubLeadingRun2.mass - 120) ** 2
             )
-        
+
         if not (self._isMC and not self.SPANET):
             self.dummy_provenance()
-                
+
         self.events["nJetGoodHiggsMatched"] = ak.num(
             self.events.JetGoodHiggsMatched, axis=1
         )
@@ -780,7 +780,7 @@ class HH4bCommonProcessor(BaseProcessorABC):
                 self.events.HiggsSubLeading,
                 self.events.JetGoodFromHiggsOrdered,
                 matched_jet_higgs_idx_not_none,
-                sb_variables=True,# if self.SIG_BKG_DNN else False,
+                sb_variables=True,  # if self.SIG_BKG_DNN else False,
             )
         if self.DNN_VARIABLES and self.RUN2:
             (
@@ -795,7 +795,7 @@ class HH4bCommonProcessor(BaseProcessorABC):
                 self.events.HiggsSubLeadingRun2,
                 self.events.JetGoodFromHiggsOrderedRun2,
                 matched_jet_higgs_idx_not_noneRun2,
-                sb_variables=True,# if self.SIG_BKG_DNN else False,
+                sb_variables=True,  # if self.SIG_BKG_DNN else False,
             )
 
         if self.BKG_MORPHING_DNN and not self._isMC:
@@ -832,6 +832,40 @@ class HH4bCommonProcessor(BaseProcessorABC):
                     axis=None,
                 )
 
+        if self.BKG_MORPHING_SPREAD_DNN and not self._isMC:
+            (
+                model_session_BKG_MORPHING_SPREAD_DNN,
+                input_name_BKG_MORPHING_SPREAD_DNN,
+                output_name_BKG_MORPHING_SPREAD_DNN,
+            ) = get_model_session(
+                self.BKG_MORPHING_SPREAD_DNN, "BKG_MORPHING_SPREAD_DNN"
+            )
+
+            if self.SPANET:
+                self.events["bkg_morphing_spread_dnn_weights"] = np.transpose(
+                    get_dnn_prediction(
+                        model_session_BKG_MORPHING_SPREAD_DNN,
+                        input_name_BKG_MORPHING_SPREAD_DNN,
+                        output_name_BKG_MORPHING_SPREAD_DNN,
+                        self.events,
+                        bkg_morphing_dnn_input_variables,
+                        pad_value=self.pad_value,
+                    )
+                )
+
+            if self.RUN2:
+                self.events["bkg_morphing_spread_dnn_weightsRun2"] = np.transpose(
+                    get_dnn_prediction(
+                        model_session_BKG_MORPHING_SPREAD_DNN,
+                        input_name_BKG_MORPHING_SPREAD_DNN,
+                        output_name_BKG_MORPHING_SPREAD_DNN,
+                        self.events,
+                        bkg_morphing_dnn_input_variables,
+                        pad_value=self.pad_value,
+                        run2=True,
+                    )
+                )
+
         if self.SIG_BKG_DNN:
             (
                 model_session_SIG_BKG_DNN,
@@ -841,37 +875,35 @@ class HH4bCommonProcessor(BaseProcessorABC):
 
             if self.SPANET:
                 sig_bkg_dnn_score = get_dnn_prediction(
-                        model_session_SIG_BKG_DNN,
-                        input_name_SIG_BKG_DNN,
-                        output_name_SIG_BKG_DNN,
-                        self.events,
-                        sig_bkg_dnn_input_variables,
-                        pad_value=self.pad_value,
-                    )[0]
+                    model_session_SIG_BKG_DNN,
+                    input_name_SIG_BKG_DNN,
+                    output_name_SIG_BKG_DNN,
+                    self.events,
+                    sig_bkg_dnn_input_variables,
+                    pad_value=self.pad_value,
+                )[0]
                 # if array is 1 dim just take it
                 if sig_bkg_dnn_score.ndim == 1:
                     self.events["sig_bkg_dnn_score"] = sig_bkg_dnn_score
                 else:
                     # if array is 2 dim take the last column
                     self.events["sig_bkg_dnn_score"] = sig_bkg_dnn_score[:, -1]
-            
+
             if self.RUN2:
                 sig_bkg_dnn_score = get_dnn_prediction(
-                        model_session_SIG_BKG_DNN,
-                        input_name_SIG_BKG_DNN,
-                        output_name_SIG_BKG_DNN,
-                        self.events,
-                        sig_bkg_dnn_input_variables,
-                        pad_value=self.pad_value,
-                        run2=True,
-                    )[0]
+                    model_session_SIG_BKG_DNN,
+                    input_name_SIG_BKG_DNN,
+                    output_name_SIG_BKG_DNN,
+                    self.events,
+                    sig_bkg_dnn_input_variables,
+                    pad_value=self.pad_value,
+                    run2=True,
+                )[0]
                 # if array is 1 dim just take it
                 if sig_bkg_dnn_score.ndim == 1:
                     self.events["sig_bkg_dnn_scoreRun2"] = sig_bkg_dnn_score
                 else:
                     # if array is 2 dim take the last column
                     self.events["sig_bkg_dnn_scoreRun2"] = sig_bkg_dnn_score[:, -1]
-                    
-        #breakpoint()
 
-        
+        # breakpoint()

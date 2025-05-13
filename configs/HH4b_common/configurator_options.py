@@ -1039,10 +1039,10 @@ def get_columns_list(
     return columns
 
 
-def create_DNN_columns_list(run2, flatten, dnn_input_variables, btag=False):
+def create_DNN_columns_list(run2, flatten, columns_dict, btag=False):
     """Create the columns of the DNN input variables"""
     column_dict = defaultdict(set)
-    for x, y in dnn_input_variables.values():
+    for x, y in columns_dict.values():
         if run2:
             if x != "events":
                 column_dict[x.split(":")[0] + "Run2"].add(y)

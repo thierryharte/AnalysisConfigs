@@ -111,8 +111,8 @@ sample_list = [
     "DATA_JetMET_JMENano_E_skimmed",
     "DATA_JetMET_JMENano_F_skimmed",
     "DATA_JetMET_JMENano_G_skimmed",
-    # "GluGlutoHHto4B",
     "GluGlutoHHto4B_spanet_skimmed",
+    # "GluGlutoHHto4B",
     # "VBF_HHto4B",
 ]
 
@@ -151,7 +151,9 @@ print("categories_dict", categories_dict)
 ## Define the columns to save
 if DNN_VARIABLES:
     total_input_variables = (
-        sig_bkg_dnn_input_variables | bkg_morphing_dnn_input_variables
+        sig_bkg_dnn_input_variables
+        | bkg_morphing_dnn_input_variables
+        | {"year": ["events", "year"]}
     )
     print(total_input_variables)
 
@@ -164,13 +166,18 @@ if DNN_VARIABLES:
 else:
     column_list = get_columns_list()
     column_listRun2 = get_columns_list()
+
+#Add special columns
 if workflow_options["SIG_BKG_DNN"] and workflow_options["SPANET"]:
-    column_list+=get_columns_list({"events": ["sig_bkg_dnn_score"]})
+    column_list += get_columns_list({"events": ["sig_bkg_dnn_score"]})
 if workflow_options["SIG_BKG_DNN"] and RUN2:
-    column_list+=get_columns_list({"events": ["sig_bkg_dnn_scoreRun2"]})
+    column_list += get_columns_list({"events": ["sig_bkg_dnn_scoreRun2"]})
+if workflow_options["BKG_MORPHING_SPREAD_DNN"] and workflow_options["SPANET"]:
+    column_list += get_columns_list({"events": ["bkg_morphing_spread_dnn_weights"]})
+if workflow_options["BKG_MORPHING_SPREAD_DNN"] and RUN2:
+    column_list += get_columns_list({"events": ["bkg_morphing_spread_dnn_weightsRun2"]})
 
-column_list+=get_columns_list({"events": ["year"]})
-
+# Define the per category columns
 bycategory_column_dict = {}
 for category in categories_dict.keys():
     if "Run2" in category:
@@ -195,7 +202,7 @@ for sample in sample_list:
                         "bkg_morphing_dnn_weight"
                     ]
 
-print("bysample_bycategory_weight_dict",bysample_bycategory_weight_dict)
+print("bysample_bycategory_weight_dict", bysample_bycategory_weight_dict)
 
 cfg = Configurator(
     parameters=parameters,
