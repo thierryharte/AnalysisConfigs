@@ -108,10 +108,10 @@ preselection = (
 sample_list = [
     # "DATA_JetMET_JMENano_C_skimmed",
     # "DATA_JetMET_JMENano_D_skimmed",
-    "DATA_JetMET_JMENano_E_skimmed",
-    "DATA_JetMET_JMENano_F_skimmed",
+    # "DATA_JetMET_JMENano_E_skimmed",
+    # "DATA_JetMET_JMENano_F_skimmed",
     "DATA_JetMET_JMENano_G_skimmed",
-    "GluGlutoHHto4B_spanet_skimmed",
+    # "GluGlutoHHto4B_spanet_skimmed",
     # "GluGlutoHHto4B",
     # "VBF_HHto4B",
 ]
@@ -167,24 +167,48 @@ else:
     column_list = get_columns_list()
     column_listRun2 = get_columns_list()
 
-#Add special columns
+# Add special columns
 if workflow_options["SIG_BKG_DNN"] and workflow_options["SPANET"]:
     column_list += get_columns_list({"events": ["sig_bkg_dnn_score"]})
 if workflow_options["SIG_BKG_DNN"] and RUN2:
-    column_list += get_columns_list({"events": ["sig_bkg_dnn_scoreRun2"]})
-if workflow_options["BKG_MORPHING_SPREAD_DNN"] and workflow_options["SPANET"]:
-    column_list += get_columns_list({"events": ["bkg_morphing_spread_dnn_weights"]})
-if workflow_options["BKG_MORPHING_SPREAD_DNN"] and RUN2:
-    column_list += get_columns_list({"events": ["bkg_morphing_spread_dnn_weightsRun2"]})
+    column_listRun2 += get_columns_list({"events": ["sig_bkg_dnn_scoreRun2"]})
 
-# Define the per category columns
-bycategory_column_dict = {}
-for category in categories_dict.keys():
-    if "Run2" in category:
-        bycategory_column_dict[category] = column_listRun2
-    else:
-        bycategory_column_dict[category] = column_list
+bysample_bycategory_column_dict = {}
+for sample in sample_list:
+    bysample_bycategory_column_dict[sample] = {
+        "inclusive": [],
+        "bycategory": {},
+    }
+    for category in categories_dict.keys():
+        if "postW" in category:
+            if "Run2" in category:
+                # if "DATA" in sample:
+                #     column_listRun2 += get_columns_list({"events": ["bkg_morphing_spread_dnn_weightsRun2"]})
 
+                bysample_bycategory_column_dict[sample]["bycategory"][category] = (
+                    column_listRun2
+                    + (
+                        get_columns_list(
+                            {"events": ["bkg_morphing_spread_dnn_weightsRun2"]}
+                        )
+                        if "DATA" in sample
+                        else []
+                    )
+                )
+            else:
+                # if "DATA" in sample:
+                #     column_list += get_columns_list({"events": ["bkg_morphing_spread_dnn_weights"]})
+                bysample_bycategory_column_dict[sample]["bycategory"][category] = (
+                    column_list
+                    + (
+                        get_columns_list(
+                            {"events": ["bkg_morphing_spread_dnn_weights"]}
+                        )
+                        if "DATA" in sample
+                        else []
+                    )
+                )
+print("bysample_bycategory_column_dict", bysample_bycategory_column_dict)
 
 ## Define the weights to apply
 bysample_bycategory_weight_dict = {}
@@ -257,8 +281,8 @@ cfg = Configurator(
     columns={
         "common": {
             "inclusive": [],
-            "bycategory": bycategory_column_dict,
+            "bycategory": {},
         },
-        "bysample": {},
+        "bysample": bysample_bycategory_column_dict,
     },
 )
