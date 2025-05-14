@@ -1,6 +1,6 @@
-scaleout: 20
+scaleout: 30
 cores-per-worker: 1
-mem-per-worker: "30GB"
+mem-per-worker: "17GB"
 disk-per-worker: "1GB"
 queue: "standard"
 walltime: "6:00:00"
