@@ -87,7 +87,8 @@ onnx_model_dict={
     "BKG_MORPHING_DNN": "/work/tharte/datasets/ML_pytorch/out/bkg_reweighting/DHH_method_20_runs_postEE/best_models/ratio/average_model_from_onnx.onnx", # --> training on postEE
     #"SIG_BKG_DNN": "/work/tharte/datasets/ML_pytorch/out/sig_bkg_classifier/DHH_method_norm_e5drop75_fixed/state_dict/model_best_epoch_18.onnx",
     #"SIG_BKG_DNN": "",
-    "SIG_BKG_DNN": "/work/tharte/datasets/ML_pytorch/out/sig_bkg_classifier/DHH_method_norm_e5drop75_postEE/state_dict/model_best_epoch_18.onnx",
+    #"SIG_BKG_DNN": "/work/tharte/datasets/ML_pytorch/out/sig_bkg_classifier/DHH_method_norm_e5drop75_postEE/state_dict/model_best_epoch_18.onnx",
+    "SIG_BKG_DNN": "/work/tharte/datasets/ML_pytorch/out/sig_bkg_classifier/DHH_method_norm_e5drop75_postEE_allklambda/state_dict/model_best_epoch_17.onnx",
     # "SIG_BKG_DNN": "/pnfs/psi.ch/cms/trivcat/store/user/mmalucch/keras_models_SvsB/model_fold0.onnx",
 }
 
@@ -97,10 +98,10 @@ print(onnx_model_dict)
 samples_list = [
             # "DATA_JetMET_JMENano_C_skimmed",
             # "DATA_JetMET_JMENano_D_skimmed",
-            "DATA_JetMET_JMENano_E_skimmed",
-            "DATA_JetMET_JMENano_F_skimmed",
+            # "DATA_JetMET_JMENano_E_skimmed",
+            # "DATA_JetMET_JMENano_F_skimmed",
             "DATA_JetMET_JMENano_G_skimmed",
-            "GluGlutoHHto4B_spanet",
+            #"GluGlutoHHto4B_spanet",
             # "DATA_JetMET_JMENano_2023_Cv1_skimmed",
             # "DATA_JetMET_JMENano_2023_Cv2_skimmed",
             # "DATA_ParkingHH_2023_Cv3",
