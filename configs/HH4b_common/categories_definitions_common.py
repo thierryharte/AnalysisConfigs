@@ -49,7 +49,7 @@ def define_single_category(category_name):
     return category_item
 
 
-def define_categories(bkg_morphing_dnn=False, blind=False, spanet=False, vbf_ggf_dnn=False, run2=False, vr1=False):
+def define_categories(bkg_morphing_dnn=False, blind=False, spanet=False,  run2=False, vr1=False):
     """
     Define the categories for the analysis.
     """

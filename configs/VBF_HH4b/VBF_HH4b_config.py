@@ -109,7 +109,7 @@ sample_list = [
     # "DATA_JetMET_JMENano_C_skimmed",
     # "DATA_JetMET_JMENano_D_skimmed",
     # "DATA_JetMET_JMENano_E_skimmed",
-    # "DATA_JetMET_JMENano_F_skimmed",
+    "DATA_JetMET_JMENano_F_skimmed",
     "DATA_JetMET_JMENano_G_skimmed",
     # "GluGlutoHHto4B_spanet_skimmed",
     # "GluGlutoHHto4B",
@@ -121,7 +121,6 @@ categories_dict = define_categories(
     bkg_morphing_dnn=workflow_options["BKG_MORPHING_DNN"],
     blind=BLIND,
     spanet=workflow_options["SPANET"],
-    vbf_ggf_dnn=workflow_options["VBF_GGF_DNN"],
     run2=RUN2,
     vr1=VR1,
 )
@@ -180,34 +179,33 @@ for sample in sample_list:
         "bycategory": {},
     }
     for category in categories_dict.keys():
-        if "postW" in category:
-            if "Run2" in category:
-                # if "DATA" in sample:
-                #     column_listRun2 += get_columns_list({"events": ["bkg_morphing_spread_dnn_weightsRun2"]})
+        if "Run2" in category:
+            # if "DATA" in sample:
+            #     column_listRun2 += get_columns_list({"events": ["bkg_morphing_spread_dnn_weightsRun2"]})
 
-                bysample_bycategory_column_dict[sample]["bycategory"][category] = (
-                    column_listRun2
-                    + (
-                        get_columns_list(
-                            {"events": ["bkg_morphing_spread_dnn_weightsRun2"]}
-                        )
-                        if "DATA" in sample
-                        else []
+            bysample_bycategory_column_dict[sample]["bycategory"][category] = (
+                column_listRun2
+                + (
+                    get_columns_list(
+                        {"events": ["bkg_morphing_spread_dnn_weightsRun2"]}
                     )
+                    if "DATA" in sample and workflow_options["BKG_MORPHING_SPREAD_DNN"] and "postW" in category 
+                    else []
                 )
-            else:
-                # if "DATA" in sample:
-                #     column_list += get_columns_list({"events": ["bkg_morphing_spread_dnn_weights"]})
-                bysample_bycategory_column_dict[sample]["bycategory"][category] = (
-                    column_list
-                    + (
-                        get_columns_list(
-                            {"events": ["bkg_morphing_spread_dnn_weights"]}
-                        )
-                        if "DATA" in sample
-                        else []
+            )
+        else:
+            # if "DATA" in sample:
+            #     column_list += get_columns_list({"events": ["bkg_morphing_spread_dnn_weights"]})
+            bysample_bycategory_column_dict[sample]["bycategory"][category] = (
+                column_list
+                + (
+                    get_columns_list(
+                        {"events": ["bkg_morphing_spread_dnn_weights"]}
                     )
+                    if "DATA" in sample and workflow_options["BKG_MORPHING_SPREAD_DNN"] and "postW" in category
+                    else []
                 )
+            )
 print("bysample_bycategory_column_dict", bysample_bycategory_column_dict)
 
 ## Define the weights to apply
