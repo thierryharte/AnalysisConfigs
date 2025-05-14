@@ -12,62 +12,20 @@ from multiprocessing import Pool
 
 from utils.get_era_lumi import get_era_lumi
 from utils.get_columns_from_files import get_columns_from_files
-
+from utils.weighted_quantile import weighted_quantile
 hep.style.use("CMS")
 
-NUMBER_OF_BINS = 20
-# constant signal bins for the model using SPANet pt flatten
-CONSTANT_SIGNAL_BLIND_BINS = np.array(
-    [
-        1.34472444e-04,
-        2.39650306e-01,
-        4.05424041e-01,
-        5.30443925e-01,
-        6.24511921e-01,
-        6.93721980e-01,
-        7.47704566e-01,
-        7.91207588e-01,
-        8.27359927e-01,
-        8.57444859e-01,
-        8.82451415e-01,
-        9.03700429e-01,
-    ]
-)
-
-CONSTANT_SIGNAL_BINS = np.array(
-    [
-        1.34472444e-04,
-        2.39650306e-01,
-        4.05424041e-01,
-        5.30443925e-01,
-        6.24511921e-01,
-        6.93721980e-01,
-        7.47704566e-01,
-        7.91207588e-01,
-        8.27359927e-01,
-        8.57444859e-01,
-        8.82451415e-01,
-        9.03700429e-01,
-        9.21699631e-01,
-        9.36757421e-01,
-        9.49532866e-01,
-        9.60485041e-01,
-        9.69833755e-01,
-        9.77849567e-01,
-        9.84888554e-01,
-        9.91273439e-01,
-        9.99923229e-01,
-    ]
-)
-CONST_BIN = True
 
 parser = argparse.ArgumentParser(description="Plot 2b morphed vs 4b data")
 parser.add_argument(
     "-i",
-    "--input",
+    "--input-data",
     type=str,
     required=True,
-    help="Input directory with coffea files or coffea file itself",
+    help="Input directory for data with coffea files or coffea file itself",
+)
+parser.add_argument(
+    "-im", "--input-mc", type=str, help="Input coffea file monte carlo", default=None
 )
 parser.add_argument(
     "-o", "--output", type=str, help="Output directory", default="plots_2bVS4b"
@@ -78,6 +36,13 @@ parser.add_argument(
     type=str,
     help="Type of normalisation (num_events, sum_weights)",
     default="sum_weights",
+)
+parser.add_argument(
+    "-r",
+    "--region-suffix",
+    type=str,
+    help="Suffix for the region",
+    default="",
 )
 parser.add_argument("-w", "--workers", type=int, default=8, help="Number of workers")
 parser.add_argument(
@@ -100,10 +65,54 @@ if args.test:
     args.workers = 1
     args.output = "test"
 
+NUMBER_OF_BINS = 20
+# constant signal bins for the model using SPANet pt flatten
+# CONSTANT_SIGNAL_BLIND_BINS = np.array(
+#     [
+#         1.34472444e-04,
+#         2.39650306e-01,
+#         4.05424041e-01,
+#         5.30443925e-01,
+#         6.24511921e-01,
+#         6.93721980e-01,
+#         7.47704566e-01,
+#         7.91207588e-01,
+#         8.27359927e-01,
+#         8.57444859e-01,
+#         8.82451415e-01,
+#         9.03700429e-01,
+#     ]
+# )
+
+# CONSTANT_SIGNAL_BINS = np.array(
+#     [
+#         1.34472444e-04,
+#         2.39650306e-01,
+#         4.05424041e-01,
+#         5.30443925e-01,
+#         6.24511921e-01,
+#         6.93721980e-01,
+#         7.47704566e-01,
+#         7.91207588e-01,
+#         8.27359927e-01,
+#         8.57444859e-01,
+#         8.82451415e-01,
+#         9.03700429e-01,
+#         9.21699631e-01,
+#         9.36757421e-01,
+#         9.49532866e-01,
+#         9.60485041e-01,
+#         9.69833755e-01,
+#         9.77849567e-01,
+#         9.84888554e-01,
+#         9.91273439e-01,
+#         9.99923229e-01,
+#     ]
+# )
 PAD_VALUE = -999
+BLIND_VALUE=0.9
 
-
-input_dir = os.path.dirname(args.input)
+input_dir = os.path.dirname(args.input_data)
 log_scale = not args.linear
 outputdir = os.path.join(input_dir, args.output) + f"_{args.normalisation}"
 
@@ -112,49 +121,48 @@ outputdir = os.path.join(input_dir, args.output) + f"_{args.normalisation}"
 # because first the name of the variables is try with the Run2 string
 # and after without it
 cat_dict = {}
-for region_suffix in ["", "_VR1"]:
-    cat_dict |= {
-        f"CR{region_suffix}": [
-            f"4b{region_suffix}_control_region",
-            f"2b{region_suffix}_control_region_postW",
-            f"2b{region_suffix}_control_region_preW",
-        ],
-        f"CR{region_suffix}Run2": [
-            f"4b{region_suffix}_control_regionRun2",
-            f"2b{region_suffix}_control_region_postWRun2",
-            f"2b{region_suffix}_control_region_preWRun2",
-        ],
-        f"SR{region_suffix}": [
-            f"4b{region_suffix}_signal_region",
-            f"2b{region_suffix}_signal_region_postW",
-            f"2b{region_suffix}_signal_region_preW",
-        ],
-        f"SR{region_suffix}_blind": [
-            f"4b{region_suffix}_signal_region_blind",
-            f"2b{region_suffix}_signal_region_postW_blind",
-            f"2b{region_suffix}_signal_region_preW_blind",
-        ],
-        f"SR{region_suffix}_blindRun2": [
-            f"4b{region_suffix}_signal_region_blindRun2",
-            f"2b{region_suffix}_signal_region_postW_blindRun2",
-            f"2b{region_suffix}_signal_region_preW_blindRun2",
-        ],
-        f"SR{region_suffix}Run2": [
-            f"4b{region_suffix}_signal_regionRun2",
-            f"2b{region_suffix}_signal_region_postWRun2",
-            f"2b{region_suffix}_signal_region_preWRun2",
-        ],
-        #
-        # Special case for the 2b morphed with the spread of the morphing weights
-        # Keyword is "SPREAD"
-        #
-        f"SR{region_suffix}_SPREAD": [
-            f"2b{region_suffix}_signal_region_postW",
-            f"2b{region_suffix}_signal_region_postW_SPREAD",
-        ],
-        # f"CR{region_suffix}_2b_Run2SPANet": [f"2b{region_suffix}_control_region_preWRun2", f"2b{region_suffix}_control_region_preW"],
-        # f"CR{region_suffix}_4b_Run2SPANet": [f"4b{region_suffix}_control_regionRun2", f"4b{region_suffix}_control_region"],
-    }
+cat_dict |= {
+    f"CR{args.region_suffix}": [
+        f"4b{args.region_suffix}_control_region",
+        f"2b{args.region_suffix}_control_region_postW",
+        f"2b{args.region_suffix}_control_region_preW",
+    ],
+    f"CR{args.region_suffix}Run2": [
+        f"4b{args.region_suffix}_control_regionRun2",
+        f"2b{args.region_suffix}_control_region_postWRun2",
+        f"2b{args.region_suffix}_control_region_preWRun2",
+    ],
+    f"SR{args.region_suffix}": [
+        f"4b{args.region_suffix}_signal_region",
+        f"2b{args.region_suffix}_signal_region_postW",
+        f"2b{args.region_suffix}_signal_region_preW",
+    ],
+    f"SR{args.region_suffix}_blind": [
+        f"4b{args.region_suffix}_signal_region_blind",
+        f"2b{args.region_suffix}_signal_region_postW_blind",
+        f"2b{args.region_suffix}_signal_region_preW_blind",
+    ],
+    f"SR{args.region_suffix}_blindRun2": [
+        f"4b{args.region_suffix}_signal_region_blindRun2",
+        f"2b{args.region_suffix}_signal_region_postW_blindRun2",
+        f"2b{args.region_suffix}_signal_region_preW_blindRun2",
+    ],
+    f"SR{args.region_suffix}Run2": [
+        f"4b{args.region_suffix}_signal_regionRun2",
+        f"2b{args.region_suffix}_signal_region_postWRun2",
+        f"2b{args.region_suffix}_signal_region_preWRun2",
+    ],
+    #
+    # Special case for the 2b morphed with the spread of the morphing weights
+    # Keyword is "SPREAD"
+    #
+    f"SR{args.region_suffix}_SPREAD": [
+        f"2b{args.region_suffix}_signal_region_postW",
+        f"2b{args.region_suffix}_signal_region_postW_SPREAD",
+    ],
+    # f"CR{args.region_suffix}_2b_Run2SPANet": [f"2b{args.region_suffix}_control_region_preWRun2", f"2b{args.region_suffix}_control_region_preW"],
+    # f"CR{args.region_suffix}_4b_Run2SPANet": [f"4b{args.region_suffix}_control_regionRun2", f"4b{args.region_suffix}_control_region"],
+}
 
 if args.test:
     cat_dict = {
@@ -170,6 +178,55 @@ color_list_orig = [("black",), ("blue", "dodgerblue"), ("red",)]
 color_list_spread = [("green", "red")] + [("green",)] * 20 + [("orange",)] + [("blue",)]
 color_list_alt = [("purple",), ("darkorange", "orange"), ("green",)]
 
+
+if not os.path.exists(outputdir):
+    os.makedirs(outputdir)
+
+# load the data
+if args.input_data.endswith(".coffea"):
+    inputfiles = [args.input_data]
+else:
+    # get list of coffea files
+    inputfiles = [
+        os.path.join(input_dir, file)
+        for file in os.listdir(input_dir)
+        if file.endswith(".coffea") and "DATA" in file
+    ]
+
+filter_lambda = (lambda x: ("weight" in x or "score" in x)) if args.spread else None
+cat_col_data, total_datasets_list = get_columns_from_files(inputfiles, filter_lambda)
+
+if args.input_mc:
+    inputfiles_mc = [args.input_mc]
+    cat_col_mc, _ = get_columns_from_files(inputfiles_mc, filter_lambda)
+    cols_sig_mc = cat_col_mc[f"4b{args.region_suffix}_signal_region"]
+    for col in cols_sig_mc:
+        print(col)
+        if "score" in col:
+            # CONSTANT_SIGNAL_BINS = np.quantile(
+            #     cols_sig_mc[col], np.linspace(0, 1, NUMBER_OF_BINS + 1)#, weights=cols_sig_mc["weight"]
+            # )
+            # CONSTANT_SIGNAL_BLIND_BINS = CONSTANT_SIGNAL_BINS[CONSTANT_SIGNAL_BINS< BLIND_VALUE]
+            # print(f"Constant signal bins: {CONSTANT_SIGNAL_BINS}")
+            # score_hist= np.histogram(
+            #     cols_sig_mc[col], bins=CONSTANT_SIGNAL_BINS#, weights=cols_sig_mc["weight"]
+            # )
+            # print(f"Constant signal bins histogram: {score_hist}")
+            
+            print("\n WEIGHTED")
+            CONSTANT_SIGNAL_BINS =weighted_quantile(
+                cols_sig_mc[col], np.linspace(0, 1, NUMBER_OF_BINS + 1), weights=cols_sig_mc["weight"]
+            )
+            CONSTANT_SIGNAL_BLIND_BINS = CONSTANT_SIGNAL_BINS[CONSTANT_SIGNAL_BINS< BLIND_VALUE]
+            print(f"Constant signal bins: {CONSTANT_SIGNAL_BINS}")
+            score_hist= np.histogram(
+                cols_sig_mc[col], bins=CONSTANT_SIGNAL_BINS, weights=cols_sig_mc["weight"]
+            )
+            print(f"Constant signal bins histogram: {score_hist}")
+
+    CONST_SIG_BINNING = True
+else:
+    CONST_SIG_BINNING = False
 
 def plot_weights(weights_list, suffix, lumi, era_string):
     fig, ax = plt.subplots(figsize=[13, 13])
@@ -224,10 +281,10 @@ def plot_single_var_from_columns(
 
         cat_plot_name = cat.replace("Run2", "_DHH")
         if "SPREAD" in cat:
+            cat_plot_name_alt = cat_plot_name.split("_SPREAD")[0] + " (median per bin)"
             cat_plot_name = (
                 cat_plot_name.split("_SPREAD")[0] + " (mean weight per event)"
             )
-            cat_plot_name_alt = cat_plot_name.split("_SPREAD")[0] + " (median per bin)"
 
         weights_den = weight_dict[cat]
         weights_num = weight_dict[cat_list[0]]
@@ -258,7 +315,7 @@ def plot_single_var_from_columns(
         weights_num = weights_num * norm_factor_num
 
         # fix the bins and range
-        if "sig_bkg_dnn" in var and CONST_BIN:
+        if "sig_bkg_dnn" in var and CONST_SIG_BINNING:
             bins = (
                 CONSTANT_SIGNAL_BINS
                 if "blind" not in cat
@@ -633,29 +690,14 @@ def plot_from_columns(cat_col, lumi, era_string):
 
 if __name__ == "__main__":
 
-    if not os.path.exists(outputdir):
-        os.makedirs(outputdir)
-    if args.input.endswith(".coffea"):
-        inputfiles = [args.input]
-    else:
-        # get list of coffea files
-        inputfiles = [
-            os.path.join(input_dir, file)
-            for file in os.listdir(input_dir)
-            if file.endswith(".coffea") and "DATA" in file
-        ]
-
-    filter_lambda = (lambda x: ("weight" in x or "score" in x)) if args.spread else None
-    cat_col, total_datasets_list = get_columns_from_files(inputfiles, filter_lambda)
-
-    print(cat_col)
+    print(cat_col_data)
     lumi, era_string = get_era_lumi(total_datasets_list)
 
     # plot the weights
-    for category in cat_col.keys():
-        weights = cat_col[category]["weight"]
+    for category in cat_col_data.keys():
+        weights = cat_col_data[category]["weight"]
         plot_weights([weights], category, lumi, era_string)
 
-    plot_from_columns(cat_col, lumi, era_string)
+    plot_from_columns(cat_col_data, lumi, era_string)
 
     print(f"\nPlots saved in {outputdir}")
