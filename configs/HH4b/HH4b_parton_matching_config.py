@@ -13,13 +13,14 @@ from pocket_coffea.lib.weights.common.common import common_weights
 
 from workflow import HH4bbQuarkMatchingProcessor
 
-from configs.HH4b_common.categories_definitions_common import define_categories
+from configs.HH4b_common.categories_definitions_common import define_categories, define_single_category
 
 from configs.HH4b_common.custom_weights import (
     bkg_morphing_dnn_weight,
     bkg_morphing_dnn_weightRun2,
 )
 from configs.HH4b_common.configurator_options import (
+    SPANET_TRAINING_DEFAULT_COLUMNS,
     get_variables_dict,
     get_columns_list,
     create_DNN_columns_list,
@@ -57,7 +58,7 @@ default_parameters = defaults.get_default_parameters()
 defaults.register_configuration_dir("config_dir", localdir + "/params")
 
 # adding object preselection
-year = ["2022_postEE", "2022_preEE", "2023_preBPix", "2023_postBPix"]
+year = ["2022_postEE", "2022_preEE"]#, "2023_preBPix", "2023_postBPix"]
 parameters = defaults.merge_parameters_from_files(
     default_parameters,
     f"{localdir}/params/object_preselection.yaml",
@@ -105,12 +106,13 @@ preselection = (
 
 ## Defining the used samples
 sample_list = [
-            "DATA_JetMET_JMENano_C_skimmed",
-            "DATA_JetMET_JMENano_D_skimmed",
-            "DATA_JetMET_JMENano_E_skimmed",
-            "DATA_JetMET_JMENano_F_skimmed",
-            "DATA_JetMET_JMENano_G_skimmed",
+            # "DATA_JetMET_JMENano_C_skimmed",
+            # "DATA_JetMET_JMENano_D_skimmed",
+            # "DATA_JetMET_JMENano_E_skimmed",
+            # "DATA_JetMET_JMENano_F_skimmed",
+            # "DATA_JetMET_JMENano_G_skimmed",
             "GluGlutoHHto4B_spanet",
+            "GluGlutoHHto4B",
             # "DATA_JetMET_JMENano_2023_Cv1_skimmed",
             # "DATA_JetMET_JMENano_2023_Cv2_skimmed",
             # "DATA_ParkingHH_2023_Cv3",
@@ -124,17 +126,18 @@ categories_dict = define_categories(
     bkg_morphing_dnn=workflow_options["BKG_MORPHING_DNN"],
     blind=BLIND,
     spanet=workflow_options["SPANET"],
-    vbf_ggf_dnn=workflow_options["VBF_GGF_DNN"],
     run2=RUN2,
     vr1=VR1,
 )
+if RANDOM_PT:
+    categories_dict = define_single_category("4b_region")
+
 print("categories_dict", categories_dict)
 
 ## VBF SPECIFIC REGIONS
 # **{f"4b_semiTight_LeadingPt_region": [hh4b_4b_region, semiTight_leadingPt]},
 # **{f"4b_semiTight_LeadingMjj_region": [hh4b_4b_region, semiTight_leadingMjj]},
 # **{f"4b_semiTight_LeadingMjj_region": [hh4b_4b_region, semiTight_leadingMjj]}
-# **{"4b_VBFtight_region": [hh4b_4b_region, VBFtight_region]},
 # **{"4b_VBFtight_region": [hh4b_4b_region, vbf_wrapper()]},
 #
 # **{
@@ -152,6 +155,7 @@ print("categories_dict", categories_dict)
 
 
 ## Define the columns to save
+assert (RANDOM_PT ^ RUN2)
 if DNN_VARIABLES:
     total_input_variables = (
         sig_bkg_dnn_input_variables
@@ -166,6 +170,9 @@ if DNN_VARIABLES:
     column_listRun2 = create_DNN_columns_list(
         True, not SAVE_CHUNK, total_input_variables, btag=False
     )
+elif RANDOM_PT:
+    column_list = get_columns_list(SPANET_TRAINING_DEFAULT_COLUMNS)
+    column_list += get_columns_list({"events": ["random_pt_weights"]})
 else:
     column_list = get_columns_list()
     column_listRun2 = get_columns_list()
@@ -183,34 +190,33 @@ for sample in sample_list:
         "bycategory": {},
     }
     for category in categories_dict.keys():
-        if "postW" in category:
-            if "Run2" in category:
-                # if "DATA" in sample:
-                #     column_listRun2 += get_columns_list({"events": ["bkg_morphing_spread_dnn_weightsRun2"]})
+        if "Run2" in category:
+            # if "DATA" in sample:
+            #     column_listRun2 += get_columns_list({"events": ["bkg_morphing_spread_dnn_weightsRun2"]})
 
-                bysample_bycategory_column_dict[sample]["bycategory"][category] = (
-                    column_listRun2
-                    + (
-                        get_columns_list(
-                            {"events": ["bkg_morphing_spread_dnn_weightsRun2"]}
-                        )
-                        if "DATA" in sample
-                        else []
+            bysample_bycategory_column_dict[sample]["bycategory"][category] = (
+                column_listRun2
+                + (
+                    get_columns_list(
+                        {"events": ["bkg_morphing_spread_dnn_weightsRun2"]}
                     )
+                    if "DATA" in sample and workflow_options["BKG_MORPHING_SPREAD_DNN"] and "postW" in category 
+                    else []
                 )
-            else:
-                # if "DATA" in sample:
-                #     column_list += get_columns_list({"events": ["bkg_morphing_spread_dnn_weights"]})
-                bysample_bycategory_column_dict[sample]["bycategory"][category] = (
-                    column_list
-                    + (
-                        get_columns_list(
-                            {"events": ["bkg_morphing_spread_dnn_weights"]}
-                        )
-                        if "DATA" in sample
-                        else []
+            )
+        else:
+            # if "DATA" in sample:
+            #     column_list += get_columns_list({"events": ["bkg_morphing_spread_dnn_weights"]})
+            bysample_bycategory_column_dict[sample]["bycategory"][category] = (
+                column_list
+                + (
+                    get_columns_list(
+                        {"events": ["bkg_morphing_spread_dnn_weights"]}
                     )
+                    if "DATA" in sample and workflow_options["BKG_MORPHING_SPREAD_DNN"] and "postW" in category
+                    else []
                 )
+            )
 print("bysample_bycategory_column_dict", bysample_bycategory_column_dict)
 
 ## Define the weights to apply
@@ -248,7 +254,7 @@ cfg = Configurator(
         "filter": {
             "samples": sample_list,
             "samples_exclude": [],
-            # "year": [year],
+            "year": year,
         },
         "subsamples": {},
     },
