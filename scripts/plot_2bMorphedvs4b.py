@@ -52,6 +52,9 @@ parser.add_argument(
     "-t", "--test", action="store_true", help="Test on one variable", default=False
 )
 parser.add_argument(
+    "-r2", "--run2", action="store_true", help="If running with Run2 method", default=False
+)
+parser.add_argument(
     "-s",
     "--spread",
     action="store_true",
@@ -121,48 +124,56 @@ outputdir = os.path.join(input_dir, args.output) + f"_{args.normalisation}"
 # because first the name of the variables is try with the Run2 string
 # and after without it
 cat_dict = {}
-cat_dict |= {
-    f"CR{args.region_suffix}": [
-        f"4b{args.region_suffix}_control_region",
-        f"2b{args.region_suffix}_control_region_postW",
-        f"2b{args.region_suffix}_control_region_preW",
-    ],
-    f"CR{args.region_suffix}Run2": [
-        f"4b{args.region_suffix}_control_regionRun2",
-        f"2b{args.region_suffix}_control_region_postWRun2",
-        f"2b{args.region_suffix}_control_region_preWRun2",
-    ],
-    f"SR{args.region_suffix}": [
-        f"4b{args.region_suffix}_signal_region",
-        f"2b{args.region_suffix}_signal_region_postW",
-        f"2b{args.region_suffix}_signal_region_preW",
-    ],
-    f"SR{args.region_suffix}_blind": [
-        f"4b{args.region_suffix}_signal_region_blind",
-        f"2b{args.region_suffix}_signal_region_postW_blind",
-        f"2b{args.region_suffix}_signal_region_preW_blind",
-    ],
-    f"SR{args.region_suffix}_blindRun2": [
-        f"4b{args.region_suffix}_signal_region_blindRun2",
-        f"2b{args.region_suffix}_signal_region_postW_blindRun2",
-        f"2b{args.region_suffix}_signal_region_preW_blindRun2",
-    ],
-    f"SR{args.region_suffix}Run2": [
-        f"4b{args.region_suffix}_signal_regionRun2",
-        f"2b{args.region_suffix}_signal_region_postWRun2",
-        f"2b{args.region_suffix}_signal_region_preWRun2",
-    ],
-    #
-    # Special case for the 2b morphed with the spread of the morphing weights
-    # Keyword is "SPREAD"
-    #
-    f"SR{args.region_suffix}_SPREAD": [
-        f"2b{args.region_suffix}_signal_region_postW",
-        f"2b{args.region_suffix}_signal_region_postW_SPREAD",
-    ],
-    # f"CR{args.region_suffix}_2b_Run2SPANet": [f"2b{args.region_suffix}_control_region_preWRun2", f"2b{args.region_suffix}_control_region_preW"],
-    # f"CR{args.region_suffix}_4b_Run2SPANet": [f"4b{args.region_suffix}_control_regionRun2", f"4b{args.region_suffix}_control_region"],
-}
+if not args.run2:
+    cat_dict |= {
+        f"CR{args.region_suffix}": [
+            f"4b{args.region_suffix}_control_region",
+            f"2b{args.region_suffix}_control_region_postW",
+            f"2b{args.region_suffix}_control_region_preW",
+        ],
+        f"SR{args.region_suffix}": [
+            f"4b{args.region_suffix}_signal_region",
+            f"2b{args.region_suffix}_signal_region_postW",
+            f"2b{args.region_suffix}_signal_region_preW",
+        ],
+        f"SR{args.region_suffix}_blind": [
+            f"4b{args.region_suffix}_signal_region_blind",
+            f"2b{args.region_suffix}_signal_region_postW_blind",
+            f"2b{args.region_suffix}_signal_region_preW_blind",
+        ],
+        #
+        # Special case for the 2b morphed with the spread of the morphing weights
+        # Keyword is "SPREAD"
+        #
+        f"SR{args.region_suffix}_SPREAD": [
+            f"2b{args.region_suffix}_signal_region_postW",
+            f"2b{args.region_suffix}_signal_region_postW_SPREAD",
+        ],
+        # f"CR{args.region_suffix}_2b_Run2SPANet": [f"2b{args.region_suffix}_control_region_preWRun2", f"2b{args.region_suffix}_control_region_preW"],
+        # f"CR{args.region_suffix}_4b_Run2SPANet": [f"4b{args.region_suffix}_control_regionRun2", f"4b{args.region_suffix}_control_region"],
+    }
+else:
+    cat_dict |= {
+        f"CR{args.region_suffix}Run2": [
+            f"4b{args.region_suffix}_control_regionRun2",
+            f"2b{args.region_suffix}_control_region_postWRun2",
+            f"2b{args.region_suffix}_control_region_preWRun2",
+        ],
+        f"SR{args.region_suffix}_blindRun2": [
+            f"4b{args.region_suffix}_signal_region_blindRun2",
+            f"2b{args.region_suffix}_signal_region_postW_blindRun2",
+            f"2b{args.region_suffix}_signal_region_preW_blindRun2",
+        ],
+        f"SR{args.region_suffix}Run2": [
+            f"4b{args.region_suffix}_signal_regionRun2",
+            f"2b{args.region_suffix}_signal_region_postWRun2",
+            f"2b{args.region_suffix}_signal_region_preWRun2",
+        ],
+        f"SR{args.region_suffix}Run2_SPREAD": [
+            f"2b{args.region_suffix}_signal_region_postWRun2",
+            f"2b{args.region_suffix}_signal_region_postWRun2_SPREAD",
+        ],
+    }
 
 if args.test:
     cat_dict = {
@@ -199,7 +210,10 @@ cat_col_data, total_datasets_list = get_columns_from_files(inputfiles, filter_la
 if args.input_mc:
     inputfiles_mc = [args.input_mc]
     cat_col_mc, _ = get_columns_from_files(inputfiles_mc, filter_lambda)
-    cols_sig_mc = cat_col_mc[f"4b{args.region_suffix}_signal_region"]
+    if not args.run2:
+        cols_sig_mc = cat_col_mc[f"4b{args.region_suffix}_signal_region"]
+    else:
+        cols_sig_mc = cat_col_mc[f"4b{args.region_suffix}_signal_regionRun2"]
     for col in cols_sig_mc:
         print(col)
         if "score" in col:
@@ -638,13 +652,18 @@ def plot_from_columns(cat_col, lumi, era_string):
                         col_dict[v][cat] = cat_col[cat][v]
                     except KeyError:
                         col_dict[v][cat] = cat_col[cat][v.replace("Run2", "")]
+        
+        if args.run2:
+            spreadvar = "events_bkg_morphing_spread_dnn_weightsRun2"
+        else:
+            spreadvar = "events_bkg_morphing_spread_dnn_weights"
 
         cat_list_final = cat_list.copy()
         for cat in cat_list:
             if "SPREAD" in cat:
                 for i in range(
                     len(
-                        col_dict["events_bkg_morphing_spread_dnn_weights"][
+                        col_dict[spreadvar][
                             cat_list_final[0]
                         ][0]
                     )
@@ -654,7 +673,7 @@ def plot_from_columns(cat_col, lumi, era_string):
                             col_dict[v][f"{cat}_{i}"] = col_dict[v][cat_list_final[0]]
 
                     col_dict["weight"][f"{cat}_{i}"] = col_dict[
-                        "events_bkg_morphing_spread_dnn_weights"
+                        spreadvar
                     ][cat_list_final[0]][:, i]
 
                     cat_list_final.append(f"{cat}_{i}")
