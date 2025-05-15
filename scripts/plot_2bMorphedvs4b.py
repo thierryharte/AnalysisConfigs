@@ -66,49 +66,6 @@ if args.test:
     args.output = "test"
 
 NUMBER_OF_BINS = 20
-# constant signal bins for the model using SPANet pt flatten
-# CONSTANT_SIGNAL_BLIND_BINS = np.array(
-#     [
-#         1.34472444e-04,
-#         2.39650306e-01,
-#         4.05424041e-01,
-#         5.30443925e-01,
-#         6.24511921e-01,
-#         6.93721980e-01,
-#         7.47704566e-01,
-#         7.91207588e-01,
-#         8.27359927e-01,
-#         8.57444859e-01,
-#         8.82451415e-01,
-#         9.03700429e-01,
-#     ]
-# )
-
-# CONSTANT_SIGNAL_BINS = np.array(
-#     [
-#         1.34472444e-04,
-#         2.39650306e-01,
-#         4.05424041e-01,
-#         5.30443925e-01,
-#         6.24511921e-01,
-#         6.93721980e-01,
-#         7.47704566e-01,
-#         7.91207588e-01,
-#         8.27359927e-01,
-#         8.57444859e-01,
-#         8.82451415e-01,
-#         9.03700429e-01,
-#         9.21699631e-01,
-#         9.36757421e-01,
-#         9.49532866e-01,
-#         9.60485041e-01,
-#         9.69833755e-01,
-#         9.77849567e-01,
-#         9.84888554e-01,
-#         9.91273439e-01,
-#         9.99923229e-01,
-#     ]
-# )
 PAD_VALUE = -999
 BLIND_VALUE=0.9
 
@@ -203,15 +160,6 @@ if args.input_mc:
     for col in cols_sig_mc:
         print(col)
         if "score" in col:
-            # CONSTANT_SIGNAL_BINS = np.quantile(
-            #     cols_sig_mc[col], np.linspace(0, 1, NUMBER_OF_BINS + 1)#, weights=cols_sig_mc["weight"]
-            # )
-            # CONSTANT_SIGNAL_BLIND_BINS = CONSTANT_SIGNAL_BINS[CONSTANT_SIGNAL_BINS< BLIND_VALUE]
-            # print(f"Constant signal bins: {CONSTANT_SIGNAL_BINS}")
-            # score_hist= np.histogram(
-            #     cols_sig_mc[col], bins=CONSTANT_SIGNAL_BINS#, weights=cols_sig_mc["weight"]
-            # )
-            # print(f"Constant signal bins histogram: {score_hist}")
             
             print("\n WEIGHTED")
             CONSTANT_SIGNAL_BINS =weighted_quantile(
