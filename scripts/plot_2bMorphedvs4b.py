@@ -12,62 +12,20 @@ from multiprocessing import Pool
 
 from utils.get_era_lumi import get_era_lumi
 from utils.get_columns_from_files import get_columns_from_files
-
+from utils.weighted_quantile import weighted_quantile
 hep.style.use("CMS")
 
-NUMBER_OF_BINS = 20
-#constant signal bins for the model using SPANet pt flatten
-CONSTANT_SIGNAL_BLIND_BINS = np.array(
-    [
-        1.34472444e-04,
-        2.39650306e-01,
-        4.05424041e-01,
-        5.30443925e-01,
-        6.24511921e-01,
-        6.93721980e-01,
-        7.47704566e-01,
-        7.91207588e-01,
-        8.27359927e-01,
-        8.57444859e-01,
-        8.82451415e-01,
-        9.03700429e-01,
-    ]
-)
-
-CONSTANT_SIGNAL_BINS = np.array(
-    [
-        1.34472444e-04,
-        2.39650306e-01,
-        4.05424041e-01,
-        5.30443925e-01,
-        6.24511921e-01,
-        6.93721980e-01,
-        7.47704566e-01,
-        7.91207588e-01,
-        8.27359927e-01,
-        8.57444859e-01,
-        8.82451415e-01,
-        9.03700429e-01,
-        9.21699631e-01,
-        9.36757421e-01,
-        9.49532866e-01,
-        9.60485041e-01,
-        9.69833755e-01,
-        9.77849567e-01,
-        9.84888554e-01,
-        9.91273439e-01,
-        9.99923229e-01,
-    ]
-)
-CONST_BIN=True
 
 parser = argparse.ArgumentParser(description="Plot 2b morphed vs 4b data")
 parser.add_argument(
     "-i",
-    "--input",
+    "--input-data",
     type=str,
     required=True,
-    help="Input directory with coffea files or coffea file itself",
+    help="Input directory for data with coffea files or coffea file itself",
+)
+parser.add_argument(
+    "-im", "--input-mc", type=str, help="Input coffea file monte carlo", default=None
 )
 parser.add_argument(
     "-o", "--output", type=str, help="Output directory", default="plots_2bVS4b"
@@ -79,12 +37,26 @@ parser.add_argument(
     help="Type of normalisation (num_events, sum_weights)",
     default="sum_weights",
 )
+parser.add_argument(
+    "-r",
+    "--region-suffix",
+    type=str,
+    help="Suffix for the region",
+    default="",
+)
 parser.add_argument("-w", "--workers", type=int, default=8, help="Number of workers")
 parser.add_argument(
     "-l", "--linear", action="store_true", help="Linear scale", default=False
 )
 parser.add_argument(
     "-t", "--test", action="store_true", help="Test on one variable", default=False
+)
+parser.add_argument(
+    "-s",
+    "--spread",
+    action="store_true",
+    help="Perform the spread morphing plot of the DNN score",
+    default=False,
 )
 
 args = parser.parse_args()
@@ -93,57 +65,104 @@ if args.test:
     args.workers = 1
     args.output = "test"
 
+NUMBER_OF_BINS = 20
+# constant signal bins for the model using SPANet pt flatten
+# CONSTANT_SIGNAL_BLIND_BINS = np.array(
+#     [
+#         1.34472444e-04,
+#         2.39650306e-01,
+#         4.05424041e-01,
+#         5.30443925e-01,
+#         6.24511921e-01,
+#         6.93721980e-01,
+#         7.47704566e-01,
+#         7.91207588e-01,
+#         8.27359927e-01,
+#         8.57444859e-01,
+#         8.82451415e-01,
+#         9.03700429e-01,
+#     ]
+# )
+
+# CONSTANT_SIGNAL_BINS = np.array(
+#     [
+#         1.34472444e-04,
+#         2.39650306e-01,
+#         4.05424041e-01,
+#         5.30443925e-01,
+#         6.24511921e-01,
+#         6.93721980e-01,
+#         7.47704566e-01,
+#         7.91207588e-01,
+#         8.27359927e-01,
+#         8.57444859e-01,
+#         8.82451415e-01,
+#         9.03700429e-01,
+#         9.21699631e-01,
+#         9.36757421e-01,
+#         9.49532866e-01,
+#         9.60485041e-01,
+#         9.69833755e-01,
+#         9.77849567e-01,
+#         9.84888554e-01,
+#         9.91273439e-01,
+#         9.99923229e-01,
+#     ]
+# )
 PAD_VALUE = -999
+BLIND_VALUE=0.9
 
-
-input_dir = os.path.dirname(args.input)
+input_dir = os.path.dirname(args.input_data)
 log_scale = not args.linear
-outputdir = (
-    os.path.join(input_dir, args.output)
-    + f"_{args.normalisation}"
-)
-
+outputdir = os.path.join(input_dir, args.output) + f"_{args.normalisation}"
 
 
 # To mix categories with Run2 and SPANet, put first the Run2 category
 # because first the name of the variables is try with the Run2 string
 # and after without it
 cat_dict = {}
-for region_suffix in ["", "_VR1"]:
-    cat_dict |= {
-        f"CR{region_suffix}": [
-            f"4b{region_suffix}_control_region",
-            f"2b{region_suffix}_control_region_postW",
-            f"2b{region_suffix}_control_region_preW",
-        ],
-        f"CR{region_suffix}Run2": [
-            f"4b{region_suffix}_control_regionRun2",
-            f"2b{region_suffix}_control_region_postWRun2",
-            f"2b{region_suffix}_control_region_preWRun2",
-        ],
-        f"SR{region_suffix}": [
-            f"4b{region_suffix}_signal_region",
-            f"2b{region_suffix}_signal_region_postW",
-            f"2b{region_suffix}_signal_region_preW",
-        ],
-        f"SR{region_suffix}_blind": [
-            f"4b{region_suffix}_signal_region_blind",
-            f"2b{region_suffix}_signal_region_postW_blind",
-            f"2b{region_suffix}_signal_region_preW_blind",
-        ],
-        f"SR{region_suffix}_blindRun2": [
-            f"4b{region_suffix}_signal_region_blindRun2",
-            f"2b{region_suffix}_signal_region_postW_blindRun2",
-            f"2b{region_suffix}_signal_region_preW_blindRun2",
-        ],
-        f"SR{region_suffix}Run2": [
-            f"4b{region_suffix}_signal_regionRun2",
-            f"2b{region_suffix}_signal_region_postWRun2",
-            f"2b{region_suffix}_signal_region_preWRun2",
-        ],
-        # f"CR{region_suffix}_2b_Run2SPANet": [f"2b{region_suffix}_control_region_preWRun2", f"2b{region_suffix}_control_region_preW"],
-        # f"CR{region_suffix}_4b_Run2SPANet": [f"4b{region_suffix}_control_regionRun2", f"4b{region_suffix}_control_region"],
-    }
+cat_dict |= {
+    f"CR{args.region_suffix}": [
+        f"4b{args.region_suffix}_control_region",
+        f"2b{args.region_suffix}_control_region_postW",
+        f"2b{args.region_suffix}_control_region_preW",
+    ],
+    f"CR{args.region_suffix}Run2": [
+        f"4b{args.region_suffix}_control_regionRun2",
+        f"2b{args.region_suffix}_control_region_postWRun2",
+        f"2b{args.region_suffix}_control_region_preWRun2",
+    ],
+    f"SR{args.region_suffix}": [
+        f"4b{args.region_suffix}_signal_region",
+        f"2b{args.region_suffix}_signal_region_postW",
+        f"2b{args.region_suffix}_signal_region_preW",
+    ],
+    f"SR{args.region_suffix}_blind": [
+        f"4b{args.region_suffix}_signal_region_blind",
+        f"2b{args.region_suffix}_signal_region_postW_blind",
+        f"2b{args.region_suffix}_signal_region_preW_blind",
+    ],
+    f"SR{args.region_suffix}_blindRun2": [
+        f"4b{args.region_suffix}_signal_region_blindRun2",
+        f"2b{args.region_suffix}_signal_region_postW_blindRun2",
+        f"2b{args.region_suffix}_signal_region_preW_blindRun2",
+    ],
+    f"SR{args.region_suffix}Run2": [
+        f"4b{args.region_suffix}_signal_regionRun2",
+        f"2b{args.region_suffix}_signal_region_postWRun2",
+        f"2b{args.region_suffix}_signal_region_preWRun2",
+    ],
+    #
+    # Special case for the 2b morphed with the spread of the morphing weights
+    # Keyword is "SPREAD"
+    #
+    f"SR{args.region_suffix}_SPREAD": [
+        f"2b{args.region_suffix}_signal_region_postW",
+        f"2b{args.region_suffix}_signal_region_postW_SPREAD",
+    ],
+    # f"CR{args.region_suffix}_2b_Run2SPANet": [f"2b{args.region_suffix}_control_region_preWRun2", f"2b{args.region_suffix}_control_region_preW"],
+    # f"CR{args.region_suffix}_4b_Run2SPANet": [f"4b{args.region_suffix}_control_regionRun2", f"4b{args.region_suffix}_control_region"],
+}
 
 if args.test:
     cat_dict = {
@@ -156,8 +175,58 @@ if args.test:
 
 
 color_list_orig = [("black",), ("blue", "dodgerblue"), ("red",)]
+color_list_spread = [("green", "red")] + [("green",)] * 20 + [("orange",)] + [("blue",)]
 color_list_alt = [("purple",), ("darkorange", "orange"), ("green",)]
 
+
+if not os.path.exists(outputdir):
+    os.makedirs(outputdir)
+
+# load the data
+if args.input_data.endswith(".coffea"):
+    inputfiles = [args.input_data]
+else:
+    # get list of coffea files
+    inputfiles = [
+        os.path.join(input_dir, file)
+        for file in os.listdir(input_dir)
+        if file.endswith(".coffea") and "DATA" in file
+    ]
+
+filter_lambda = (lambda x: ("weight" in x or "score" in x)) if args.spread else None
+cat_col_data, total_datasets_list = get_columns_from_files(inputfiles, filter_lambda)
+
+if args.input_mc:
+    inputfiles_mc = [args.input_mc]
+    cat_col_mc, _ = get_columns_from_files(inputfiles_mc, filter_lambda)
+    cols_sig_mc = cat_col_mc[f"4b{args.region_suffix}_signal_region"]
+    for col in cols_sig_mc:
+        print(col)
+        if "score" in col:
+            # CONSTANT_SIGNAL_BINS = np.quantile(
+            #     cols_sig_mc[col], np.linspace(0, 1, NUMBER_OF_BINS + 1)#, weights=cols_sig_mc["weight"]
+            # )
+            # CONSTANT_SIGNAL_BLIND_BINS = CONSTANT_SIGNAL_BINS[CONSTANT_SIGNAL_BINS< BLIND_VALUE]
+            # print(f"Constant signal bins: {CONSTANT_SIGNAL_BINS}")
+            # score_hist= np.histogram(
+            #     cols_sig_mc[col], bins=CONSTANT_SIGNAL_BINS#, weights=cols_sig_mc["weight"]
+            # )
+            # print(f"Constant signal bins histogram: {score_hist}")
+            
+            print("\n WEIGHTED")
+            CONSTANT_SIGNAL_BINS =weighted_quantile(
+                cols_sig_mc[col], np.linspace(0, 1, NUMBER_OF_BINS + 1), weights=cols_sig_mc["weight"]
+            )
+            CONSTANT_SIGNAL_BLIND_BINS = CONSTANT_SIGNAL_BINS[CONSTANT_SIGNAL_BINS< BLIND_VALUE]
+            print(f"Constant signal bins: {CONSTANT_SIGNAL_BINS}")
+            score_hist= np.histogram(
+                cols_sig_mc[col], bins=CONSTANT_SIGNAL_BINS, weights=cols_sig_mc["weight"]
+            )
+            print(f"Constant signal bins histogram: {score_hist}")
+
+    CONST_SIG_BINNING = True
+else:
+    CONST_SIG_BINNING = False
 
 def plot_weights(weights_list, suffix, lumi, era_string):
     fig, ax = plt.subplots(figsize=[13, 13])
@@ -187,12 +256,13 @@ def plot_single_var_from_columns(
     var,
     col_dict,
     weight_dict,
+    cats_name,
     cat_list,
     dir_cat,
-    chi_squared=True,
-    color_list=color_list_orig,
-    lumi=5.79,
-    era_string="22 E",
+    chi_squared,
+    color_list,
+    lumi,
+    era_string,
 ):
     fig, (ax, ax_ratio) = plt.subplots(
         2,
@@ -203,11 +273,18 @@ def plot_single_var_from_columns(
     )
 
     print(var)
+    ratios_spread = []
+    histos_spread = []
     # range_4b = (0, 0)
 
     for i, cat in enumerate(cat_list):
 
         cat_plot_name = cat.replace("Run2", "_DHH")
+        if "SPREAD" in cat:
+            cat_plot_name_alt = cat_plot_name.split("_SPREAD")[0] + " (median per bin)"
+            cat_plot_name = (
+                cat_plot_name.split("_SPREAD")[0] + " (mean weight per event)"
+            )
 
         weights_den = weight_dict[cat]
         weights_num = weight_dict[cat_list[0]]
@@ -238,7 +315,7 @@ def plot_single_var_from_columns(
         weights_num = weights_num * norm_factor_num
 
         # fix the bins and range
-        if "sig_bkg_dnn" in var and CONST_BIN:
+        if "sig_bkg_dnn" in var and CONST_SIG_BINNING:
             bins = (
                 CONSTANT_SIGNAL_BINS
                 if "blind" not in cat
@@ -269,6 +346,8 @@ def plot_single_var_from_columns(
 
         # print("bins", bins, len(bins))
         bins_center = (bins[1:] + bins[:-1]) / 2
+        # get the bin centers but with the first and last bin
+        bins_center_step = np.concatenate(([bins[0]], bins_center[1:-1], [bins[-1]]))
         # print("bins_center", bins_center, len(bins_center))
         idx_den = np.digitize(col_den, bins)
         idx_num = np.digitize(col_num, bins)
@@ -310,16 +389,8 @@ def plot_single_var_from_columns(
         ratio = h_num / h_den
 
         print("ratio", ratio)
-
         if i == 0:
             ratio_err = err_num / h_num
-        else:
-            ratio_err = np.sqrt(
-                (err_num / h_den) ** 2 + (h_num * err_den / h_den**2) ** 2
-            )
-        # print("ratio_err", ratio_err)
-
-        if i == 0:
             ax.errorbar(
                 bins_center,
                 h_den,
@@ -328,36 +399,72 @@ def plot_single_var_from_columns(
                 color=color_list[i][0],
                 fmt=".",
             )
+
             ax_ratio.axhline(y=1, color=color_list[i][0], linestyle="--")
-            ax_ratio.fill_between(
-                bins_center,
-                1 - ratio_err,
-                1 + ratio_err,
-                color="grey",
-                alpha=0.5,
-            )
+            if "SPREAD" in cats_name:
+                ax_ratio.step(
+                    bins,
+                    1 - np.append(ratio_err, ratio_err[-1]),
+                    where="post",
+                    color=color_list[i][1],
+                    label=r"$\pm \sigma_{stat}$",
+                    linewidth=1,
+                )
+                ax_ratio.step(
+                    bins,
+                    1 + np.append(ratio_err, ratio_err[-1]),
+                    where="post",
+                    color=color_list[i][1],
+                    linewidth=1,
+                )
+            else:
+                ax_ratio.fill_between(
+                    bins_center,
+                    1 - ratio_err,
+                    1 + ratio_err,
+                    color="grey",
+                    alpha=0.5,
+                )
+
         else:
+            ratio_err = np.sqrt(
+                (err_num / h_den) ** 2 + (h_num * err_den / h_den**2) ** 2
+            )
 
             ax.hist(
                 col_den,
                 bins=bins,
                 histtype="step",
-                label=cat_plot_name,
+                label=cat_plot_name if "SPREAD" not in cat or i == 1 else None,
                 weights=weights_den,
                 edgecolor=color_list[i][0],
                 facecolor=color_list[i][1] if len(color_list[i]) > 1 else None,
                 fill=True if len(color_list[i]) > 1 else False,
+                # linestyle="--" if "SPREAD" in cat else "-",
                 alpha=0.5,
-                # range=range_4b,
             )
-            ax_ratio.errorbar(
-                bins_center,
-                ratio,
-                yerr=ratio_err,
-                fmt=".",
-                label=cat_plot_name,
-                color=color_list[i][0],
-            )
+
+            if "SPREAD" in cat:
+                histos_spread.append(h_den)
+                # plot the spread of the DNN score as histogram in the ratio
+                ax_ratio.step(
+                    bins,
+                    np.append(ratio, ratio[-1]),
+                    where="post",
+                    color=color_list[i][0],
+                    # linestyle="--",
+                    linewidth=1,
+                    zorder=0,
+                )
+                ratios_spread.append(ratio)
+            else:
+                ax_ratio.errorbar(
+                    bins_center,
+                    ratio,
+                    yerr=ratio_err,
+                    fmt=".",
+                    color=color_list[i][0],
+                )
 
         if chi2_norm:
             ax.text(
@@ -374,7 +481,48 @@ def plot_single_var_from_columns(
 
         del col_den, col_num
 
+    if "SPREAD" in cats_name:
+        # plot the median of the spread
+        h_median_spread = np.median(histos_spread, axis=0)
+        ax.step(
+            bins,
+            np.append(h_median_spread, h_median_spread[-1]),
+            where="post",
+            color=color_list[-2][0],
+            linewidth=1,
+            label=cat_plot_name_alt,
+            zorder=10,
+        )
+        ratio_median = h_num / h_median_spread
+        ax_ratio.step(
+            bins,
+            np.append(ratio_median, ratio_median[-1]),
+            where="post",
+            color=color_list[-2][0],
+            linewidth=1,
+        )
+
+        # plot the 16th and 84th percentiles of the spread
+        ratio_16 = np.percentile(ratios_spread, 16, axis=0)
+        ratio_84 = np.percentile(ratios_spread, 84, axis=0)
+        ax_ratio.step(
+            bins,
+            np.append(ratio_16, ratio_16[-1]),
+            where="post",
+            color=color_list[-1][0],
+            linewidth=1,
+            label=r"$\pm \sigma_{k-folds}$",
+        )
+        ax_ratio.step(
+            bins,
+            np.append(ratio_84, ratio_84[-1]),
+            where="post",
+            color=color_list[-1][0],
+            linewidth=1,
+        )
+
     ax.legend(loc="upper right")
+    ax_ratio.legend(loc="upper left")
     ax.set_yscale("log" if log_scale else "linear")
 
     hep.cms.lumitext(f"{era_string}, {lumi}" + r" $fb^{-1}$, (13.6 TeV)", ax=ax)
@@ -387,7 +535,10 @@ def plot_single_var_from_columns(
 
     ax.grid()
     ax_ratio.grid()
-    ax_ratio.set_ylim(0.5, 1.5)
+    if "SPREAD" in cat:
+        ax_ratio.set_ylim(0.75, 1.25)
+    else:
+        ax_ratio.set_ylim(0.5, 1.5)
     ax.set_ylim(
         top=(1.3 * ax.get_ylim()[1] if not log_scale else ax.get_ylim()[1] ** 1.3)
     )
@@ -402,11 +553,18 @@ def plot_single_var_from_columns(
 def plot_from_columns(cat_col, lumi, era_string):
 
     print(f"CATEGORIES ARE:")
-    print(f"{cat_dict.keys()}")
+    print(cat_dict)
     for cats_name, cat_list in cat_dict.items():
+        if args.spread:
+            if "SPREAD" not in cats_name:
+                continue
+
         if "Run2SPANet" in cats_name:
             chi_squared = False
             color_list = color_list_alt
+        elif "SPREAD" in cats_name:
+            chi_squared = False
+            color_list = color_list_spread
         else:
             chi_squared = True
             color_list = color_list_orig
@@ -414,12 +572,16 @@ def plot_from_columns(cat_col, lumi, era_string):
         # check if the categories are in the accumulator
         try:
             for cat in cat_list:
-                cat_col[cat]
+                if "SPREAD" not in cat:
+                    cat_col[cat]
         except KeyError:
             print(f"KeyError: {cat} not in {cat_col.keys()}, skipping {cats_name}")
             continue
 
         vars_tot = list(cat_col[cat_list[0]].keys())
+        if "SPREAD" in cats_name:
+            vars_tot = [v for v in vars_tot if "weight" in v or "score" in v]
+
         dir_cat = f"{outputdir}/{cats_name}_columns"
         if not os.path.exists(dir_cat):
             os.makedirs(dir_cat)
@@ -449,6 +611,8 @@ def plot_from_columns(cat_col, lumi, era_string):
                     col_dict[f"{v}_{idx}"] = {}
                     vars_to_plot.append(f"{v}_{idx}")
                     for cat in cat_list:
+                        if "SPREAD" in cat:
+                            continue
                         print(v, cat)
                         try:
                             col_dict[f"{v}_{idx}"][cat] = cat_col[cat][v][
@@ -463,16 +627,44 @@ def plot_from_columns(cat_col, lumi, era_string):
                             ]
             else:
                 col_dict[v] = {}
-                if v != "weight":
+                if "weight" not in v:
                     vars_to_plot.append(v)
                 for cat in cat_list:
+                    if "SPREAD" in cat:
+                        continue
                     # swap the dict keys
                     print(v, cat)
                     try:
                         col_dict[v][cat] = cat_col[cat][v]
                     except KeyError:
                         col_dict[v][cat] = cat_col[cat][v.replace("Run2", "")]
-        print(col_dict)
+
+        cat_list_final = cat_list.copy()
+        for cat in cat_list:
+            if "SPREAD" in cat:
+                for i in range(
+                    len(
+                        col_dict["events_bkg_morphing_spread_dnn_weights"][
+                            cat_list_final[0]
+                        ][0]
+                    )
+                ):
+                    for v in vars_tot:
+                        if "score" in v:
+                            col_dict[v][f"{cat}_{i}"] = col_dict[v][cat_list_final[0]]
+
+                    col_dict["weight"][f"{cat}_{i}"] = col_dict[
+                        "events_bkg_morphing_spread_dnn_weights"
+                    ][cat_list_final[0]][:, i]
+
+                    cat_list_final.append(f"{cat}_{i}")
+
+                    if cat in cat_list_final:
+                        # remove the original cat
+                        cat_list_final.remove(cat)
+
+        print("col_dict", col_dict)
+        print("cat_list_final", cat_list_final)
 
         with Pool(args.workers) as p:
             p.starmap(
@@ -482,7 +674,8 @@ def plot_from_columns(cat_col, lumi, era_string):
                         var,
                         col_dict[var],
                         col_dict["weight"],
-                        cat_list,
+                        cats_name,
+                        cat_list_final,
                         dir_cat,
                         chi_squared,
                         color_list,
@@ -497,27 +690,14 @@ def plot_from_columns(cat_col, lumi, era_string):
 
 if __name__ == "__main__":
 
-    if not os.path.exists(outputdir):
-        os.makedirs(outputdir)
-    if args.input.endswith(".coffea"):
-        inputfiles = [args.input]
-    else:
-        # get list of coffea files
-        inputfiles = [
-            os.path.join(input_dir, file)
-            for file in os.listdir(input_dir)
-            if file.endswith(".coffea") and "DATA" in file
-        ]
-    cat_col, total_datasets_list=get_columns_from_files(inputfiles)
-
-    print(cat_col)
+    print(cat_col_data)
     lumi, era_string = get_era_lumi(total_datasets_list)
 
     # plot the weights
-    for category in cat_col.keys():
-        weights = cat_col[category]["weight"]
+    for category in cat_col_data.keys():
+        weights = cat_col_data[category]["weight"]
         plot_weights([weights], category, lumi, era_string)
 
-    plot_from_columns(cat_col, lumi, era_string)
+    plot_from_columns(cat_col_data, lumi, era_string)
 
     print(f"\nPlots saved in {outputdir}")

@@ -15,6 +15,8 @@ from utils.get_era_lumi import get_era_lumi
 from utils.get_columns_from_files import get_columns_from_files
 from utils.inference_session_onnx import get_model_session
 from utils.get_DNN_input_list import get_DNN_input_list
+from utils.weighted_quantile import weighted_quantile
+
 from configs.HH4b_common.dnn_input_variables import sig_bkg_dnn_input_variables
 
 hep.style.use("CMS")
@@ -25,7 +27,7 @@ matplotlib.rcParams["agg.path.chunksize"] = 10000  # or try 5000, depending on s
 
 parser = argparse.ArgumentParser(description="Plot 2b morphed vs 4b data")
 parser.add_argument(
-    "-id",
+    "-i",
     "--input-data",
     type=str,
     required=True,
@@ -74,9 +76,9 @@ if args.test:
     args.workers = 1
     args.output = "test"
 
-NORMALIZE_WEIGHTS = False
+NUMBER_OF_BINS = 20
 PAD_VALUE = -999
-BLIND_VALUE=0.9
+BLIND_VALUE = 0.9
 
 input_dir_data = os.path.dirname(args.input_data)
 
@@ -146,6 +148,44 @@ color_list_orig = [("black",), ("black",), ("blue", "dodgerblue"), ("red",)]
 color_list_alt = [("purple",), ("darkorange", "orange"), ("green",)]
 
 
+if not os.path.exists(outputdir):
+    os.makedirs(outputdir)
+
+if args.input_data.endswith(".coffea"):
+    inputfiles_data = [args.input_data]
+else:
+    # get list of coffea files
+    inputfiles_data = [
+        os.path.join(input_dir_data, file)
+        for file in os.listdir(input_dir_data)
+        if file.endswith(".coffea") and "DATA" in file
+    ]
+
+inputfile_mc = args.input_mc
+input_dir_mc = os.path.dirname(args.input_mc)
+
+filter_lambda = (
+    (
+        lambda x: (
+            "weight" in x
+            or ("score" in x and ("Run2" in x if args.run2 else "Run2" not in x))
+        )
+    )
+    if not args.onnx_model
+    else None
+)
+
+## Collecting MC dataset
+cat_col_mc, total_datasets_list_mc = get_columns_from_files(
+    [inputfile_mc], filter_lambda
+)
+
+## Collecting DATA dataset
+cat_col_data, total_datasets_list_data = get_columns_from_files(
+    inputfiles_data, filter_lambda
+)
+
+
 def plot_single_var_from_columns(
     var,
     col_dict,
@@ -167,7 +207,6 @@ def plot_single_var_from_columns(
     )
     weights_plotted = False
     print(var)
-    range_4b = (0, 0)
 
     var_plot_name = var.replace("Run2", "")
 
@@ -177,11 +216,11 @@ def plot_single_var_from_columns(
     # I still have to define it this way to make up for different ranges of blinded histograms.
     # range_4b is basically a global variable. It is calculated only once.
     # Same as bin_edges. Both depend on the MC signal
-    col_den = col_dict[cat_list[1]]["mc"]
-    range_4b = tuple(np.quantile(col_den, [0, 1]))
-    nbins = 20
-    bin_edges = np.quantile(col_den, np.linspace(0, 1, nbins + 1))
-    print(f"range_4b {range_4b}")
+    bin_edges = weighted_quantile(
+        col_dict[cat_list[1]]["mc"],
+        np.linspace(0, 1, NUMBER_OF_BINS + 1),
+        weights=weight_dict[cat_list[1]]["mc"],
+    )
     print(f"bin_edges {bin_edges}")
 
     # this is the mc data that I want to add to the histogram of the reweighted data
@@ -215,27 +254,10 @@ def plot_single_var_from_columns(
             col_den = col_den[col_den != PAD_VALUE]
             col_num = col_num[col_num != PAD_VALUE]
 
-            # mask_num_range4b = (col_num > range_4b[0]) & (col_num < range_4b[1])
-            # weights_num = weights_num[mask_num_range4b]
-            # col_num = col_num[mask_num_range4b]
-
-            # mask_den_range4b = (col_den > range_4b[0]) & (col_den < range_4b[1])
-            # weights_den = weights_den[mask_den_range4b]
-            # col_den = col_den[mask_den_range4b]
-
             norm_factor_den = weights_num.sum() / weights_den.sum()
             print("Difference between the different normings")
             print(norm_factor_den)
             print(ratio2b4b)
-            norm_factor_den = 1.0  # ratio2b4b
-            norm_factor_num = 1.0
-            print(
-                f"Plotting from columns {var} for {cat} with norm {norm_factor_den} and weights sum {weights_den.sum()}"
-            )
-
-            # normalize the weights
-            weights_den = weights_den * norm_factor_den
-            weights_num = weights_num * norm_factor_num
 
             print(f"weights_den {weights_den}", type(weights_den))
             print(f"weights_num {weights_num}")
@@ -281,7 +303,10 @@ def plot_single_var_from_columns(
             values["weights_den"] = np.concatenate(
                 (values["weights_den"], plotdict[mc_signal]["weights_den"])
             )
-            namesuffix = " + mc signal"
+            
+            # namesuffix = " + mc signal"
+            kl=os.path.basename(inputfile_mc).split("kl-")[-1].split("_")[0].replace("p", ".")
+            namesuffix = r" + $\kappa_\lambda$ = " + kl
 
             idx_den_onlybg = np.digitize(values["col_den_onlybg"], values["bin_edges"])
             values["h_den_onlybg"] = []
@@ -348,7 +373,9 @@ def plot_single_var_from_columns(
 
         # Thanks chatGPT. Try to mask the bins, where both edges are above BLIND_VALUE:
         if not "control" in region:
-            mask_blind = ~((bin_edges[:-1] > BLIND_VALUE) & (bin_edges[1:] > BLIND_VALUE))
+            mask_blind = ~(
+                (bin_edges[:-1] > BLIND_VALUE) & (bin_edges[1:] > BLIND_VALUE)
+            )
         else:
             mask_blind = ~(
                 (bin_edges[:-1] > 1) & (bin_edges[1:] > 1)
@@ -507,7 +534,7 @@ def plot_single_var_from_columns(
                     label=region + namesuffix,
                     color=values["color"][0],
                 )
-                
+
             ax.hist(
                 values["col_den"],
                 bins=bin_edges,
@@ -518,7 +545,6 @@ def plot_single_var_from_columns(
                 facecolor=values["color"][1] if len(values["color"]) > 1 else None,
                 fill=True if len(values["color"]) > 1 else False,
                 alpha=0.5,
-                range=range_4b,
             )
     del plotdict
 
@@ -685,7 +711,6 @@ def plot_from_columns(cat_cols, lumi, era_string):
                     col_dict[v] = {}
                 if not v in vars_to_plot:
                     vars_to_plot.append(v)
-                    
 
                 for cat in cat_list:
                     if not cat in col_dict[v].keys():
@@ -710,7 +735,7 @@ def plot_from_columns(cat_cols, lumi, era_string):
                     # print("outputs", cat, data_mc, outputs[0].shape, outputs[0])
 
         print("col_dict", col_dict)
-        print("vars_to_plot",vars_to_plot)
+        print("vars_to_plot", vars_to_plot)
 
         with Pool(args.workers) as p:
             print(f"Category name: {cats_name}")
@@ -750,43 +775,6 @@ def plot_from_columns(cat_cols, lumi, era_string):
 
 
 if __name__ == "__main__":
-
-    if not os.path.exists(outputdir):
-        os.makedirs(outputdir)
-
-    if args.input_data.endswith(".coffea"):
-        inputfiles_data = [args.input_data]
-    else:
-        # get list of coffea files
-        inputfiles_data = [
-            os.path.join(input_dir_data, file)
-            for file in os.listdir(input_dir_data)
-            if file.endswith(".coffea") and "DATA" in file
-        ]
-
-    inputfile_mc = args.input_mc
-    input_dir_mc = os.path.dirname(args.input_mc)
-
-    filter_lambda = (
-        (
-            lambda x: (
-                "weight" in x
-                or ("score" in x and ("Run2" in x if args.run2 else "Run2" not in x))
-            )
-        )
-        if not args.onnx_model
-        else None
-    )
-
-    ## Collecting MC dataset
-    cat_col_mc, total_datasets_list_mc = get_columns_from_files(
-        [inputfile_mc], filter_lambda
-    )
-
-    ## Collecting DATA dataset
-    cat_col_data, total_datasets_list_data = get_columns_from_files(
-        inputfiles_data, filter_lambda
-    )
 
     print("cat_col_data")
     for key, value in cat_col_data.items():
