@@ -11,11 +11,13 @@ import argparse
 import mplhep as hep
 from multiprocessing import Pool
 
-from utils.get_era_lumi import get_era_lumi
-from utils.get_columns_from_files import get_columns_from_files
 from utils.inference_session_onnx import get_model_session
 from utils.get_DNN_input_list import get_DNN_input_list
-from utils.weighted_quantile import weighted_quantile
+
+from utils.plot.get_era_lumi import get_era_lumi
+from utils.plot.get_columns_from_files import get_columns_from_files
+from utils.plot.weighted_quantile import weighted_quantile
+from utils.plot.plot_names import plot_regions_names
 
 from configs.HH4b_common.dnn_input_variables import sig_bkg_dnn_input_variables
 
@@ -89,9 +91,9 @@ outputdir = os.path.join(input_dir_data, args.output) + f"_{args.normalisation}"
 # To mix categories with Run2 and SPANet, put first the Run2 category
 # because first the name of the variables is try with the Run2 string
 # and after without it
-# First region: data 4b
+# First region: data 4b (blinded)
 # Second region: mc 4b (unblinded)
-# Third region: data reweighted
+# Third region: data 2b reweighted (unblinded)
 cat_dict = {}
 if args.run2:
     cat_dict[f"CR{args.region_suffix}Run2"] = [
@@ -123,13 +125,22 @@ else:
     #    f"CR{args.region_suffix}_4b_Run2SPANet": [f"4b{args.region_suffix}_control_regionRun2", f"4b{args.region_suffix}_control_region"],
 
 if args.test:
-    cat_dict = {
-        f"CR{args.region_suffix}": [
-            f"4b{args.region_suffix}_control_region",
-            f"2b{args.region_suffix}_control_region_postW",
-            #  f"2b{args.region_suffix}_control_region_preW",
-        ],
-    }
+    if args.run2:
+        cat_dict = {
+            f"SR{args.region_suffix}Run2": [
+                f"4b{args.region_suffix}_signal_regionRun2",
+                f"4b{args.region_suffix}_signal_regionRun2",
+                f"2b{args.region_suffix}_signal_region_postWRun2",
+            ]
+        }
+    else:
+        cat_dict = {
+            f"SR{args.region_suffix}": [
+                f"4b{args.region_suffix}_signal_region",
+                f"4b{args.region_suffix}_signal_region",
+                f"2b{args.region_suffix}_signal_region_postW",
+            ]
+        }
 
 
 ## Load the onnx model
@@ -144,7 +155,11 @@ if args.onnx_model:
     print(f"Input list for DNN: {dnn_input_list}")
 
 
-color_list_orig = [("black",), ("black",), ("blue", "dodgerblue"), ("red",)]
+color_list_orig = [
+    ("black",),
+    ("red",),
+    ("blue", "dodgerblue"),
+]
 color_list_alt = [("purple",), ("darkorange", "orange"), ("green",)]
 
 
@@ -216,30 +231,30 @@ def plot_single_var_from_columns(
     # I still have to define it this way to make up for different ranges of blinded histograms.
     # range_4b is basically a global variable. It is calculated only once.
     # Same as bin_edges. Both depend on the MC signal
-    bin_edges = weighted_quantile(
-        col_dict[cat_list[1]]["mc"],
-        np.linspace(0, 1, NUMBER_OF_BINS + 1),
-        weights=weight_dict[cat_list[1]]["mc"],
-    )
+    if "UNIFORM" in var:
+        bin_edges = np.linspace(0, 1, NUMBER_OF_BINS + 1)
+    else:
+        bin_edges = weighted_quantile(
+            col_dict[cat_list[1]]["MC"],
+            np.linspace(0, 1, NUMBER_OF_BINS + 1),
+            weights=weight_dict[cat_list[1]]["MC"],
+        )
     print(f"bin_edges {bin_edges}")
 
     # this is the mc data that I want to add to the histogram of the reweighted data
-    mc_signal = f"{cat_list[1].replace('Run2', '_DHH')}_mc"
-
+    mc_signal = f"{cat_list[1].replace('Run2', '_DHH')}_MC"
     for i, cat in enumerate(cat_list):
         # I only want the following columns:
         # postW data
         # signal data
         # signal MC
-        cat_plot_name = cat.replace("Run2", "_DHH")
-        print(cat_plot_name)
-        for data_mc in ["mc", "data"]:
+        for data_mc in ["MC", "DATA"]:
             # we dont need the reweighted MC region
-            if data_mc == "mc" and "postW" in cat_plot_name:
+            if data_mc == "MC" and "postW" in cat:
                 continue
-            if data_mc == "mc" and "blind" in cat_plot_name:
+            if data_mc == "MC" and "blind" in cat:
                 continue
-            if i == 1 and data_mc == "data":
+            if i == 1 and data_mc == "DATA":
                 continue
 
             weights_den = weight_dict[cat][data_mc]
@@ -268,12 +283,25 @@ def plot_single_var_from_columns(
             bins_center = (bin_edges[1:] + bin_edges[:-1]) / 2
             print("bins_center", bins_center, len(bins_center))
 
-            print(f"Found something to plot {cat_plot_name}_{data_mc}")
+            if "TRANSFORM" in var:
+                bin_edges_plotting = np.linspace(
+                    bin_edges[0], bin_edges[-1], NUMBER_OF_BINS + 1
+                )
+                bins_center_plotting = (
+                    bin_edges_plotting[1:] + bin_edges_plotting[:-1]
+                ) / 2
+            else:
+                bin_edges_plotting = bin_edges
+                bins_center_plotting = bins_center
+
+            print(f"Found something to plot {cat}_{data_mc}")
             # Here we save the MC and the bg reweighted
             # The signal was already plotted and we don't need it anymore
-            plotdict[f"{cat_plot_name}_{data_mc}"] = {
+            plotdict[f"{cat}_{data_mc}"] = {
                 "bin_edges": bin_edges,
                 "bins_center": bins_center,
+                "bin_edges_plotting": bin_edges_plotting,
+                "bins_center_plotting": bins_center_plotting,
                 "color": color_list[i],
                 "col_den": col_den,
                 "col_num": col_num,
@@ -282,7 +310,7 @@ def plot_single_var_from_columns(
             }
             del col_den, col_num
 
-    print(plotdict)
+    # print(plotdict)
     for region, values in plotdict.items():
         print(f"Plotting region {region}")
         # Trying to add up the reweighted data from 2b with the MC signal
@@ -303,10 +331,6 @@ def plot_single_var_from_columns(
             values["weights_den"] = np.concatenate(
                 (values["weights_den"], plotdict[mc_signal]["weights_den"])
             )
-            
-            # namesuffix = " + mc signal"
-            kl=os.path.basename(inputfile_mc).split("kl-")[-1].split("_")[0].replace("p", ".")
-            namesuffix = r" + $\kappa_\lambda$ = " + kl
 
             idx_den_onlybg = np.digitize(values["col_den_onlybg"], values["bin_edges"])
             values["h_den_onlybg"] = []
@@ -323,14 +347,27 @@ def plot_single_var_from_columns(
             values["h_den_onlybg"] = np.array(values["h_den_onlybg"])
             values["err_den_onlybg"] = np.array(values["err_den_onlybg"])
 
+        if "postW" in region or "MC" in region:
+            kl = (
+                os.path.basename(inputfile_mc)
+                .split("kl-")[-1]
+                .split("_")[0]
+                .replace("p", ".")
+            )
+            if "postW" in region:
+                namesuffix = r" + $\kappa_\lambda$=" + kl
+            if "MC" in region:
+                namesuffix = r" ($\kappa_\lambda$=" + kl + ")"
+
+        cat_plot_name = plot_regions_names(region, namesuffix)
         # Filling the histograms
         idx_den = np.digitize(values["col_den"], values["bin_edges"])
         idx_num = np.digitize(values["col_num"], values["bin_edges"])
-        print(f"bin_edges {values['bin_edges']}")
-        print(len(values["col_den"]))
-        print(len(values["weights_den"]))
-        print("idx_den", idx_den, len(idx_den))
-        print("idx_num", idx_num, len(idx_num))
+        # print(f"bin_edges {values['bin_edges']}")
+        # print(len(values["col_den"]))
+        # print(len(values["weights_den"]))
+        # print("idx_den", idx_den, len(idx_den))
+        # print("idx_num", idx_num, len(idx_num))
 
         values["h_den"] = []
         values["h_num"] = []
@@ -346,20 +383,20 @@ def plot_single_var_from_columns(
             values["err_num"].append(
                 np.sqrt(np.sum(values["weights_num"][idx_num == j] ** 2))
             )
-            print(
-                'values["weights_den"][idx_den == j]',
-                values["weights_den"][idx_den == j],
-            )
+            # print(
+            #     'values["weights_den"][idx_den == j]',
+            #     values["weights_den"][idx_den == j],
+            # )
 
         values["h_den"] = np.array(values["h_den"])
         values["h_num"] = np.array(values["h_num"])
         values["err_den"] = np.array(values["err_den"])
         values["err_num"] = np.array(values["err_num"])
 
-        print("h_den", values["h_den"], len(values["h_den"]))
-        print("h_num", values["h_num"], len(values["h_num"]))
-        print("err_den", values["err_den"])
-        print("err_num", values["err_num"])
+        # print("h_den", values["h_den"], len(values["h_den"]))
+        # print("h_num", values["h_num"], len(values["h_num"]))
+        # print("err_den", values["err_den"])
+        # print("err_num", values["err_num"])
 
         ratio = values["h_num"] / values["h_den"]
         ratio_err = np.sqrt(
@@ -382,23 +419,23 @@ def plot_single_var_from_columns(
             )  # hacked - so not blinded
 
         # Reference dataset (data in 4b)
-        if not "postW" in region and "data" in region:
-            print("Found signal region data")
+        if not "postW" in region and "DATA" in region:
+            print("Found signal region DATA")
             ratio = values["h_num"][mask_blind] / values["h_den"][mask_blind]
             ratio_err = values["err_num"][mask_blind] / values["h_num"][mask_blind]
-            print("ratio_err", ratio_err)
+            # print("ratio_err", ratio_err)
 
             ax.errorbar(
-                values["bins_center"][mask_blind],
+                values["bins_center_plotting"][mask_blind],
                 values["h_den"][mask_blind],
                 yerr=values["err_den"][mask_blind],
-                label=region,
+                label=cat_plot_name,
                 color=values["color"][0],
                 fmt=".",
             )
             ax_ratio.axhline(y=1, color=values["color"][0], linestyle="--")
             ax_ratio.fill_between(
-                values["bins_center"][mask_blind],
+                values["bins_center_plotting"][mask_blind],
                 1 - ratio_err,
                 1 + ratio_err,
                 color="grey",
@@ -427,7 +464,7 @@ def plot_single_var_from_columns(
                     0.05,
                     0.95 - 0.05,
                     r"$\chi^2$/ndof= {:.1f},".format(chi2_norm)
-                    + f"  p-value= {pvalue:.2f}",
+                    + f"  p-value= {pvalue:.2f} (blind)",
                     horizontalalignment="left",
                     verticalalignment="center",
                     transform=ax.transAxes,
@@ -486,7 +523,7 @@ def plot_single_var_from_columns(
                 ax.text(
                     0.05,
                     0.95 - 0.15,
-                    r"$s/\sqrt{{{{b}}}}$ = {:.2f} $\pm$ {:.2f},".format(sob, sob_err),
+                    r"$s/\sqrt{{{{b}}}}$ = {:.2f} $\pm$ {:.2f}".format(sob, sob_err),
                     horizontalalignment="left",
                     verticalalignment="center",
                     transform=ax.transAxes,
@@ -494,58 +531,100 @@ def plot_single_var_from_columns(
                     fontsize=20,
                 )
 
-                # plot the sob for each bin
-                fig_sob, ax_sob = plt.subplots(figsize=[13, 13])
-                ax_sob.errorbar(
-                    values["bins_center"],
-                    sob_list,
-                    yerr=sob_err_list,
-                    fmt=".",
-                    label=region + namesuffix,
-                    color=values["color"][0],
-                )
-                ax_sob.fill_between(
-                    values["bins_center"],
-                    sob_list - sob_err_list,
-                    sob_list + sob_err_list,
-                    color="grey",
-                    alpha=0.5,
-                )
-                ax_sob.legend(loc="upper left")
-                ax_sob.set_yscale("linear")
-                hep.cms.lumitext(
-                    f"{era_string}, {lumi}" + r" $fb^{-1}$, (13.6 TeV)", ax=ax_sob
-                )
-                ax_sob.set_xlabel(var_plot_name)
-                ax_sob.set_ylabel(r"$s/\sqrt{{{{b}}}}$")
-                ax_sob.grid()
-                fig_sob.savefig(
-                    os.path.join(dir_cat, f"{var}_sob.png"),
-                    bbox_inches="tight",
-                    dpi=300,
-                )
-                plt.close(fig_sob)
+                for plot_var, plot_var_err, axis_name, plot_name in zip(
+                    [sob_list, s, b],
+                    [
+                        sob_err_list,
+                        s_err,
+                        b_err,
+                    ],
+                    [r"$s/\sqrt{{{{b}}}}$", "sig", "bkg"],
+                    ["sob", "sig", "bkg"],
+                ):
+
+                    # plot the sob for each bin
+                    fig_events, ax_events = plt.subplots(figsize=[13, 13])
+                    ax_events.errorbar(
+                        values["bins_center_plotting"],
+                        plot_var,
+                        yerr=plot_var_err,
+                        fmt=".",
+                        label=cat_plot_name,
+                        color=values["color"][0],
+                    )
+                    ax_events.fill_between(
+                        values["bins_center_plotting"],
+                        plot_var - plot_var_err,
+                        plot_var + plot_var_err,
+                        color="grey",
+                        alpha=0.5,
+                    )
+                    ax_events.legend(loc="upper left")
+                    ax_events.set_yscale("linear")
+                    hep.cms.lumitext(
+                        f"{era_string}, {lumi}" + r" $fb^{-1}$, (13.6 TeV)",
+                        ax=ax_events,
+                    )
+                    ax_events.set_xlabel(var_plot_name)
+                    ax_events.set_ylabel(axis_name)
+                    ax_events.grid()
+                    fig_events.savefig(
+                        os.path.join(dir_cat, f"{var}_{plot_name}.png"),
+                        bbox_inches="tight",
+                        dpi=300,
+                    )
+                    plt.close(fig_events)
 
                 ax_ratio.errorbar(
-                    values["bins_center"][mask_blind],
+                    values["bins_center_plotting"][mask_blind],
                     ratio[mask_blind],
                     yerr=ratio_err[mask_blind],
                     fmt=".",
-                    label=region + namesuffix,
+                    label=cat_plot_name,
                     color=values["color"][0],
                 )
 
-            ax.hist(
-                values["col_den"],
-                bins=bin_edges,
-                histtype="step",
-                label=region + namesuffix,
-                weights=values["weights_den"],
-                edgecolor=values["color"][0],
-                facecolor=values["color"][1] if len(values["color"]) > 1 else None,
-                fill=True if len(values["color"]) > 1 else False,
-                alpha=0.5,
+            ## plot the histogram
+            ax.step(
+                values["bin_edges_plotting"],
+                np.append(values["h_den"], values["h_den"][-1]),
+                where="post",
+                label=cat_plot_name,
+                color=values["color"][0],
             )
+
+            x0 = values["bin_edges_plotting"][0]
+            x1 = values["bin_edges_plotting"][-1]
+            y0 = values["h_den"][0]
+            y1 = values["h_den"][-1]
+            ax.plot(
+                [x0, x0], [ax.get_ylim()[0], y0], color=values["color"][0]
+            )  # first bin edge
+            ax.plot(
+                [x1, x1], [ax.get_ylim()[0], y1], color=values["color"][0]
+            )  # last bin edge
+
+            if len(values["color"]) > 1:
+                ax.fill_between(
+                    values["bin_edges_plotting"],
+                    np.append(values["h_den"], values["h_den"][-1]),
+                    step="post",
+                    alpha=0.5,
+                    color=values["color"][1],
+                )
+
+            # ax.hist(
+            #     values["col_den"],
+            #     bins=values["bin_edges_plotting"],
+            #     histtype="step",
+            #     label=cat_plot_name,
+            #     weights=values["weights_den"],
+            #     edgecolor=values["color"][0],
+            #     facecolor=values["color"][1] if len(values["color"]) > 1 else None,
+            #     fill=True if len(values["color"]) > 1 else False,
+            #     alpha=0.5,
+            # )
+
     del plotdict
 
     ax.legend(loc="upper right")
@@ -588,11 +667,14 @@ def plot_from_columns(cat_cols, lumi, era_string):
         op_norm = lambda x, y: len(x) / len(y)
 
     if args.run2:
-        CR_region_keys = cat_dict[f"CR{args.region_suffix}Run2"]
-        CRratio_4b_2bpostW_Run2 = op_norm(
-            cat_cols[0][CR_region_keys[0]]["weight"],
-            cat_cols[0][CR_region_keys[2]]["weight"],
-        )
+        if args.test:
+            CRratio_4b_2bpostW_Run2 = 1
+        else:
+            CR_region_keys = cat_dict[f"CR{args.region_suffix}Run2"]
+            CRratio_4b_2bpostW_Run2 = op_norm(
+                cat_cols[0][CR_region_keys[0]]["weight"],
+                cat_cols[0][CR_region_keys[2]]["weight"],
+            )
 
         SR_region_keys = cat_dict[f"SR{args.region_suffix}Run2"]
         SRratio_4b_2bpostW_Run2 = op_norm(
@@ -603,14 +685,16 @@ def plot_from_columns(cat_cols, lumi, era_string):
         print(f"CR ratio Run2: {CRratio_4b_2bpostW_Run2}")
         print(f"SR ratio Run2: {SRratio_4b_2bpostW_Run2}")
     else:
-        print(cat_dict.keys())
-        CR_region_keys = cat_dict[f"CR{args.region_suffix}"]
-        print(CR_region_keys)
+        if args.test:
+            CRratio_4b_2bpostW = 1
+        else:
+            CR_region_keys = cat_dict[f"CR{args.region_suffix}"]
+            print(CR_region_keys)
 
-        CRratio_4b_2bpostW = op_norm(
-            cat_cols[0][CR_region_keys[0]]["weight"],
-            cat_cols[0][CR_region_keys[2]]["weight"],
-        )
+            CRratio_4b_2bpostW = op_norm(
+                cat_cols[0][CR_region_keys[0]]["weight"],
+                cat_cols[0][CR_region_keys[2]]["weight"],
+            )
 
         SR_region_keys = cat_dict[f"SR{args.region_suffix}"]
         SRratio_4b_2bpostW = op_norm(
@@ -635,7 +719,7 @@ def plot_from_columns(cat_cols, lumi, era_string):
         # From here on we have to extract for signal an MC:
         # :param: data_mc means that we make the dictionary one longer such that for each category we save the data and the MC values.
         col_dict = {}
-        for data_mc, cat_col in zip(["data", "mc"], cat_cols):
+        for data_mc, cat_col in zip(["DATA", "MC"], cat_cols):
             print(data_mc)
             print(cat_col.keys())
             vars_tot = list(cat_col[cat_list[0]].keys())
@@ -694,7 +778,7 @@ def plot_from_columns(cat_cols, lumi, era_string):
                         if v == "weight":
                             # Note that the total luminosity is hardcoded here for 2022postEE
                             col_dict[v][cat][data_mc] = col_dict[v][cat][data_mc] * (
-                                lumi / (5.79 + 17.6 + 2.88) if data_mc == "mc" else 1
+                                lumi / (5.79 + 17.6 + 2.88) if data_mc == "MC" else 1
                             )
 
             # compute the DNN score if onnx model is given
@@ -734,8 +818,12 @@ def plot_from_columns(cat_cols, lumi, era_string):
 
                     # print("outputs", cat, data_mc, outputs[0].shape, outputs[0])
 
+        vars_to_plot_final = vars_to_plot.copy()
+        vars_to_plot_final += [f"{v}_TRANSFORM" for v in vars_to_plot  if "score" in v]
+        vars_to_plot_final += [f"{v}_UNIFORM" for v in vars_to_plot  if "score" in v]
+
         print("col_dict", col_dict)
-        print("vars_to_plot", vars_to_plot)
+        print("vars_to_plot_final", vars_to_plot_final)
 
         with Pool(args.workers) as p:
             print(f"Category name: {cats_name}")
@@ -757,7 +845,7 @@ def plot_from_columns(cat_cols, lumi, era_string):
                 [
                     (
                         var,
-                        col_dict[var],
+                        col_dict[var.replace("_TRANSFORM", "").replace("_UNIFORM", "")],
                         col_dict["weight"],
                         cat_list,
                         dir_cat,
@@ -767,8 +855,7 @@ def plot_from_columns(cat_cols, lumi, era_string):
                         lumi,
                         era_string,
                     )
-                    for var in vars_to_plot
-                    if "score" in var
+                    for var in vars_to_plot_final
                 ],
             )
         del col_dict
