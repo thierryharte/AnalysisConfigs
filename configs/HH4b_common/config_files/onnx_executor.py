@@ -1,4 +1,4 @@
-from HH4b_parton_matching_config_DHH_reweight import onnx_model_dict
+from configs.HH4b_common.config_files.__config_file__ import onnx_model_dict
 
 from utils.onnx_executor_common import OnnxExecutorFactory
 

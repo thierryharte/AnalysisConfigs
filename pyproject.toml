@@ -52,3 +52,6 @@ pocket_coffea = ["configs/*.txt",
               "configs/*.yaml",
               "configs/*.json",
               "configs/*.txt.gz"]
+
+[project.scripts]
+run_pocket_coffea = "configs.HH4b_common.config_files.run_pocket_coffea_wrapper:main"
