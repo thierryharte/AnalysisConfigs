@@ -242,7 +242,7 @@ def plot_single_var_from_columns(
     print(f"bin_edges {bin_edges}")
 
     # this is the mc data that I want to add to the histogram of the reweighted data
-    mc_signal = f"{cat_list[1].replace('Run2', '_DHH')}_MC"
+    mc_signal = f"{cat_list[1]}_MC"
     for i, cat in enumerate(cat_list):
         # I only want the following columns:
         # postW data
@@ -359,7 +359,7 @@ def plot_single_var_from_columns(
             if "MC" in region:
                 namesuffix = r" ($\kappa_\lambda$=" + kl + ")"
 
-        cat_plot_name = plot_regions_names(region, namesuffix)
+        cat_plot_name = plot_regions_names(region, namesuffix).replace("Run2","_DHH")
         # Filling the histograms
         idx_den = np.digitize(values["col_den"], values["bin_edges"])
         idx_num = np.digitize(values["col_num"], values["bin_edges"])
