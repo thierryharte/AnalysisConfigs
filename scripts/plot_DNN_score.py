@@ -11,6 +11,7 @@ import argparse
 import mplhep as hep
 from multiprocessing import Pool
 
+from configs.HH4b_common.dnn_input_variables import sig_bkg_dnn_input_variables
 from utils.inference_session_onnx import get_model_session
 from utils.get_DNN_input_list import get_DNN_input_list
 
@@ -19,7 +20,6 @@ from utils.plot.get_columns_from_files import get_columns_from_files
 from utils.plot.weighted_quantile import weighted_quantile
 from utils.plot.plot_names import plot_regions_names
 
-from configs.HH4b_common.dnn_input_variables import sig_bkg_dnn_input_variables
 
 hep.style.use("CMS")
 
@@ -815,8 +815,8 @@ def plot_from_columns(cat_cols, lumi, era_string):
                     )
                     # print("events_sig_bkg_dnn_score", col_dict["events_sig_bkg_dnn_score"][cat][data_mc])
                     col_dict[v][cat][data_mc] = outputs[0][:, -1]
-
                     # print("outputs", cat, data_mc, outputs[0].shape, outputs[0])
+                    del input_variables_array, inputs_complete, outputs
 
         vars_to_plot_final = vars_to_plot.copy()
         vars_to_plot_final += [f"{v}_TRANSFORM" for v in vars_to_plot  if "score" in v]
