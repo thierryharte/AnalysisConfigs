@@ -587,7 +587,7 @@ def plot_single_var_from_columns(
                 )
 
             ## Save the histogram
-            np.savez(os.path.join(dir_cat, f"hist_columns_{region}_{savesuffix}.npz".replace("Run2", "_DHH")), counts=np.append(values["h_den"],values["h_den"][-1]), bin_edges=values["bin_edges_plotting"])
+            np.savez(os.path.join(dir_cat, f"hist_columns_{region}_{var_plot_name}_{savesuffix}.npz".replace("Run2", "_DHH")), counts=np.append(values["h_den"],values["h_den"][-1]), bin_edges=values["bin_edges_plotting"], plot=var_plot_name)
 
             ## plot the histogram
             ax.step(

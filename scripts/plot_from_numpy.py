@@ -43,66 +43,108 @@ if not os.path.exists(outputdir):
 
 filedict = {}
 for input in args.input_data:
+    input = os.path.abspath(input)
     if os.path.exists(input) and "npz" in input:
+        print(f"Found file {input}")
         filedict[Path(input).stem] = np.load(input)
-    elif os.path.isdir(input):
-        input_dir = os.path.dirname(input)
-        for file in glob.glob(f"{input_dir}/*.npz"):
+    elif os.path.exists(input):
+        print(f"Found folder {input}")
+        for file in glob.glob(f"{input}/*.npz"):
+            print(f"Found file {file}")
             filedict[Path(file).stem] = np.load(file)
     else:
         raise ValueError(f"The path {input} does not exist!")
 
-fig, (ax) = plt.subplots(
-    1,
-    1,
-    figsize=[13, 13],
-    sharex=True,
-    #gridspec_kw={"height_ratios": [2.5, 1]},
-)
 
-# Load histogram data
+# Get list of plot names:
+plots = []
 for file, data in filedict.items():
     print(file)
     print(data.files)
     print(data["counts"])
     print(data["bin_edges"])
+    plots.append(data["plot"].item())
+plots = set(plots)
 
+colours = ["b", "r", "g", "y"]
 
-    ax.step(
-        data["bin_edges"],
-        data["counts"],
-        where="post",
-        label=file,
+for plot in plots:
+    ref_data = None
+    fig, (ax, ax_ratio) = plt.subplots(
+        2,
+        1,
+        figsize=[13, 13],
+        sharex=True,
+        gridspec_kw={"height_ratios": [2.5, 1]},
     )
-    ax.fill_between(
-        data["bin_edges"],
-        data["counts"],
-        step="post",
-        alpha=0.5,
-        #color=values["color"][1],
+    # Load histogram data
+    idx_data = -1
+    idx_mc = -1
+    for file, data in filedict.items():
+        if not data["plot"] == plot:
+            continue
+
+        name = file.replace("_UNIFORM", "").replace("_TRANSFORM", "").replace("hist_columns_","").replace("_events_sig_bkg_dnn_score", "")
+
+        if "DATA" in file:
+            idx_data += 1
+            if ref_data is None:
+                ref_data = data
+                ax_ratio.axhline(y=1, color="k", linestyle="--")
+            ratio = data["counts"] / ref_data["counts"]
+            print(ratio)
+            # To be added when we also save the errors
+            #  ratio_err = np.sqrt(
+            #      (values["err_num"] / values["h_den"]) ** 2
+            #      + (values["h_num"] * values["err_den"] / values["h_den"] ** 2) ** 2
+            #  )
+            ax_ratio.errorbar(
+                data["bin_edges"],
+                ratio,
+                yerr=np.zeros(len(ratio)),
+                fmt=".",
+                label=name,
+                color=colours[idx_data],
+            )
+        else:
+            idx_mc +=1
+
+        ax.step(
+            data["bin_edges"],
+            data["counts"],
+            where="post",
+            label=name,
+            color=colours[idx_data if "DATA" in file else idx_mc],
+        )
+        ax.fill_between(
+            data["bin_edges"],
+            data["counts"],
+            step="post",
+            alpha=0.5,
+            color=colours[idx_data if "DATA" in file else idx_mc],
+        )
+
+
+    ax.legend(loc="upper right")
+    ax.set_yscale("log" if log_scale else "linear")
+
+    #hep.cms.lumitext(f"{era_string}, {lumi}" + r" $fb^{-1}$, (13.6 TeV)", ax=ax)
+    hep.cms.text(text="Preliminary", ax=ax)
+
+    ax_ratio.set_xlabel(plot)
+    ax.set_ylabel("Events")
+    ax_ratio.set_ylabel("ratio")
+
+    ax.grid()
+    ax_ratio.grid()
+    #ax_ratio.set_ylim(0.5, 1.5)
+    ax.set_ylim(
+        top=(1.3 * ax.get_ylim()[1] if not log_scale else ax.get_ylim()[1] ** 1.3)
     )
 
-
-ax.legend(loc="upper right")
-ax.set_yscale("log" if log_scale else "linear")
-
-#hep.cms.lumitext(f"{era_string}, {lumi}" + r" $fb^{-1}$, (13.6 TeV)", ax=ax)
-hep.cms.text(text="Preliminary", ax=ax)
-
-#ax_ratio.set_xlabel(var_plot_name)
-ax.set_ylabel("Events")
-#ax_ratio.set_ylabel("Data/Pred.")
-
-ax.grid()
-#ax_ratio.grid()
-#ax_ratio.set_ylim(0.5, 1.5)
-ax.set_ylim(
-    top=(1.3 * ax.get_ylim()[1] if not log_scale else ax.get_ylim()[1] ** 1.3)
-)
-
-fig.savefig(
-    os.path.join(outputdir, f"plots_from_onnx.png"),
-    bbox_inches="tight",
-    dpi=300,
-)
-plt.close(fig)
+    fig.savefig(
+        os.path.join(outputdir, f"{plot}.png"),
+        bbox_inches="tight",
+        dpi=300,
+    )
+    plt.close(fig)
