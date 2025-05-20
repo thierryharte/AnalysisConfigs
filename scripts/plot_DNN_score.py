@@ -778,7 +778,7 @@ def plot_from_columns(cat_cols, lumi, era_string):
                         if v == "weight":
                             # Note that the total luminosity is hardcoded here for 2022postEE
                             col_dict[v][cat][data_mc] = col_dict[v][cat][data_mc] * (
-                                lumi / (5.79 + 17.6 + 2.88) if data_mc == "MC" else 1
+                                float(lumi) / (5.79 + 17.6 + 2.88) if data_mc == "MC" else 1
                             )
 
             # compute the DNN score if onnx model is given

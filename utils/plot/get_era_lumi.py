@@ -46,6 +46,9 @@ def get_era_lumi(dataset_data):
     print(era_list)
     assert len(era_list) > 0
     lumi = sum([era_lumi_dict[era] for era in era_list])
+    #convert lumi to string with 2 digits
+    lumi = "{:.2f}".format(lumi)
+    
     # If nothing else will be satisfied:
     era_string = ", ".join(era_list)
     # If only one Era
