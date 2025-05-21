@@ -30,7 +30,24 @@ from configs.HH4b_common.dnn_input_variables import (
     bkg_morphing_dnn_input_variables_altOrder,
     sig_bkg_dnn_input_variables,
 )
-from configs.VBF_HH4b.onnx_models import onnx_model_dict
+from configs.HH4b_common.config_files.__config_file__ import (
+    onnx_model_dict,
+    HIGGS_PARTON_MATCHING,
+    VBF_PARTON_MATCHING,
+    TIGHT_CUTS,
+    CLASSIFICATION,
+    SAVE_CHUNK,
+    VBF_PRESEL,
+    SEMI_TIGHT_VBF,
+    DNN_VARIABLES,
+    RUN2,
+    VR1,
+    RANDOM_PT,
+    BLIND,
+    DELTA_PROB
+)
+
+# from configs.VBF_HH4b.onnx_models import onnx_model_dict
 
 import configs.HH4b_common.custom_cuts_common as cuts
 
@@ -55,17 +72,18 @@ parameters = defaults.merge_parameters_from_files(
 
 print("onnx_model_dict", onnx_model_dict)
 
-
-VBF_PARTON_MATCHING = False
-TIGHT_CUTS = False
-CLASSIFICATION = False
-SAVE_CHUNK = False
-VBF_PRESEL = False
-SEMI_TIGHT_VBF = True
-DNN_VARIABLES = True
-VR1 = False
-BLIND = True if onnx_model_dict["SIG_BKG_DNN"] else False
-RUN2 = False
+# HIGGS_PARTON_MATCHING,
+# VBF_PARTON_MATCHING = False
+# TIGHT_CUTS = False
+# CLASSIFICATION = False
+# SAVE_CHUNK = False
+# VBF_PRESEL = False
+# SEMI_TIGHT_VBF = True
+# DNN_VARIABLES = True
+# RUN2 = False
+# VR1 = False
+# RANDOM_PT = False
+# BLIND = True if onnx_model_dict["SIG_BKG_DNN"] else False
 
 workflow_options = {
     "parton_jet_min_dR": 0.4,
@@ -81,6 +99,7 @@ workflow_options = {
     "DNN_VARIABLES": DNN_VARIABLES,
     "RUN2": RUN2,
     "pad_value": -999.0,
+    "DeltaProb":DELTA_PROB,
 }
 workflow_options.update(onnx_model_dict)
 
@@ -108,10 +127,10 @@ preselection = (
 sample_list = [
     # "DATA_JetMET_JMENano_C_skimmed",
     # "DATA_JetMET_JMENano_D_skimmed",
-    # "DATA_JetMET_JMENano_E_skimmed",
+    "DATA_JetMET_JMENano_E_skimmed",
     "DATA_JetMET_JMENano_F_skimmed",
     "DATA_JetMET_JMENano_G_skimmed",
-    # "GluGlutoHHto4B_spanet_skimmed",
+    "GluGlutoHHto4B_spanet_skimmed",
     # "GluGlutoHHto4B",
     # "VBF_HHto4B",
 ]
@@ -154,6 +173,23 @@ if DNN_VARIABLES:
         | bkg_morphing_dnn_input_variables
         | {"year": ["events", "year"]}
     )
+
+    if workflow_options["SPANET"]:
+        total_input_variables |= (
+            {"Delta_pairing_probabilities": ["events", "Delta_pairing_probabilities"]}
+            | {
+                "Logit_Delta_pairing_probabilities": [
+                    "events",
+                    "Logit_Delta_pairing_probabilities",
+                ]
+            }
+            | {
+                "Arctanh_Delta_pairing_probabilities": [
+                    "events",
+                    "Arctanh_Delta_pairing_probabilities",
+                ]
+            }
+        )
     print(total_input_variables)
 
     column_list = create_DNN_columns_list(
@@ -180,29 +216,26 @@ for sample in sample_list:
     }
     for category in categories_dict.keys():
         if "Run2" in category:
-            # if "DATA" in sample:
-            #     column_listRun2 += get_columns_list({"events": ["bkg_morphing_spread_dnn_weightsRun2"]})
-
             bysample_bycategory_column_dict[sample]["bycategory"][category] = (
                 column_listRun2
                 + (
                     get_columns_list(
                         {"events": ["bkg_morphing_spread_dnn_weightsRun2"]}
                     )
-                    if "DATA" in sample and workflow_options["BKG_MORPHING_SPREAD_DNN"] and "postW" in category 
+                    if "DATA" in sample
+                    and workflow_options["BKG_MORPHING_SPREAD_DNN"]
+                    and "postW" in category
                     else []
                 )
             )
         else:
-            # if "DATA" in sample:
-            #     column_list += get_columns_list({"events": ["bkg_morphing_spread_dnn_weights"]})
             bysample_bycategory_column_dict[sample]["bycategory"][category] = (
                 column_list
                 + (
-                    get_columns_list(
-                        {"events": ["bkg_morphing_spread_dnn_weights"]}
-                    )
-                    if "DATA" in sample and workflow_options["BKG_MORPHING_SPREAD_DNN"] and "postW" in category
+                    get_columns_list({"events": ["bkg_morphing_spread_dnn_weights"]})
+                    if "DATA" in sample
+                    and workflow_options["BKG_MORPHING_SPREAD_DNN"]
+                    and "postW" in category
                     else []
                 )
             )

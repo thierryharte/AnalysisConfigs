@@ -13,7 +13,8 @@ from .custom_object_preselection_common import lepton_selection, jet_selection_n
 from .dnn_input_variables import (
     bkg_morphing_dnn_input_variables,
     sig_bkg_dnn_input_variables,
-    bkg_morphing_dnn_input_variables_altOrder,
+    bkg_morphing_dnn_DeltaProb_input_variables,
+    sig_bkg_dnn_DeltaProb_input_variables,
 )
 
 from utils.parton_matching_function import get_parton_last_copy
@@ -74,6 +75,13 @@ class HH4bCommonProcessor(BaseProcessorABC):
         self.DNN_VARIABLES = self.workflow_options["DNN_VARIABLES"]
         self.RUN2 = self.workflow_options["RUN2"]
         self.pad_value = self.workflow_options["pad_value"]
+        
+        if self.workflow_options["DeltaProb"]:
+            self.sig_bkg_dnn_input_variables = sig_bkg_dnn_DeltaProb_input_variables
+            self.bkg_morphing_dnn_input_variables = bkg_morphing_dnn_DeltaProb_input_variables
+        else:
+            self.sig_bkg_dnn_input_variables = sig_bkg_dnn_input_variables
+            self.bkg_morphing_dnn_input_variables = bkg_morphing_dnn_input_variables
 
     def apply_object_preselection(self, variation):
         self.events["Jet"] = ak.with_field(
@@ -721,7 +729,18 @@ class HH4bCommonProcessor(BaseProcessorABC):
                 self.events.best_pairing_probability
                 - self.events.second_best_pairing_probability
             )
-
+            
+            # apply logit transformation
+            self.events["Logit_Delta_pairing_probabilities"] = np.log(
+                self.events["Delta_pairing_probabilities"]
+                / (1 - self.events["Delta_pairing_probabilities"])
+            )
+            
+            # apply arctanh transformation
+            self.events["Arctanh_Delta_pairing_probabilities"] = np.arctanh(
+                self.events["Delta_pairing_probabilities"]
+            )
+            
             (
                 self.events["HiggsLeading"],
                 self.events["HiggsSubLeading"],
@@ -812,7 +831,7 @@ class HH4bCommonProcessor(BaseProcessorABC):
                         input_name_BKG_MORPHING_DNN,
                         output_name_BKG_MORPHING_DNN,
                         self.events,
-                        bkg_morphing_dnn_input_variables,
+                        self.bkg_morphing_dnn_input_variables,
                         pad_value=self.pad_value,
                     )[0],
                     axis=None,
@@ -825,7 +844,7 @@ class HH4bCommonProcessor(BaseProcessorABC):
                         input_name_BKG_MORPHING_DNN,
                         output_name_BKG_MORPHING_DNN,
                         self.events,
-                        bkg_morphing_dnn_input_variables,
+                        self.bkg_morphing_dnn_input_variables,
                         pad_value=self.pad_value,
                         run2=True,
                     )[0],
@@ -848,7 +867,7 @@ class HH4bCommonProcessor(BaseProcessorABC):
                         input_name_BKG_MORPHING_SPREAD_DNN,
                         output_name_BKG_MORPHING_SPREAD_DNN,
                         self.events,
-                        bkg_morphing_dnn_input_variables,
+                        self.bkg_morphing_dnn_input_variables,
                         pad_value=self.pad_value,
                     )
                 )
@@ -860,7 +879,7 @@ class HH4bCommonProcessor(BaseProcessorABC):
                         input_name_BKG_MORPHING_SPREAD_DNN,
                         output_name_BKG_MORPHING_SPREAD_DNN,
                         self.events,
-                        bkg_morphing_dnn_input_variables,
+                        self.bkg_morphing_dnn_input_variables,
                         pad_value=self.pad_value,
                         run2=True,
                     )
@@ -879,7 +898,7 @@ class HH4bCommonProcessor(BaseProcessorABC):
                     input_name_SIG_BKG_DNN,
                     output_name_SIG_BKG_DNN,
                     self.events,
-                    sig_bkg_dnn_input_variables,
+                    self.sig_bkg_dnn_input_variables,
                     pad_value=self.pad_value,
                 )[0]
                 # if array is 1 dim just take it
@@ -895,7 +914,7 @@ class HH4bCommonProcessor(BaseProcessorABC):
                     input_name_SIG_BKG_DNN,
                     output_name_SIG_BKG_DNN,
                     self.events,
-                    sig_bkg_dnn_input_variables,
+                    self.sig_bkg_dnn_input_variables,
                     pad_value=self.pad_value,
                     run2=True,
                 )[0]

@@ -8,6 +8,7 @@ onnx_model_dict = {
     "SPANET": "",
     "VBF_GGF_DNN": "",
     "BKG_MORPHING_DNN": "",
+    "BKG_MORPHING_SPREAD_DNN": "",
     "SIG_BKG_DNN": "",
 }
 

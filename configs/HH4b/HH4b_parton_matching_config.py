@@ -44,6 +44,7 @@ from configs.HH4b_common.config_files.__config_file__ import (
     VR1,
     RANDOM_PT,
     BLIND,
+    DELTA_PROB
 )
 
 import configs.HH4b_common.custom_cuts_common as cuts
@@ -83,6 +84,8 @@ workflow_options = {
     "random_pt": RANDOM_PT,
     "rand_type": 0.3,
     "pad_value": -999.0,
+    "DeltaProb":DELTA_PROB,
+    
 }
 workflow_options.update(onnx_model_dict)
 
