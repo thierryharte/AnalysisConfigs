@@ -9,12 +9,15 @@ import mplhep as hep
 import argparse
 from pathlib import Path
 import glob
+import logging
 
 hep.style.use("CMS")
 
 import matplotlib
 
 matplotlib.rcParams["agg.path.chunksize"] = 10000  # or try 5000, depending on size
+
+
 
 parser = argparse.ArgumentParser(description="Plot 2b morphed vs 4b data")
 parser.add_argument(
@@ -40,17 +43,25 @@ outputdir = args.output
 if not os.path.exists(outputdir):
     os.makedirs(outputdir)
 
+logging.basicConfig(filename=f"{outputdir}/logger.log",
+                    filemode='a',
+                    format='%(asctime)s,%(msecs)03d %(name)s %(levelname)s %(message)s',
+                    datefmt='%Y-%m-%d %H:%M:%S',
+                    level=logging.INFO)
+logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
+logger = logging.getLogger()
+
 
 filedict = {}
 for input in args.input_data:
     input = os.path.abspath(input)
     if os.path.exists(input) and "npz" in input:
-        print(f"Found file {input}")
+        logger.info(f"Found file {input}")
         filedict[Path(input).stem] = np.load(input)
     elif os.path.exists(input):
-        print(f"Found folder {input}")
+        logger.info(f"Found folder {input}")
         for file in glob.glob(f"{input}/*.npz"):
-            print(f"Found file {file}")
+            logger.info(f"Found file {file}")
             filedict[Path(file).stem] = np.load(file)
     else:
         raise ValueError(f"The path {input} does not exist!")
@@ -59,23 +70,29 @@ for input in args.input_data:
 # Get list of plot names:
 plots = []
 for file, data in filedict.items():
-    print(file)
-    print(data.files)
-    print(data["counts"])
-    print(data["bin_edges"])
+    logger.info(file)
+    logger.info(data.files)
+    logger.info(data["counts"])
+    logger.info(data["bin_edges"])
     plots.append(data["plot"].item())
 plots = set(plots)
 
-colours = ["b", "r", "g", "y"]
+colour_mc = ["mediumblue", "darkred", "darkgreen", "goldenrod"]
+colour_both = ["royalblue", "coral", "palegreen", "palegoldenrod"]
+colour_data = ["deepskyblue", "orangered", "darkseagreen", "gold"]
 
 for plot in plots:
-    ref_data = None
-    fig, (ax, ax_ratio) = plt.subplots(
+    ref = {"mc": None, "data": None, "both": None}
+    idx = {"mc": -1, "data": -1, "both": -1}
+    hist_fig, (ax, ax_ratio) = plt.subplots(
         2,
         1,
         figsize=[13, 13],
         sharex=True,
         gridspec_kw={"height_ratios": [2.5, 1]},
+    )
+    fig_sob, ax_sob = plt.subplots(
+        figsize=[13, 13],
     )
     # Load histogram data
     idx_data = -1
@@ -86,43 +103,90 @@ for plot in plots:
 
         name = file.replace("_UNIFORM", "").replace("_TRANSFORM", "").replace("hist_columns_","").replace("_events_sig_bkg_dnn_score", "")
 
-        if "DATA" in file:
-            idx_data += 1
-            if ref_data is None:
-                ref_data = data
-                ax_ratio.axhline(y=1, color="k", linestyle="--")
-            ratio = data["counts"] / ref_data["counts"]
-            print(ratio)
-            # To be added when we also save the errors
-            #  ratio_err = np.sqrt(
-            #      (values["err_num"] / values["h_den"]) ** 2
-            #      + (values["h_num"] * values["err_den"] / values["h_den"] ** 2) ** 2
-            #  )
-            ax_ratio.errorbar(
-                data["bin_edges"],
-                ratio,
-                yerr=np.zeros(len(ratio)),
-                fmt=".",
-                label=name,
-                color=colours[idx_data],
-            )
+        logger.info(f"== Amount of weighted events in {name} ==")
+        logger.info(sum(data["counts"]))
+        logger.info(f"== Amount of events in {name} ==")
+        logger.info(data["num_events"])
+
+        if "MC" in file:
+            cmap = colour_mc
+            ref_key = "mc"
+        elif "DATA" in file and "kl" in file:
+            cmap = colour_both
+            ref_key = "both"
         else:
-            idx_mc +=1
+            cmap = colour_data
+            ref_key = "data"
+        print(f"The file {file} is part of {ref_key}")
+
+        idx[ref_key] += 1
+        if ref[ref_key] is None:
+            ref[ref_key] = data
+            ax_ratio.axhline(y=1, color="k", linestyle="--")
+        ratio = data["counts"] / ref[ref_key]["counts"]
+        logger.info(ratio)
+        ratio_err = np.sqrt(
+                (ref[ref_key]["count_err"] / data["counts"][:-1]) ** 2
+                + (ref[ref_key]["counts"][:-1] * data["count_err"] / data["counts"][:-1] ** 2) ** 2
+        )
+        ax_ratio.errorbar(
+            data["bin_edges"],
+            ratio,
+            yerr=np.zeros(len(ratio)),
+            fmt=".",
+            label=name,
+            color=cmap[idx[ref_key]],
+        )
 
         ax.step(
             data["bin_edges"],
             data["counts"],
             where="post",
             label=name,
-            color=colours[idx_data if "DATA" in file else idx_mc],
+            color=cmap[idx[ref_key]],
         )
         ax.fill_between(
             data["bin_edges"],
             data["counts"],
             step="post",
-            alpha=0.5,
-            color=colours[idx_data if "DATA" in file else idx_mc],
+            alpha=0.2,
+            color=cmap[idx[ref_key]],
         )
+    
+        if "sob" in data.files:
+            # plot the sob for each bin
+            ax_sob.errorbar(
+                (data["bin_edges"][:-1]+data["bin_edges"][1:])/2,
+                data["sob"],
+                yerr=data["sob_err"],
+                fmt=".",
+                label=name,
+                color=cmap[idx[ref_key]],
+            )
+            ax_sob.fill_between(
+                (data["bin_edges"][:-1]+data["bin_edges"][1:])/2,
+                data["sob"] - data["sob_err"],
+                data["sob"] + data["sob_err"],
+                color="grey",
+                alpha=0.2,
+            )
+            ax_sob.legend(loc="upper left")
+            ax_sob.set_yscale("linear")
+            #hep.cms.lumitext(
+            #    f"{era_string}, {lumi}" + r" $fb^{-1}$, (13.6 TeV)",
+            #    ax=ax_sob,
+            #)
+            ax_sob.set_xlabel(plot)
+            ax_sob.set_ylabel(r"$s/\sqrt{b}$")
+            ax_sob.grid()
+            fig_sob.savefig(
+                os.path.join(outputdir, f"{plot}_sob.png"),
+                bbox_inches="tight",
+                dpi=300,
+            )
+            plt.close(fig_sob)
+
+
 
 
     ax.legend(loc="upper right")
@@ -142,9 +206,9 @@ for plot in plots:
         top=(1.3 * ax.get_ylim()[1] if not log_scale else ax.get_ylim()[1] ** 1.3)
     )
 
-    fig.savefig(
+    hist_fig.savefig(
         os.path.join(outputdir, f"{plot}.png"),
         bbox_inches="tight",
         dpi=300,
     )
-    plt.close(fig)
+    plt.close(hist_fig)

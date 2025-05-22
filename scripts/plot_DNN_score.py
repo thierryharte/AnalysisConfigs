@@ -586,8 +586,29 @@ def plot_single_var_from_columns(
                     color=values["color"][0],
                 )
 
-            ## Save the histogram
-            np.savez(os.path.join(dir_cat, f"hist_columns_{region}_{var_plot_name}_{savesuffix}.npz".replace("Run2", "_DHH")), counts=np.append(values["h_den"],values["h_den"][-1]), bin_edges=values["bin_edges_plotting"], plot=var_plot_name)
+                ## Save the histogram
+                np.savez(os.path.join(dir_cat, f"hist_columns_{region}_{var_plot_name}_{savesuffix}.npz".replace("Run2", "_DHH")), 
+                        counts=np.append(values["h_den"],values["h_den"][-1]),
+                        count_err=values["err_den"],
+                        bin_edges=values["bin_edges_plotting"],
+                        plot=var_plot_name,
+                        num_events=len(values["col_den"]))
+                np.savez(os.path.join(dir_cat, f"hist_columns_{region}_{var_plot_name}.npz".replace("Run2", "_DHH")), 
+                        counts=np.append(values["h_den_onlybg"],values["h_den_onlybg"][-1]),
+                        count_err=values["err_den_onlybg"],
+                        bin_edges=values["bin_edges_plotting"],
+                        sob=sob_list,
+                        sob_err=sob_err_list,
+                        plot=var_plot_name,
+                        num_events=len(values["col_den"]))
+            else: # For mainly MC and 4b_data, as there we are not calculating the sob
+                ## Save the histogram
+                np.savez(os.path.join(dir_cat, f"hist_columns_{region}_{var_plot_name}_{savesuffix}.npz".replace("Run2", "_DHH")), 
+                        counts=np.append(values["h_den"],values["h_den"][-1]),
+                        count_err=values["err_den"],
+                        bin_edges=values["bin_edges_plotting"],
+                        plot=var_plot_name,
+                        num_events=len(values["col_den"]))
 
             ## plot the histogram
             ax.step(
