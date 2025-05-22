@@ -286,5 +286,5 @@ if __name__ == "__main__":
                 print(f"Key {key} is missing in the first dictionary")
                 
     # Call the function to print the differences
-    print"Differences between bkg_morphing_dnn_input_variables and bkg_morphing_dnn_input_variables_altOrder:")
+    print("Differences between bkg_morphing_dnn_input_variables and bkg_morphing_dnn_input_variables_altOrder:")
     print_dict_diff(bkg_morphing_dnn_input_variables, sig_bkg_dnn_input_variables)

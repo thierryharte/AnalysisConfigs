@@ -731,10 +731,10 @@ class HH4bCommonProcessor(BaseProcessorABC):
             )
             
             # apply logit transformation
-            self.events["Logit_Delta_pairing_probabilities"] = np.log(
-                self.events["Delta_pairing_probabilities"]
-                / (1 - self.events["Delta_pairing_probabilities"])
-            )
+            # self.events["Logit_Delta_pairing_probabilities"] = np.log(
+            #     self.events["Delta_pairing_probabilities"]
+            #     / (1 - self.events["Delta_pairing_probabilities"])
+            # )
             
             # apply arctanh transformation
             self.events["Arctanh_Delta_pairing_probabilities"] = np.arctanh(

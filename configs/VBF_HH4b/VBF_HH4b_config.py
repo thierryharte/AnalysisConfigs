@@ -177,12 +177,12 @@ if DNN_VARIABLES:
     if workflow_options["SPANET"]:
         total_input_variables |= (
             {"Delta_pairing_probabilities": ["events", "Delta_pairing_probabilities"]}
-            | {
-                "Logit_Delta_pairing_probabilities": [
-                    "events",
-                    "Logit_Delta_pairing_probabilities",
-                ]
-            }
+            # | {
+            #     "Logit_Delta_pairing_probabilities": [
+            #         "events",
+            #         "Logit_Delta_pairing_probabilities",
+            #     ]
+            # }
             | {
                 "Arctanh_Delta_pairing_probabilities": [
                     "events",

@@ -1,12 +1,8 @@
 import os
 import sys
 from matplotlib import pyplot as plt
-from coffea.util import load
-from omegaconf import OmegaConf
 import numpy as np
 from scipy.stats.distributions import chi2
-from pocket_coffea.utils.plot_utils import PlotManager
-import argparse
 import mplhep as hep
 from multiprocessing import Pool
 
@@ -18,81 +14,12 @@ from utils.plot.get_era_lumi import get_era_lumi
 from utils.plot.get_columns_from_files import get_columns_from_files
 from utils.plot.weighted_quantile import weighted_quantile
 from utils.plot.plot_names import plot_regions_names
+from utils.plot.args_plot import args
 
 hep.style.use("CMS")
 
-
-parser = argparse.ArgumentParser(description="Plot 2b morphed vs 4b data")
-parser.add_argument(
-    "-i",
-    "--input-data",
-    type=str,
-    nargs="+",
-    required=True,
-    help="Input directory for data with coffea files or coffea files themselves",
-)
-parser.add_argument(
-    "-im",
-    "--input-mc",
-    nargs="+",
-    type=str,
-    help="Input coffea files monte carlo",
-    default=None,
-)
-parser.add_argument(
-    "-o", "--output", type=str, help="Output directory", default="plots_2bVS4b"
-)
-parser.add_argument(
-    "-n",
-    "--normalisation",
-    type=str,
-    help="Type of normalisation (num_events, sum_weights, density)",
-    default="sum_weights",
-)
-parser.add_argument(
-    "-om",
-    "--onnx-model",
-    type=str,
-    help="Path to the onnx containing the DNN model for SvB",
-    default="",
-)
-parser.add_argument(
-    "-r",
-    "--region-suffix",
-    type=str,
-    help="Suffix for the region",
-    default="",
-)
-parser.add_argument("-w", "--workers", type=int, default=8, help="Number of workers")
-parser.add_argument(
-    "-l", "--linear", action="store_true", help="Linear scale", default=False
-)
-parser.add_argument(
-    "-t", "--test", action="store_true", help="Test on one variable", default=False
-)
-parser.add_argument(
-    "-r2",
-    "--run2",
-    action="store_true",
-    help="If running with Run2 method",
-    default=False,
-)
-parser.add_argument(
-    "-s",
-    "--spread",
-    action="store_true",
-    help="Perform the spread morphing plot of the DNN score",
-    default=False,
-)
-parser.add_argument(
-    "-c",
-    "--comparison",
-    action="store_true",
-    help="Compare distributions for DATA and MC and for Run2 and SPANet",
-    default=False,
-)
-
-args = parser.parse_args()
+if not args.output:
+    args.output="plots_2bVS4b"
 
 if args.test:
     args.workers = 1
@@ -243,7 +170,7 @@ cat_col_data, total_datasets_list = get_columns_from_files(inputfiles, filter_la
 cat_col_mc = None
 if args.input_mc:
     if args.input_mc[0].endswith(".coffea"):
-        inputfiles_mc = [args.input_mc]
+        inputfiles_mc = args.input_mc
         CONST_SIG_BINNING = True if len(inputfiles_mc) == 1 else False
     else:
         CONST_SIG_BINNING = False
@@ -649,8 +576,9 @@ def plot_single_var_from_columns(
     ax_ratio.grid()
     if "SPREAD" in cat:
         ax_ratio.set_ylim(0.75, 1.25)
-    elif not "DATAMC":
+    elif not "DATAMC" in cat:
         ax_ratio.set_ylim(0.5, 1.5)
+        
     ax.set_ylim(
         top=(
             1.3 * ax.get_ylim()[1]
@@ -912,8 +840,9 @@ if __name__ == "__main__":
 
     # plot the weights
     for category in cat_col_data.keys():
-        weights = cat_col_data[category]["weight"]
-        plot_weights([weights], category, lumi, era_string)
+        if "postW" in category:
+            weights = cat_col_data[category]["weight"]
+            plot_weights([weights], category, lumi, era_string)
 
     plot_from_columns([cat_col_data, cat_col_mc], lumi, era_string)
 

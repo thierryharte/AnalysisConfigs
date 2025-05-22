@@ -1,17 +1,12 @@
 import os
 import sys
 from matplotlib import pyplot as plt
-from coffea.util import load
-from coffea.processor.accumulator import column_accumulator
-from omegaconf import OmegaConf
 import numpy as np
 from scipy.stats.distributions import chi2
-from pocket_coffea.utils.plot_utils import PlotManager
-import argparse
 import mplhep as hep
 from multiprocessing import Pool
 
-from configs.HH4b_common.dnn_input_variables import sig_bkg_dnn_input_variables
+import configs.HH4b_common.dnn_input_variables as dnn_input_variables
 from utils.inference_session_onnx import get_model_session
 from utils.get_DNN_input_list import get_DNN_input_list
 
@@ -19,6 +14,7 @@ from utils.plot.get_era_lumi import get_era_lumi
 from utils.plot.get_columns_from_files import get_columns_from_files
 from utils.plot.weighted_quantile import weighted_quantile
 from utils.plot.plot_names import plot_regions_names
+from utils.plot.args_plot import args
 
 
 hep.style.use("CMS")
@@ -27,52 +23,9 @@ import matplotlib
 
 matplotlib.rcParams["agg.path.chunksize"] = 10000  # or try 5000, depending on size
 
-parser = argparse.ArgumentParser(description="Plot 2b morphed vs 4b data")
-parser.add_argument(
-    "-i",
-    "--input-data",
-    type=str,
-    required=True,
-    help="Input directory for data with coffea files or coffea file itself",
-)
-parser.add_argument(
-    "-im", "--input-mc", type=str, required=True, help="Input coffea file monte carlo"
-)
-parser.add_argument(
-    "-o", "--output", type=str, help="Output directory", default="plots_DNN_data_and_mc"
-)
-parser.add_argument(
-    "-n",
-    "--normalisation",
-    type=str,
-    help="Type of normalisation (num_events, sum_weights)",
-    default="sum_weights",
-)
-parser.add_argument(
-    "-om",
-    "--onnx-model",
-    type=str,
-    help="Path to the onnx containing the DNN model for SvB",
-    default="",
-)
-parser.add_argument(
-    "-r",
-    "--region-suffix",
-    type=str,
-    help="Suffix for the region",
-    default="",
-)
-parser.add_argument("-w", "--workers", type=int, default=1, help="Number of workers")
-parser.add_argument(
-    "-l", "--linear", action="store_true", help="Linear scale", default=False
-)
-parser.add_argument(
-    "-t", "--test", action="store_true", help="Test on one variable", default=False
-)
-parser.add_argument(
-    "-r2", "--run2", action="store_true", help="Also run run2 regions", default=False
-)
-args = parser.parse_args()
+if not args.output:
+    args.output="plots_DNN_data_and_mc"
+
 
 if args.test:
     args.workers = 1
@@ -82,7 +35,7 @@ NUMBER_OF_BINS = 20
 PAD_VALUE = -999
 BLIND_VALUE = 0.9
 
-input_dir_data = os.path.dirname(args.input_data)
+input_dir_data = os.path.dirname(args.input_data[0])
 
 log_scale = not args.linear
 outputdir = os.path.join(input_dir_data, args.output) + f"_{args.normalisation}"
@@ -151,7 +104,9 @@ if args.onnx_model:
         output_name_SIG_BKG_DNN,
     ) = get_model_session(args.onnx_model, "SIG_BKG_DNN")
     # load the variables for the DNN
-    dnn_input_list = get_DNN_input_list(args.run2, sig_bkg_dnn_input_variables)
+    # get the list name from the string args.input_variables
+    dnn_variables = getattr(dnn_input_variables, args.input_variables)
+    dnn_input_list = get_DNN_input_list(args.run2, dnn_variables)
     print(f"Input list for DNN: {dnn_input_list}")
 
 
@@ -166,8 +121,8 @@ color_list_alt = [("purple",), ("darkorange", "orange"), ("green",)]
 if not os.path.exists(outputdir):
     os.makedirs(outputdir)
 
-if args.input_data.endswith(".coffea"):
-    inputfiles_data = [args.input_data]
+if args.input_data[0].endswith(".coffea"):
+    inputfiles_data = args.input_data
 else:
     # get list of coffea files
     inputfiles_data = [
@@ -176,8 +131,7 @@ else:
         if file.endswith(".coffea") and "DATA" in file
     ]
 
-inputfile_mc = args.input_mc
-input_dir_mc = os.path.dirname(args.input_mc)
+inputfiles_mc = args.input_mc
 
 filter_lambda = (
     (
@@ -192,7 +146,7 @@ filter_lambda = (
 
 ## Collecting MC dataset
 cat_col_mc, total_datasets_list_mc = get_columns_from_files(
-    [inputfile_mc], filter_lambda
+    inputfiles_mc, filter_lambda
 )
 
 ## Collecting DATA dataset
@@ -349,7 +303,7 @@ def plot_single_var_from_columns(
 
         if "postW" in region or "MC" in region:
             kl = (
-                os.path.basename(inputfile_mc)
+                os.path.basename(inputfiles_mc[0])
                 .split("kl-")[-1]
                 .split("_")[0]
                 .replace("p", ".")
@@ -663,9 +617,13 @@ def plot_from_columns(cat_cols, lumi, era_string):
     # - In this region, 1st element is 4b, 3rd element is 2b-reweighted
     if args.normalisation == "sum_weights":
         op_norm = lambda x, y: sum(x) / sum(y)
-    else:
+    elif args.normalisation == "sum_weights":
         op_norm = lambda x, y: len(x) / len(y)
-
+    else:
+        raise ValueError(
+            f"Unknown normalisation type {args.normalisation}. Use num_events or sum_weights"
+        )
+        
     if args.run2:
         if args.test:
             CRratio_4b_2bpostW_Run2 = 1
@@ -778,7 +736,9 @@ def plot_from_columns(cat_cols, lumi, era_string):
                         if v == "weight":
                             # Note that the total luminosity is hardcoded here for 2022postEE
                             col_dict[v][cat][data_mc] = col_dict[v][cat][data_mc] * (
-                                float(lumi) / (5.79 + 17.6 + 2.88) if data_mc == "MC" else 1
+                                float(lumi) / (5.79 + 17.6 + 2.88)
+                                if data_mc == "MC"
+                                else 1
                             )
 
             # compute the DNN score if onnx model is given
@@ -819,8 +779,8 @@ def plot_from_columns(cat_cols, lumi, era_string):
                     del input_variables_array, inputs_complete, outputs
 
         vars_to_plot_final = vars_to_plot.copy()
-        vars_to_plot_final += [f"{v}_TRANSFORM" for v in vars_to_plot  if "score" in v]
-        vars_to_plot_final += [f"{v}_UNIFORM" for v in vars_to_plot  if "score" in v]
+        vars_to_plot_final += [f"{v}_TRANSFORM" for v in vars_to_plot if "score" in v]
+        vars_to_plot_final += [f"{v}_UNIFORM" for v in vars_to_plot if "score" in v]
 
         print("col_dict", col_dict)
         print("vars_to_plot_final", vars_to_plot_final)
