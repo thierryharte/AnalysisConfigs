@@ -19,7 +19,7 @@ from utils.plot.args_plot import args
 hep.style.use("CMS")
 
 if not args.output:
-    args.output="plots_2bVS4b"
+    args.output = "plots_2bVS4b"
 
 if args.test:
     args.workers = 1
@@ -116,7 +116,14 @@ if args.comparison:
                 f"2b{args.region_suffix}_signal_region_postW",
                 f"4b{args.region_suffix}_signal_region_MC",
             ],
-        ]
+        ],
+        f"SR{args.region_suffix}_4b_DATAMC": [
+            [
+                f"4b{args.region_suffix}_signal_region",
+                f"2b{args.region_suffix}_signal_region_postW",
+                f"4b{args.region_suffix}_signal_region_MC",
+            ],
+        ],
     }
 
 if args.test:
@@ -147,7 +154,11 @@ color_list_spread = [
     [("green", "red")] + [("green",)] * 20 + [("orange",)] + [("blue",)]
 ]
 color_list_alt = [[("purple",), ("darkorange", "orange"), ("green",)]]
-color_list_DATAMC = [[("red",), ("darkorange",)], [("blue",), ("dodgerblue",)]]
+color_list_DATAMC = [
+    [("red",), ("darkorange",), ("purple",)],
+    [("blue",), ("dodgerblue",)],
+    [("green",), ("limegreen",)],
+]
 
 
 if not os.path.exists(outputdir):
@@ -258,6 +269,8 @@ def plot_single_var_from_columns(
     ratios_spread = []
     histos_spread = []
 
+    min_histo_value = 1e10
+
     for k, cat_list in enumerate(cat_lists):
         for i, cat in enumerate(cat_list):
             print("cat", cat)
@@ -270,11 +283,11 @@ def plot_single_var_from_columns(
                 cat_plot_name_alt = plot_regions_names(cat, " (median per bin)")
             else:
                 if "MC" in cat:
-                    kl = (  
-                    os.path.basename(inputfiles_mc[0])
-                    .split("kl-")[-1]
-                    .split("_")[0]
-                    .replace("p", ".")
+                    kl = (
+                        os.path.basename(inputfiles_mc[0])
+                        .split("kl-")[-1]
+                        .split("_")[0]
+                        .replace("p", ".")
                     )
                     namesuffix = r" ($\kappa_\lambda$=" + kl + ")"
                 else:
@@ -324,6 +337,14 @@ def plot_single_var_from_columns(
                     if "blind" not in cat
                     else CONSTANT_SIGNAL_BLIND_BINS
                 )
+            elif type(col_num[0]) == np.int64:
+                # this is a categorical variable, use the number of bins
+                print("categorical variable")
+                bins = np.arange(
+                    col_num.min() - 0.5,
+                    col_num.max() + 1.5,
+                    1,
+                )
             else:
                 # compute the range of the 4b category considering the 0.1% and 99.9% quantile
                 range_4b = (
@@ -332,11 +353,11 @@ def plot_single_var_from_columns(
 
                 print(f"range_4b {range_4b}")
 
-                mask_num_range4b = (col_num > range_4b[0]) & (col_num < range_4b[1])
+                mask_num_range4b = (col_num >= range_4b[0]) & (col_num <= range_4b[1])
                 weights_num = weights_num[mask_num_range4b]
                 col_num = col_num[mask_num_range4b]
 
-                mask_den_range4b = (col_den > range_4b[0]) & (col_den < range_4b[1])
+                mask_den_range4b = (col_den >= range_4b[0]) & (col_den <= range_4b[1])
                 weights_den = weights_den[mask_den_range4b]
                 col_den = col_den[mask_den_range4b]
 
@@ -439,20 +460,24 @@ def plot_single_var_from_columns(
                     where="post",
                     label=cat_plot_name if "SPREAD" not in cat or i == 1 else None,
                     color=color_list[k][i][0],
-                    linewidth=1,
+                    linewidth=2,
                     zorder=0,
                 )
 
+                # plot the first and last bin edges
                 x0 = bins[0]
                 x1 = bins[-1]
                 y0 = h_den[0]
                 y1 = h_den[-1]
                 ax.plot(
-                    [x0, x0], [ax.get_ylim()[0], y0], color=color_list[k][i][0]
+                    [x0, x0], [1e-10, y0], color=color_list[k][i][0], linewidth=2,
                 )  # first bin edge
                 ax.plot(
-                    [x1, x1], [ax.get_ylim()[0], y1], color=color_list[k][i][0]
+                    [x1, x1], [1e-10, y1], color=color_list[k][i][0],linewidth=2,
                 )  # last bin edge
+
+                # get the minimum value of the histogram
+                min_histo_value = min(min_histo_value, h_den.min())
 
                 if len(color_list[k][i]) > 1:
                     ax.fill_between(
@@ -578,12 +603,17 @@ def plot_single_var_from_columns(
         ax_ratio.set_ylim(0.75, 1.25)
     elif not "DATAMC" in cat:
         ax_ratio.set_ylim(0.5, 1.5)
-        
+
     ax.set_ylim(
         top=(
             1.3 * ax.get_ylim()[1]
             if not log_scale
             else ax.get_ylim()[1] ** (1.3 if args.normalisation != "density" else -1.3)
+        ),
+        bottom=(
+            min_histo_value * 0.9
+            if not log_scale
+            else min_histo_value ** (0.9 if args.normalisation != "density" else -0.9)
         ),
     )
     fig.savefig(
@@ -603,7 +633,7 @@ def plot_from_columns(cat_cols, lumi, era_string):
 
     col_dict = {}
     for cats_name, cat_lists in cat_dict.items():
-        plot_categories=False
+        plot_categories = False
         cat_lists_final = []
         for cat_list in cat_lists:
             print(f"categories being analysed {cats_name}", cat_list)
@@ -611,18 +641,17 @@ def plot_from_columns(cat_cols, lumi, era_string):
                 if "SPREAD" not in cats_name:
                     continue
 
+            chi_squared = True
+            color_list = color_list_orig
             if "Run2SPANet" in cats_name:
                 chi_squared = False
                 color_list = color_list_alt
             if "DATAMC" in cats_name:
                 chi_squared = False
                 color_list = color_list_DATAMC
-            elif "SPREAD" in cats_name:
+            if "SPREAD" in cats_name:
                 chi_squared = False
                 color_list = color_list_spread
-            else:
-                chi_squared = True
-                color_list = color_list_orig
 
             # check if the categories are in the accumulator
             try:
@@ -640,7 +669,8 @@ def plot_from_columns(cat_cols, lumi, era_string):
                 vars_tot = [v for v in vars_tot if "weight" in v or "score" in v]
 
             if args.test:
-                vars_tot = vars_tot[:3]
+                # vars_tot = vars_tot[:3]
+                vars_tot=[v for v in vars_tot if "prob" in v or "weight" in v]
             print("vars_tot", vars_tot)
 
             vars_to_plot = []
@@ -720,7 +750,7 @@ def plot_from_columns(cat_cols, lumi, era_string):
                             ]
 
             cat_list_final = cat_list.copy()
-            
+
             # compute the DNN score if onnx model is given
             if args.onnx_model:
                 v = f"events_sig_bkg_dnn_score"  # {'Run2' if args.run2 else ''}"
@@ -759,7 +789,7 @@ def plot_from_columns(cat_cols, lumi, era_string):
             #     var_SPREAD = "events_bkg_morphing_spread_dnn_weightsRun2"
             # else:
             var_SPREAD = "events_bkg_morphing_spread_dnn_weights"
-                
+
             try:
                 for cat in cat_list:
                     if "SPREAD" in cat:
@@ -784,7 +814,6 @@ def plot_from_columns(cat_cols, lumi, era_string):
                 print(f"{var_SPREAD} not in {col_dict.keys()}, skipping")
                 continue
 
-
             dir_cat = f"{outputdir}/{cats_name}_columns"
             if not os.path.exists(dir_cat):
                 os.makedirs(dir_cat)
@@ -804,9 +833,9 @@ def plot_from_columns(cat_cols, lumi, era_string):
                         len(col_dict[col][cat]),
                     )
             cat_lists_final.append(cat_list_final)
-            
+
             plot_categories = True
-            
+
         if plot_categories:
             with Pool(args.workers) as p:
                 p.starmap(

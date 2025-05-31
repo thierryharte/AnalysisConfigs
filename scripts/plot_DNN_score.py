@@ -781,6 +781,7 @@ def plot_from_columns(cat_cols, lumi, era_string):
         vars_to_plot_final = vars_to_plot.copy()
         vars_to_plot_final += [f"{v}_TRANSFORM" for v in vars_to_plot if "score" in v]
         vars_to_plot_final += [f"{v}_UNIFORM" for v in vars_to_plot if "score" in v]
+        vars_to_plot_final = [v for v in vars_to_plot_final if "score" in v]
 
         print("col_dict", col_dict)
         print("vars_to_plot_final", vars_to_plot_final)

@@ -2,7 +2,7 @@ import argparse
 
 
 parser = argparse.ArgumentParser(description="Plot 2b morphed vs 4b data")
-parser.add_argument(
+parser.add_argument (
     "-i",
     "--input-data",
     type=str,
