@@ -10,12 +10,12 @@ from pocket_coffea.workflows.base import BaseProcessorABC
 from pocket_coffea.lib.deltaR_matching import object_matching
 
 from .custom_object_preselection_common import lepton_selection, jet_selection_nopu
-from .dnn_input_variables import (
-    bkg_morphing_dnn_input_variables,
-    sig_bkg_dnn_input_variables,
-    bkg_morphing_dnn_DeltaProb_input_variables,
-    sig_bkg_dnn_DeltaProb_input_variables,
-)
+# from .dnn_input_variables import (
+#     bkg_morphing_dnn_input_variables,
+#     sig_bkg_dnn_input_variables,
+#     bkg_morphing_dnn_DeltaProb_input_variables,
+#     sig_bkg_dnn_DeltaProb_input_variables,
+# )
 
 from utils.parton_matching_function import get_parton_last_copy
 from utils.spanet_evaluation_functions import get_pairing_information, get_best_pairings
@@ -64,24 +64,32 @@ class HH4bCommonProcessor(BaseProcessorABC):
         self.fifth_jet = self.workflow_options["fifth_jet"]
         self.tight_cuts = self.workflow_options["tight_cuts"]
         self.classification = self.workflow_options["classification"]
+        self.arctanh_delta_prob_bin_edge = self.workflow_options[
+            "arctanh_delta_prob_bin_edge"
+        ]
 
         # onnx models
-        self.SPANET = self.workflow_options["SPANET"]
-        self.BKG_MORPHING_DNN = self.workflow_options["BKG_MORPHING_DNN"]
-        self.BKG_MORPHING_SPREAD_DNN = self.workflow_options["BKG_MORPHING_SPREAD_DNN"]
-        self.SIG_BKG_DNN = self.workflow_options["SIG_BKG_DNN"]
-        self.VBF_GGF_DNN = self.workflow_options["VBF_GGF_DNN"]
+        self.spanet = self.workflow_options["spanet"]
+        self.bkg_morphing_dnn = self.workflow_options["bkg_morphing_dnn"]
+        self.bkg_morphing_spread_dnn = self.workflow_options["bkg_morphing_spread_dnn"]
+        self.sig_bkg_dnn = self.workflow_options["sig_bkg_dnn"]
+        self.vbf_ggf_dnn = self.workflow_options["vbf_ggf_dnn"]
 
-        self.DNN_VARIABLES = self.workflow_options["DNN_VARIABLES"]
-        self.RUN2 = self.workflow_options["RUN2"]
+        self.dnn_variables = self.workflow_options["dnn_variables"]
+        self.run2 = self.workflow_options["run2"]
         self.pad_value = self.workflow_options["pad_value"]
+
+        self.bkg_morphing_dnn_input_variables = self.workflow_options["bkg_morphing_dnn_input_variables"]
+        self.sig_bkg_dnn_input_variables = self.workflow_options["sig_bkg_dnn_input_variables"]
         
-        if self.workflow_options["DeltaProb"]:
-            self.sig_bkg_dnn_input_variables = sig_bkg_dnn_DeltaProb_input_variables
-            self.bkg_morphing_dnn_input_variables = bkg_morphing_dnn_DeltaProb_input_variables
-        else:
-            self.sig_bkg_dnn_input_variables = sig_bkg_dnn_input_variables
-            self.bkg_morphing_dnn_input_variables = bkg_morphing_dnn_input_variables
+        # if self.workflow_options["DeltaProb"]:
+        #     self.sig_bkg_dnn_input_variables = sig_bkg_dnn_DeltaProb_input_variables
+        #     self.bkg_morphing_dnn_input_variables = (
+        #         bkg_morphing_dnn_DeltaProb_input_variables
+        #     )
+        # else:
+        #     self.sig_bkg_dnn_input_variables = sig_bkg_dnn_input_variables
+        #     self.bkg_morphing_dnn_input_variables = bkg_morphing_dnn_input_variables
 
     def apply_object_preselection(self, variation):
         self.events["Jet"] = ak.with_field(
@@ -679,7 +687,7 @@ class HH4bCommonProcessor(BaseProcessorABC):
         )
 
     def process_extra_after_presel(self, variation):  # -> ak.Array:
-        if self._isMC and not self.SPANET:
+        if self._isMC and not self.spanet:
             # do truth matching to get b-jet from Higgs
             self.get_jet_higgs_provenance(which_bquark=self.which_bquark)
             self.events["nbQuarkHiggsMatched"] = ak.num(
@@ -703,10 +711,10 @@ class HH4bCommonProcessor(BaseProcessorABC):
                 (self.events.HiggsLeading.mass - 125) ** 2
                 + (self.events.HiggsSubLeading.mass - 120) ** 2
             )
-        elif self.SPANET:
+        elif self.spanet:
             # apply spanet model to get the pairing prediction for the b-jets from Higgs
             model_session_SPANET, input_name_SPANET, output_name_SPANET = (
-                get_model_session(self.SPANET, "SPANET")
+                get_model_session(self.spanet, "SPANET")
             )
 
             # compute the pairing information using the SPANET model
@@ -729,18 +737,29 @@ class HH4bCommonProcessor(BaseProcessorABC):
                 self.events.best_pairing_probability
                 - self.events.second_best_pairing_probability
             )
-            
+
             # apply logit transformation
             # self.events["Logit_Delta_pairing_probabilities"] = np.log(
             #     self.events["Delta_pairing_probabilities"]
             #     / (1 - self.events["Delta_pairing_probabilities"])
             # )
-            
+
             # apply arctanh transformation
             self.events["Arctanh_Delta_pairing_probabilities"] = np.arctanh(
                 self.events["Delta_pairing_probabilities"]
             )
-            
+            arctanh_delta_prob_bin_edges = [
+                np.min(self.events.Arctanh_Delta_pairing_probabilities) - 1,
+                self.arctanh_delta_prob_bin_edge,
+                np.max(self.events.Arctanh_Delta_pairing_probabilities) + 1,
+            ]
+            self.events["Binned_Arctanh_Delta_pairing_probabilities"] = (
+                np.digitize(
+                    ak.to_numpy(self.events.Arctanh_Delta_pairing_probabilities),
+                    arctanh_delta_prob_bin_edges,
+                )
+                - 1
+            )
             (
                 self.events["HiggsLeading"],
                 self.events["HiggsSubLeading"],
@@ -755,7 +774,7 @@ class HH4bCommonProcessor(BaseProcessorABC):
             )
 
         # reconstruct the higgs candidates for Run2 method
-        if self.RUN2:
+        if self.run2:
             (
                 self.events["delta_dhh"],
                 self.events["HiggsLeadingRun2"],
@@ -771,7 +790,7 @@ class HH4bCommonProcessor(BaseProcessorABC):
                 + (self.events.HiggsSubLeadingRun2.mass - 120) ** 2
             )
 
-        if not (self._isMC and not self.SPANET):
+        if not (self._isMC and not self.spanet):
             self.dummy_provenance()
 
         self.events["nJetGoodHiggsMatched"] = ak.num(
@@ -779,14 +798,14 @@ class HH4bCommonProcessor(BaseProcessorABC):
         )
         self.events["nJetGoodMatched"] = ak.num(self.events.JetGoodMatched, axis=1)
 
-        if self.VBF_GGF_DNN:
+        if self.vbf_ggf_dnn:
             (
                 model_session_VBF_GGF_DNN,
                 input_name_VBF_GGF_DNN,
                 output_name_VBF_GGF_DNN,
-            ) = get_model_session(self.VBF_GGF_DNN, "VBF_GGF_DNN")
+            ) = get_model_session(self.vbf_ggf_dnn, "VBF_GGF_DNN")
 
-        if self.DNN_VARIABLES and self.SPANET:
+        if self.dnn_variables and self.spanet:
             (
                 self.events["HiggsLeading"],
                 self.events["HiggsSubLeading"],
@@ -801,7 +820,7 @@ class HH4bCommonProcessor(BaseProcessorABC):
                 matched_jet_higgs_idx_not_none,
                 sb_variables=True,  # if self.SIG_BKG_DNN else False,
             )
-        if self.DNN_VARIABLES and self.RUN2:
+        if self.dnn_variables and self.run2:
             (
                 self.events["HiggsLeadingRun2"],
                 self.events["HiggsSubLeadingRun2"],
@@ -814,17 +833,17 @@ class HH4bCommonProcessor(BaseProcessorABC):
                 self.events.HiggsSubLeadingRun2,
                 self.events.JetGoodFromHiggsOrderedRun2,
                 matched_jet_higgs_idx_not_noneRun2,
-                sb_variables=True,  # if self.SIG_BKG_DNN else False,
+                sb_variables=True,  # if self.sig_bkg_dnn else False,
             )
 
-        if self.BKG_MORPHING_DNN and not self._isMC:
+        if self.bkg_morphing_dnn and not self._isMC:
             (
                 model_session_BKG_MORPHING_DNN,
                 input_name_BKG_MORPHING_DNN,
                 output_name_BKG_MORPHING_DNN,
-            ) = get_model_session(self.BKG_MORPHING_DNN, "BKG_MORPHING_DNN")
+            ) = get_model_session(self.bkg_morphing_dnn, "BKG_MORPHING_DNN")
 
-            if self.SPANET:
+            if self.spanet:
                 self.events["bkg_morphing_dnn_weight"] = ak.flatten(
                     get_dnn_prediction(
                         model_session_BKG_MORPHING_DNN,
@@ -837,7 +856,7 @@ class HH4bCommonProcessor(BaseProcessorABC):
                     axis=None,
                 )
 
-            if self.RUN2:
+            if self.run2:
                 self.events["bkg_morphing_dnn_weightRun2"] = ak.flatten(
                     get_dnn_prediction(
                         model_session_BKG_MORPHING_DNN,
@@ -851,16 +870,16 @@ class HH4bCommonProcessor(BaseProcessorABC):
                     axis=None,
                 )
 
-        if self.BKG_MORPHING_SPREAD_DNN and not self._isMC:
+        if self.bkg_morphing_spread_dnn and not self._isMC:
             (
                 model_session_BKG_MORPHING_SPREAD_DNN,
                 input_name_BKG_MORPHING_SPREAD_DNN,
                 output_name_BKG_MORPHING_SPREAD_DNN,
             ) = get_model_session(
-                self.BKG_MORPHING_SPREAD_DNN, "BKG_MORPHING_SPREAD_DNN"
+                self.bkg_morphing_spread_dnn, "BKG_MORPHING_SPREAD_DNN"
             )
 
-            if self.SPANET:
+            if self.spanet:
                 self.events["bkg_morphing_spread_dnn_weights"] = np.transpose(
                     get_dnn_prediction(
                         model_session_BKG_MORPHING_SPREAD_DNN,
@@ -872,7 +891,7 @@ class HH4bCommonProcessor(BaseProcessorABC):
                     )
                 )
 
-            if self.RUN2:
+            if self.run2:
                 self.events["bkg_morphing_spread_dnn_weightsRun2"] = np.transpose(
                     get_dnn_prediction(
                         model_session_BKG_MORPHING_SPREAD_DNN,
@@ -885,14 +904,14 @@ class HH4bCommonProcessor(BaseProcessorABC):
                     )
                 )
 
-        if self.SIG_BKG_DNN:
+        if self.sig_bkg_dnn:
             (
                 model_session_SIG_BKG_DNN,
                 input_name_SIG_BKG_DNN,
                 output_name_SIG_BKG_DNN,
-            ) = get_model_session(self.SIG_BKG_DNN, "SIG_BKG_DNN")
+            ) = get_model_session(self.sig_bkg_dnn, "SIG_BKG_DNN")
 
-            if self.SPANET:
+            if self.spanet:
                 sig_bkg_dnn_score = get_dnn_prediction(
                     model_session_SIG_BKG_DNN,
                     input_name_SIG_BKG_DNN,
@@ -908,7 +927,7 @@ class HH4bCommonProcessor(BaseProcessorABC):
                     # if array is 2 dim take the last column
                     self.events["sig_bkg_dnn_score"] = sig_bkg_dnn_score[:, -1]
 
-            if self.RUN2:
+            if self.run2:
                 sig_bkg_dnn_score = get_dnn_prediction(
                     model_session_SIG_BKG_DNN,
                     input_name_SIG_BKG_DNN,
