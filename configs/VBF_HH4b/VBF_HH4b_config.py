@@ -123,8 +123,8 @@ sample_list = [
         # "GluGlutoHHto4B",
         # "VBF_HHto4B",
     ]
-    if config_options_dict["sig_bkg_dnn"]
-    else []
+    # if config_options_dict["sig_bkg_dnn"]
+    # else []
 )
 
 

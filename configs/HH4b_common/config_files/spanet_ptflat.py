@@ -34,18 +34,6 @@ onnx_model_dict |= {
     # "sig_bkg_dnn": "/pnfs/psi.ch/cms/trivcat/store/user/mmalucch/keras_models_SvsB/model_fold0.onnx", # soumya's model
 }
 
-# higgs_parton_matching = False
-# vbf_parton_matching = False
-# tight_cuts = False
-# classification = False
-# save_chunk = False
-# vbf_presel = False
-# semi_tight_vbf = True
-# dnn_variables = True
-# run2 = False
-# vr1 = False
-# random_pt = False
-# blind = True if onnx_model_dict["sig_bkg_dnn"] else False
 
 config_options_dict = {
     "higgs_parton_matching": False,
@@ -70,4 +58,5 @@ config_options_dict = {
     "donotscale_sumgenweights": True,
     "pad_value": -999.0,
     "arctanh_delta_prob_bin_edge": 2.44,
+    "arctanh_delta_prob_pad_limit": 2.,
 } | onnx_model_dict

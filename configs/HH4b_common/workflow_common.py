@@ -10,6 +10,7 @@ from pocket_coffea.workflows.base import BaseProcessorABC
 from pocket_coffea.lib.deltaR_matching import object_matching
 
 from .custom_object_preselection_common import lepton_selection, jet_selection_nopu
+
 # from .dnn_input_variables import (
 #     bkg_morphing_dnn_input_variables,
 #     sig_bkg_dnn_input_variables,
@@ -64,9 +65,21 @@ class HH4bCommonProcessor(BaseProcessorABC):
         self.fifth_jet = self.workflow_options["fifth_jet"]
         self.tight_cuts = self.workflow_options["tight_cuts"]
         self.classification = self.workflow_options["classification"]
+        self.dnn_variables = self.workflow_options["dnn_variables"]
+        self.run2 = self.workflow_options["run2"]
+        self.pad_value = self.workflow_options["pad_value"]
+
+        self.bkg_morphing_dnn_input_variables = self.workflow_options[
+            "bkg_morphing_dnn_input_variables"
+        ]
+        self.sig_bkg_dnn_input_variables = self.workflow_options[
+            "sig_bkg_dnn_input_variables"
+        ]
+
         self.arctanh_delta_prob_bin_edge = self.workflow_options[
             "arctanh_delta_prob_bin_edge"
         ]
+        self.arctanh_delta_prob_pad_limit = self.workflow_options["arctanh_delta_prob_pad_limit"]
 
         # onnx models
         self.spanet = self.workflow_options["spanet"]
@@ -75,13 +88,7 @@ class HH4bCommonProcessor(BaseProcessorABC):
         self.sig_bkg_dnn = self.workflow_options["sig_bkg_dnn"]
         self.vbf_ggf_dnn = self.workflow_options["vbf_ggf_dnn"]
 
-        self.dnn_variables = self.workflow_options["dnn_variables"]
-        self.run2 = self.workflow_options["run2"]
-        self.pad_value = self.workflow_options["pad_value"]
 
-        self.bkg_morphing_dnn_input_variables = self.workflow_options["bkg_morphing_dnn_input_variables"]
-        self.sig_bkg_dnn_input_variables = self.workflow_options["sig_bkg_dnn_input_variables"]
-        
         # if self.workflow_options["DeltaProb"]:
         #     self.sig_bkg_dnn_input_variables = sig_bkg_dnn_DeltaProb_input_variables
         #     self.bkg_morphing_dnn_input_variables = (
@@ -713,15 +720,15 @@ class HH4bCommonProcessor(BaseProcessorABC):
             )
         elif self.spanet:
             # apply spanet model to get the pairing prediction for the b-jets from Higgs
-            model_session_SPANET, input_name_SPANET, output_name_SPANET = (
-                get_model_session(self.spanet, "SPANET")
+            model_session_spanet, input_name_spanet, output_name_spanet = (
+                get_model_session(self.spanet, "spanet")
             )
 
             # compute the pairing information using the SPANET model
             pairing_outputs = get_pairing_information(
-                model_session_SPANET,
-                input_name_SPANET,
-                output_name_SPANET,
+                model_session_spanet,
+                input_name_spanet,
+                output_name_spanet,
                 self.events,
                 self.max_num_jets,
             )
@@ -760,6 +767,13 @@ class HH4bCommonProcessor(BaseProcessorABC):
                 )
                 - 1
             )
+            self.events["Padded_Arctanh_Delta_pairing_probabilities"] = np.where(
+                self.events.Arctanh_Delta_pairing_probabilities
+                > self.arctanh_delta_prob_pad_limit,
+                self.pad_value,
+                self.events.Arctanh_Delta_pairing_probabilities,
+            )
+
             (
                 self.events["HiggsLeading"],
                 self.events["HiggsSubLeading"],
@@ -800,10 +814,10 @@ class HH4bCommonProcessor(BaseProcessorABC):
 
         if self.vbf_ggf_dnn:
             (
-                model_session_VBF_GGF_DNN,
-                input_name_VBF_GGF_DNN,
-                output_name_VBF_GGF_DNN,
-            ) = get_model_session(self.vbf_ggf_dnn, "VBF_GGF_DNN")
+                model_session_vbf_ggf_dnn,
+                input_name_vbf_ggf_dnn,
+                output_name_vbf_ggf_dnn,
+            ) = get_model_session(self.vbf_ggf_dnn, "vbf_ggf_dnn")
 
         if self.dnn_variables and self.spanet:
             (
@@ -838,17 +852,17 @@ class HH4bCommonProcessor(BaseProcessorABC):
 
         if self.bkg_morphing_dnn and not self._isMC:
             (
-                model_session_BKG_MORPHING_DNN,
-                input_name_BKG_MORPHING_DNN,
-                output_name_BKG_MORPHING_DNN,
-            ) = get_model_session(self.bkg_morphing_dnn, "BKG_MORPHING_DNN")
+                model_session_bkg_morphing_dnn,
+                input_name_bkg_morphing_dnn,
+                output_name_bkg_morphing_dnn,
+            ) = get_model_session(self.bkg_morphing_dnn, "bkg_morphing_dnn")
 
             if self.spanet:
                 self.events["bkg_morphing_dnn_weight"] = ak.flatten(
                     get_dnn_prediction(
-                        model_session_BKG_MORPHING_DNN,
-                        input_name_BKG_MORPHING_DNN,
-                        output_name_BKG_MORPHING_DNN,
+                        model_session_bkg_morphing_dnn,
+                        input_name_bkg_morphing_dnn,
+                        output_name_bkg_morphing_dnn,
                         self.events,
                         self.bkg_morphing_dnn_input_variables,
                         pad_value=self.pad_value,
@@ -859,9 +873,9 @@ class HH4bCommonProcessor(BaseProcessorABC):
             if self.run2:
                 self.events["bkg_morphing_dnn_weightRun2"] = ak.flatten(
                     get_dnn_prediction(
-                        model_session_BKG_MORPHING_DNN,
-                        input_name_BKG_MORPHING_DNN,
-                        output_name_BKG_MORPHING_DNN,
+                        model_session_bkg_morphing_dnn,
+                        input_name_bkg_morphing_dnn,
+                        output_name_bkg_morphing_dnn,
                         self.events,
                         self.bkg_morphing_dnn_input_variables,
                         pad_value=self.pad_value,
@@ -872,19 +886,19 @@ class HH4bCommonProcessor(BaseProcessorABC):
 
         if self.bkg_morphing_spread_dnn and not self._isMC:
             (
-                model_session_BKG_MORPHING_SPREAD_DNN,
-                input_name_BKG_MORPHING_SPREAD_DNN,
-                output_name_BKG_MORPHING_SPREAD_DNN,
+                model_session_bkg_morphing_spread_dnn,
+                input_name_bkg_morphing_spread_dnn,
+                output_name_bkg_morphing_spread_dnn,
             ) = get_model_session(
-                self.bkg_morphing_spread_dnn, "BKG_MORPHING_SPREAD_DNN"
+                self.bkg_morphing_spread_dnn, "bkg_morphing_spread_dnn"
             )
 
             if self.spanet:
                 self.events["bkg_morphing_spread_dnn_weights"] = np.transpose(
                     get_dnn_prediction(
-                        model_session_BKG_MORPHING_SPREAD_DNN,
-                        input_name_BKG_MORPHING_SPREAD_DNN,
-                        output_name_BKG_MORPHING_SPREAD_DNN,
+                        model_session_bkg_morphing_spread_dnn,
+                        input_name_bkg_morphing_spread_dnn,
+                        output_name_bkg_morphing_spread_dnn,
                         self.events,
                         self.bkg_morphing_dnn_input_variables,
                         pad_value=self.pad_value,
@@ -894,9 +908,9 @@ class HH4bCommonProcessor(BaseProcessorABC):
             if self.run2:
                 self.events["bkg_morphing_spread_dnn_weightsRun2"] = np.transpose(
                     get_dnn_prediction(
-                        model_session_BKG_MORPHING_SPREAD_DNN,
-                        input_name_BKG_MORPHING_SPREAD_DNN,
-                        output_name_BKG_MORPHING_SPREAD_DNN,
+                        model_session_bkg_morphing_spread_dnn,
+                        input_name_bkg_morphing_spread_dnn,
+                        output_name_bkg_morphing_spread_dnn,
                         self.events,
                         self.bkg_morphing_dnn_input_variables,
                         pad_value=self.pad_value,
@@ -909,7 +923,7 @@ class HH4bCommonProcessor(BaseProcessorABC):
                 model_session_SIG_BKG_DNN,
                 input_name_SIG_BKG_DNN,
                 output_name_SIG_BKG_DNN,
-            ) = get_model_session(self.sig_bkg_dnn, "SIG_BKG_DNN")
+            ) = get_model_session(self.sig_bkg_dnn, "sig_bkg_dnn")
 
             if self.spanet:
                 sig_bkg_dnn_score = get_dnn_prediction(

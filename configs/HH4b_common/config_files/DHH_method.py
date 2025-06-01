@@ -24,22 +24,6 @@ onnx_model_dict  |= {
     "sig_bkg_dnn": "/work/tharte/datasets/ML_pytorch/out/sig_bkg_classifier/DHH_method_norm_e5drop75_postEE/state_dict/model_best_epoch_18.onnx",
 }
 
-# Loading default parameters
-# HIGGS_PARTON_MATCHING = False
-# VBF_PARTON_MATCHING = False
-# TIGHT_CUTS = False
-# CLASSIFICATION = False
-# SAVE_CHUNK = False
-# VBF_PRESEL = False
-# SEMI_TIGHT_VBF = True
-# DNN_VARIABLES = True
-# RUN2 = True
-# BLIND = True if onnx_model_dict["SIG_BKG_DNN"] else False
-# VR1 = False
-# RANDOM_PT = False
-# DELTA_PROB=False
-
-
 
 config_options_dict = {
     "higgs_parton_matching": False,
@@ -64,4 +48,5 @@ config_options_dict = {
     "donotscale_sumgenweights": True,
     "pad_value": -999.0,
     "arctanh_delta_prob_bin_edge": 2.44,
+    "arctanh_delta_prob_pad_limit": 2.,
 }| onnx_model_dict
