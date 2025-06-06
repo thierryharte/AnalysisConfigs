@@ -33,7 +33,7 @@ if args.test:
 
 NUMBER_OF_BINS = 20
 PAD_VALUE = -999
-BLIND_VALUE = 0.9
+BLIND_VALUE = 0.96
 
 input_dir_data = os.path.dirname(args.input_data[0])
 

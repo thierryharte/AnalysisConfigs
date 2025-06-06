@@ -24,28 +24,9 @@ from configs.HH4b_common.config_files.configurator_tools import (
     create_DNN_columns_list,
     define_categories,
 )
-from configs.HH4b_common.dnn_input_variables import (
-    bkg_morphing_dnn_input_variables,
-    bkg_morphing_dnn_input_variables_altOrder,
-    sig_bkg_dnn_input_variables,
-)
+
 from configs.HH4b_common.config_files.__config_file__ import (
-    config_options_dict
-    # onnx_model_dict,
-    # HIGGS_PARTON_MATCHING,
-    # VBF_PARTON_MATCHING,
-    # TIGHT_CUTS,
-    # CLASSIFICATION,
-    # SAVE_CHUNK,
-    # VBF_PRESEL,
-    # SEMI_TIGHT_VBF,
-    # DNN_VARIABLES,
-    # RUN2,
-    # VR1,
-    # RANDOM_PT,
-    # BLIND,
-    # BKG_MORPHING_DNN_INPUT_VARIABLES,
-    # SIG_BKG_DNN_INPUT_VARIABLES,
+    config_options_dict,
 )
 
 import configs.HH4b_common.custom_cuts_common as cuts
@@ -69,28 +50,6 @@ parameters = defaults.merge_parameters_from_files(
 )
 
 
-# print("onnx_model_dict", onnx_model_dict)
-
-# {
-#     "parton_jet_min_dR": 0.4,
-#     "max_num_jets": 5,
-#     "which_bquark": "last",
-#     "fifth_jet": "pt",  
-#     "donotscale_sumgenweights": True,
-#     "pad_value": -999.0,
-#     "arctanh_delta_prob_bin_edge": 2.44,
-#     "classification": CLASSIFICATION,
-#     "tight_cuts": TIGHT_CUTS,
-#     "vbf_parton_matching": VBF_PARTON_MATCHING,
-#     "vbf_presel": VBF_PRESEL,
-#     "semi_tight_vbf": SEMI_TIGHT_VBF,
-#     "DNN_VARIABLES": DNN_VARIABLES,
-#     "RUN2": RUN2,
-#     "bkg_morphing_dnn_input_variables": BKG_MORPHING_DNN_INPUT_VARIABLES,
-#     "sig_bkg_dnn_input_variables": SIG_BKG_DNN_INPUT_VARIABLES,
-# }
-# workflow_options.update(onnx_model_dict)
-
 if config_options_dict["save_chunk"]:
     # workflow_options["dump_columns_as_arrays_per_chunk"] = "root://t3dcachedb03.psi.ch:1094//pnfs/psi.ch/cms/trivcat/store/user/tharte/HH4b/training_samples/GluGlutoHHto4B_spanet_loose_03_17"
     pass
@@ -105,9 +64,21 @@ variables_dict = {}
 
 ## Define the preselection to apply
 preselection = (
-    [vbf_hh4b_presel if config_options_dict["tight_cuts"] is False else vbf_hh4b_presel_tight]
+    [
+        (
+            vbf_hh4b_presel
+            if config_options_dict["tight_cuts"] is False
+            else vbf_hh4b_presel_tight
+        )
+    ]
     if config_options_dict["vbf_presel"]
-    else [cuts.hh4b_presel if config_options_dict["tight_cuts"] is False else cuts.hh4b_presel_tight]
+    else [
+        (
+            cuts.hh4b_presel
+            if config_options_dict["tight_cuts"] is False
+            else cuts.hh4b_presel_tight
+        )
+    ]
 )
 
 ## Define the samples to process
@@ -162,8 +133,8 @@ print("categories_dict", categories_dict)
 ## Define the columns to save
 if config_options_dict["dnn_variables"]:
     total_input_variables = (
-        sig_bkg_dnn_input_variables
-        | bkg_morphing_dnn_input_variables
+        config_options_dict["sig_bkg_dnn_input_variables"]
+        | config_options_dict["bkg_morphing_dnn_input_variables"]
         | {"year": ["events", "year"]}
     )
 
@@ -177,6 +148,10 @@ if config_options_dict["dnn_variables"]:
             "Binned_Arctanh_Delta_pairing_probabilities": [
                 "events",
                 "Binned_Arctanh_Delta_pairing_probabilities",
+            ],
+            "Padded_Arctanh_Delta_pairing_probabilities": [
+                "events",
+                "Padded_Arctanh_Delta_pairing_probabilities",
             ],
         }
     print(total_input_variables)

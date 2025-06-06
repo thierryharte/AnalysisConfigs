@@ -11,13 +11,6 @@ from pocket_coffea.lib.deltaR_matching import object_matching
 
 from .custom_object_preselection_common import lepton_selection, jet_selection_nopu
 
-# from .dnn_input_variables import (
-#     bkg_morphing_dnn_input_variables,
-#     sig_bkg_dnn_input_variables,
-#     bkg_morphing_dnn_DeltaProb_input_variables,
-#     sig_bkg_dnn_DeltaProb_input_variables,
-# )
-
 from utils.parton_matching_function import get_parton_last_copy
 from utils.spanet_evaluation_functions import get_pairing_information, get_best_pairings
 from utils.basic_functions import add_fields
@@ -59,44 +52,10 @@ year_dict = {
 class HH4bCommonProcessor(BaseProcessorABC):
     def __init__(self, cfg) -> None:
         super().__init__(cfg=cfg)
-        self.dr_min = self.workflow_options["parton_jet_min_dR"]
-        self.max_num_jets = self.workflow_options["max_num_jets"]
-        self.which_bquark = self.workflow_options["which_bquark"]
-        self.fifth_jet = self.workflow_options["fifth_jet"]
-        self.tight_cuts = self.workflow_options["tight_cuts"]
-        self.classification = self.workflow_options["classification"]
-        self.dnn_variables = self.workflow_options["dnn_variables"]
-        self.run2 = self.workflow_options["run2"]
-        self.pad_value = self.workflow_options["pad_value"]
-
-        self.bkg_morphing_dnn_input_variables = self.workflow_options[
-            "bkg_morphing_dnn_input_variables"
-        ]
-        self.sig_bkg_dnn_input_variables = self.workflow_options[
-            "sig_bkg_dnn_input_variables"
-        ]
-
-        self.arctanh_delta_prob_bin_edge = self.workflow_options[
-            "arctanh_delta_prob_bin_edge"
-        ]
-        self.arctanh_delta_prob_pad_limit = self.workflow_options["arctanh_delta_prob_pad_limit"]
-
-        # onnx models
-        self.spanet = self.workflow_options["spanet"]
-        self.bkg_morphing_dnn = self.workflow_options["bkg_morphing_dnn"]
-        self.bkg_morphing_spread_dnn = self.workflow_options["bkg_morphing_spread_dnn"]
-        self.sig_bkg_dnn = self.workflow_options["sig_bkg_dnn"]
-        self.vbf_ggf_dnn = self.workflow_options["vbf_ggf_dnn"]
-
-
-        # if self.workflow_options["DeltaProb"]:
-        #     self.sig_bkg_dnn_input_variables = sig_bkg_dnn_DeltaProb_input_variables
-        #     self.bkg_morphing_dnn_input_variables = (
-        #         bkg_morphing_dnn_DeltaProb_input_variables
-        #     )
-        # else:
-        #     self.sig_bkg_dnn_input_variables = sig_bkg_dnn_input_variables
-        #     self.bkg_morphing_dnn_input_variables = bkg_morphing_dnn_input_variables
+        
+        for key, value in self.workflow_options.items():
+            setattr(self, key, value)   
+            
 
     def apply_object_preselection(self, variation):
         self.events["Jet"] = ak.with_field(
@@ -268,14 +227,14 @@ class HH4bCommonProcessor(BaseProcessorABC):
             object_matching(
                 bquarks,
                 self.events.JetGoodHiggs,
-                dr_min=self.dr_min,
+                dr_min=self.parton_jet_min_dR,
             )
         )
         # matched all jetgood
         matched_bquarks, matched_jets, deltaR_matched = object_matching(
             bquarks,
             self.events.JetGood,
-            dr_min=self.dr_min,
+            dr_min=self.parton_jet_min_dR,
         )
 
         matched_jets_higgs = ak.with_field(
@@ -374,7 +333,7 @@ class HH4bCommonProcessor(BaseProcessorABC):
         matched_vbf_quarks, matched_vbf_jets, deltaR_matched_vbf = object_matching(
             vbf_quark_last,
             self.events.JetVBF_matching,
-            dr_min=self.dr_min,
+            dr_min=self.parton_jet_min_dR,
         )
 
         maskNotNone = ~ak.is_none(matched_vbf_jets, axis=1)
@@ -403,7 +362,7 @@ class HH4bCommonProcessor(BaseProcessorABC):
         ) = object_matching(
             vbf_quark_last,
             self.events.JetVBF_generalSelection,
-            dr_min=self.dr_min,
+            dr_min=self.parton_jet_min_dR,
         )
         maskNotNone_genSel = ~ak.is_none(matched_vbf_jets_generalSelection, axis=1)
 

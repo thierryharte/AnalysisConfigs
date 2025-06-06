@@ -32,19 +32,6 @@ from configs.HH4b_common.dnn_input_variables import (
 )
 from configs.HH4b_common.config_files.__config_file__ import (
     config_options_dict
-    # onnx_model_dict,
-    # HIGGS_PARTON_MATCHING,
-    # VBF_PARTON_MATCHING,
-    # TIGHT_CUTS,
-    # CLASSIFICATION,
-    # SAVE_CHUNK,
-    # VBF_PRESEL,
-    # SEMI_TIGHT_VBF,
-    # DNN_VARIABLES,
-    # RUN2,
-    # VR1,
-    # RANDOM_PT,
-    # BLIND,
 )
 
 import configs.HH4b_common.custom_cuts_common as cuts
@@ -68,25 +55,6 @@ parameters = defaults.merge_parameters_from_files(
     update=True,
 )
 
-
-# print("onnx_model_dict", onnx_model_dict)
-
-# workflow_options = {
-#     "parton_jet_min_dR": 0.4,
-#     "max_num_jets": 5,
-#     "which_bquark": "last",
-#     "classification": CLASSIFICATION,
-#     "tight_cuts": config_options_dict["tight_cuts"],
-#     "fifth_jet": "pt",
-#     "donotscale_sumgenweights": True,
-#     "DNN_VARIABLES": DNN_VARIABLES,
-#     "RUN2": RUN2,
-#     "random_pt": RANDOM_PT,
-#     "rand_type": 0.3,
-#     "pad_value": -999.0,
-#     "arctanh_delta_prob_bin_edge":2.44,
-# }
-# workflow_options.update(onnx_model_dict)
 
 if config_options_dict["save_chunk"]:
     # workflow_options["dump_columns_as_arrays_per_chunk"] = "root://t3dcachedb03.psi.ch:1094//pnfs/psi.ch/cms/trivcat/store/user/tharte/HH4b/training_samples/GluGlutoHHto4B_spanet_loose_03_17"
