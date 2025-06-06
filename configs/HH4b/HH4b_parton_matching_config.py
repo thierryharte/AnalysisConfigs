@@ -129,7 +129,8 @@ categories_dict = define_categories(
     run2=RUN2,
     vr1=VR1,
 )
-if RANDOM_PT:
+# AKA if no model is applied
+if [model=="" for model in onnx_model_dict]:
     categories_dict = define_single_category("4b_region")
 
 print("categories_dict", categories_dict)
@@ -155,7 +156,7 @@ print("categories_dict", categories_dict)
 
 
 ## Define the columns to save
-assert (RANDOM_PT ^ RUN2)
+assert not (RANDOM_PT and RUN2)
 if DNN_VARIABLES:
     total_input_variables = (
         sig_bkg_dnn_input_variables
@@ -170,9 +171,10 @@ if DNN_VARIABLES:
     column_listRun2 = create_DNN_columns_list(
         True, not SAVE_CHUNK, total_input_variables, btag=False
     )
-elif RANDOM_PT:
+elif [model=="" for model in onnx_model_dict]:
     column_list = get_columns_list(SPANET_TRAINING_DEFAULT_COLUMNS)
-    column_list += get_columns_list({"events": ["random_pt_weights"]})
+    if RANDOM_PT:
+        column_list += get_columns_list({"events": ["random_pt_weights"]})
 else:
     column_list = get_columns_list()
     column_listRun2 = get_columns_list()
