@@ -3,13 +3,12 @@ import os
 localdir = os.path.dirname(os.path.abspath(__file__))
 
 onnx_model_dict = {
-    "spanet": "",
-    "vbf_ggf_dnn": "",
-    "bkg_morphing_dnn": "",
-    "sig_bkg_dnn": "",
-    "bkg_morphing_spread_dnn": "",
+    "SPANET": "",
+    "VBF_GGF_DNN": "",
+    "BKG_MORPHING_DNN": "",
+    "SIG_BKG_DNN": "",
+    "BKG_MORPHING_SPREAD_DNN": "",
 }
-
 
 config_options_dict = {
     "higgs_parton_matching": False,
@@ -22,7 +21,7 @@ config_options_dict = {
     "dnn_variables": False,
     "run2": False,
     "vr1": False,
-    "random_pt": True,
+    "random_pt": False,
     "rand_type": 0.3,
     "blind": True if onnx_model_dict["sig_bkg_dnn"] else False,
     "sig_bkg_dnn_input_variables": None,

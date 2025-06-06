@@ -24,6 +24,12 @@ This will install the `configs` package in editable mode.
 
 - Simple **Z-> mumu** invariant mass analysis [here](./configs/zmumu)
 
+## Run analysis
+
+```python
+run_pocket_coffea <config_name> <config_file> <run_options> <output_dir> <--test>
+```
+
 ## Run ggF HH4b analysis
 
 ```python

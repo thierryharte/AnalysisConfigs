@@ -13,17 +13,17 @@ from pocket_coffea.lib.weights.common.common import common_weights
 
 from workflow import HH4bbQuarkMatchingProcessor
 
-from configs.HH4b_common.categories_definitions_common import define_categories, define_single_category
-
 from configs.HH4b_common.custom_weights import (
     bkg_morphing_dnn_weight,
     bkg_morphing_dnn_weightRun2,
 )
-from configs.HH4b_common.configurator_options import (
+from configs.HH4b_common.config_files.configurator_tools import (
     SPANET_TRAINING_DEFAULT_COLUMNS,
     get_variables_dict,
     get_columns_list,
     create_DNN_columns_list,
+    define_categories,
+    define_single_category
 )
 from configs.HH4b_common.dnn_input_variables import (
     bkg_morphing_dnn_input_variables,
@@ -32,18 +32,7 @@ from configs.HH4b_common.dnn_input_variables import (
 )
 from configs.HH4b_common.config_files.__config_file__ import (
     onnx_model_dict,
-    HIGGS_PARTON_MATCHING,
-    VBF_PARTON_MATCHING,
-    TIGHT_CUTS,
-    CLASSIFICATION,
-    SAVE_CHUNK,
-    VBF_PRESEL,
-    SEMI_TIGHT_VBF,
-    DNN_VARIABLES,
-    RUN2,
-    VR1,
-    RANDOM_PT,
-    BLIND,
+    config_options_dict
 )
 
 import configs.HH4b_common.custom_cuts_common as cuts
@@ -68,25 +57,7 @@ parameters = defaults.merge_parameters_from_files(
 )
 
 
-print("onnx_model_dict", onnx_model_dict)
-
-workflow_options = {
-    "parton_jet_min_dR": 0.4,
-    "max_num_jets": 5,
-    "which_bquark": "last",
-    "classification": CLASSIFICATION,
-    "tight_cuts": TIGHT_CUTS,
-    "fifth_jet": "pt",
-    "donotscale_sumgenweights": True,
-    "DNN_VARIABLES": DNN_VARIABLES,
-    "RUN2": RUN2,
-    "random_pt": RANDOM_PT,
-    "rand_type": 0.3,
-    "pad_value": -999.0,
-}
-workflow_options.update(onnx_model_dict)
-
-if SAVE_CHUNK:
+if config_options_dict["save_chunk"]:
     # workflow_options["dump_columns_as_arrays_per_chunk"] = "root://t3dcachedb03.psi.ch:1094//pnfs/psi.ch/cms/trivcat/store/user/tharte/HH4b/training_samples/GluGlutoHHto4B_spanet_loose_03_17"
     pass
 
@@ -101,7 +72,7 @@ variables_dict = {}
 
 ## Define the preselection to apply
 preselection = (
-    [cuts.hh4b_presel if TIGHT_CUTS is False else cuts.hh4b_presel_tight]
+    [cuts.hh4b_presel if config_options_dict["tight_cuts"] is False else cuts.hh4b_presel_tight]
 )
 
 ## Defining the used samples
@@ -123,14 +94,14 @@ sample_list = [
 
 ## Define the categories to save
 categories_dict = define_categories(
-    bkg_morphing_dnn=workflow_options["BKG_MORPHING_DNN"],
-    blind=BLIND,
-    spanet=workflow_options["SPANET"],
-    run2=RUN2,
-    vr1=VR1,
+    bkg_morphing_dnn=config_options_dict["bkg_morphing_dnn"],
+    blind=config_options_dict["blind"],
+    spanet=config_options_dict["spanet"],
+    run2=config_options_dict["run2"],
+    vr1=config_options_dict["vr1"],
 )
 # AKA if no model is applied
-if [model=="" for model in onnx_model_dict]:
+if all([model=="" for model in onnx_model_dict]):
     categories_dict = define_single_category("4b_region")
 
 print("categories_dict", categories_dict)
@@ -156,8 +127,8 @@ print("categories_dict", categories_dict)
 
 
 ## Define the columns to save
-assert not (RANDOM_PT and RUN2)
-if DNN_VARIABLES:
+assert not (config_options_dict["random_pt"] and config_options_dict["run2"])
+if config_options_dict["dnn_variables"]:
     total_input_variables = (
         sig_bkg_dnn_input_variables
         | bkg_morphing_dnn_input_variables
@@ -166,12 +137,12 @@ if DNN_VARIABLES:
     print(total_input_variables)
 
     column_list = create_DNN_columns_list(
-        False, not SAVE_CHUNK, total_input_variables, btag=False
+        False, not config_options_dict["save_chunk"], total_input_variables, btag=False
     )
     column_listRun2 = create_DNN_columns_list(
-        True, not SAVE_CHUNK, total_input_variables, btag=False
+        True, not config_options_dict["save_chunk"], total_input_variables, btag=False
     )
-elif [model=="" for model in onnx_model_dict]:
+elif all([model=="" for model in onnx_model_dict]):
     column_list = get_columns_list(SPANET_TRAINING_DEFAULT_COLUMNS)
     if RANDOM_PT:
         column_list += get_columns_list({"events": ["random_pt_weights"]})
@@ -180,10 +151,11 @@ else:
     column_listRun2 = get_columns_list()
 
 # Add special columns
-if workflow_options["SIG_BKG_DNN"] and workflow_options["SPANET"]:
+if config_options_dict["sig_bkg_dnn"] and config_options_dict["spanet"]:
     column_list += get_columns_list({"events": ["sig_bkg_dnn_score"]})
-if workflow_options["SIG_BKG_DNN"] and RUN2:
+if config_options_dict["sig_bkg_dnn"] and config_options_dict["run2"]:
     column_listRun2 += get_columns_list({"events": ["sig_bkg_dnn_scoreRun2"]})
+    
 
 bysample_bycategory_column_dict = {}
 for sample in sample_list:
@@ -193,29 +165,26 @@ for sample in sample_list:
     }
     for category in categories_dict.keys():
         if "Run2" in category:
-            # if "DATA" in sample:
-            #     column_listRun2 += get_columns_list({"events": ["bkg_morphing_spread_dnn_weightsRun2"]})
-
             bysample_bycategory_column_dict[sample]["bycategory"][category] = (
                 column_listRun2
                 + (
                     get_columns_list(
                         {"events": ["bkg_morphing_spread_dnn_weightsRun2"]}
                     )
-                    if "DATA" in sample and workflow_options["BKG_MORPHING_SPREAD_DNN"] and "postW" in category 
+                    if "DATA" in sample
+                    and config_options_dict["bkg_morphing_spread_dnn"]
+                    and "postW" in category
                     else []
                 )
             )
         else:
-            # if "DATA" in sample:
-            #     column_list += get_columns_list({"events": ["bkg_morphing_spread_dnn_weights"]})
             bysample_bycategory_column_dict[sample]["bycategory"][category] = (
                 column_list
                 + (
-                    get_columns_list(
-                        {"events": ["bkg_morphing_spread_dnn_weights"]}
-                    )
-                    if "DATA" in sample and workflow_options["BKG_MORPHING_SPREAD_DNN"] and "postW" in category
+                    get_columns_list({"events": ["bkg_morphing_spread_dnn_weights"]})
+                    if "DATA" in sample
+                    and config_options_dict["bkg_morphing_spread_dnn"]
+                    and "postW" in category
                     else []
                 )
             )
@@ -261,7 +230,7 @@ cfg = Configurator(
         "subsamples": {},
     },
     workflow=HH4bbQuarkMatchingProcessor,
-    workflow_options=workflow_options,
+    workflow_options=config_options_dict,
     skim=[
         get_HLTsel(primaryDatasets=["JetMET"]),
     ],

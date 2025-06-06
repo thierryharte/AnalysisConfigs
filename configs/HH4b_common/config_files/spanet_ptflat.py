@@ -1,54 +1,62 @@
-import os
-
-localdir = os.path.dirname(os.path.abspath(__file__))
-
-common_params = f"{localdir}/../HH4b_common/params_common/"
+from configs.HH4b_common.dnn_input_variables import (
+    bkg_morphing_dnn_input_variables,
+    sig_bkg_dnn_input_variables,
+)
 
 onnx_model_dict = {
-    "SPANET": "",
-    "VBF_GGF_DNN": "",
-    "BKG_MORPHING_DNN": "",
-    "SIG_BKG_DNN": "",
-    "BKG_MORPHING_SPREAD_DNN": "",
+    "spanet": "",
+    "vbf_ggf_dnn": "",
+    "bkg_morphing_dnn": "",
+    "sig_bkg_dnn": "",
+    "bkg_morphing_spread_dnn": "",
 }
 
 
-onnx_model_dict  |= {
-    "SPANET": f"{common_params}/hh4b_5jets_e300_s100_ptvary_wide_loose_btag.onnx", # spanet pt vary 0.3, 1.7
-    # "SPANET": "/work/tharte/datasets/mass_sculpting_data/hh4b_5jets_e300_s160_btag.onnx", # thierry's model, spanet baseline
-    # "SPANET": "params/out_hh4b_5jets_ATLAS_ptreg_c0_lr1e4_wp0_noklininp_oc_300e_kl3p5.onnx", # ruth's model
+onnx_model_dict |= {
+    "spanet": "/work/tharte/datasets/mass_sculpting_data/hh4b_5jets_e300_s100_ptvary_wide_loose_btag.onnx",  # spanet pt vary 0.3, 1.7
+    # "spanet": "/work/tharte/datasets/mass_sculpting_data/hh4b_5jets_e300_s160_btag.onnx", # thierry's model, spanet baseline
+    # "spanet": "params/out_hh4b_5jets_ATLAS_ptreg_c0_lr1e4_wp0_noklininp_oc_300e_kl3p5.onnx", # ruth's model
     #
-    # "VBF_GGF_DNN":"/t3home/rcereghetti/ML_pytorch/out/20241212_223142_SemitTightPtLearningRateConstant/models/model_28.onnx",
+    # "vbf_ggf_dnn":"/t3home/rcereghetti/ML_pytorch/out/20241212_223142_SemitTightPtLearningRateConstant/models/model_28.onnx",
     #
     ### SPANET pt vary 0.3, 1.7
-    # "BKG_MORPHING_DNN": "/work/mmalucch/out_ML_pytorch/DNN_AN_1e-3_e20drop75_minDelta1em5_SPANet_oversample_split_20folds/batch06/best_models/average_model_from_onnx.onnx",  # full 2022, 20 k-folds, early stopping, 1e-5 minDelta, spanet pt vary
-    "BKG_MORPHING_DNN": "/work/mmalucch/out_ML_pytorch/DNN_AN_1e-3_e20drop75_minDelta1em5_SPANet_postEE/best_models/average_model_from_onnx.onnx",  # only 2022_postEE, 20 k-folds, early stopping, 1e-5 minDelta, spanet pt vary 
-    # "BKG_MORPHING_DNN": "/work/mmalucch/out_ML_pytorch/DNN_AN_VR1_1e-3_e20drop75_minDelta1em5_SPANet_oversample_split/state_dict/average_model_from_onnx.onnx",  # VR1 train, early stopping, 1e-5 minDelta, spanet pt vary
-    ### Run2
-    # "BKG_MORPHING_DNN": "/pnfs/psi.ch/cms/trivcat/store/user/mmalucch/keras_models_morphing/average_model_from_keras.onnx", # soumya's model
-    # "BKG_MORPHING_DNN": "/work/mmalucch/out_ML_pytorch/DNN_AN_1e-3_e20drop75_minDelta1em5_run2/state_dict/average_model_from_onnx.onnx",  # Run2 CR train, early stopping, 1e-5 minDelta
-    # "BKG_MORPHING_DNN": "/work/mmalucch/out_ML_pytorch/DNN_AN_1e-3_e20drop75_minDelta1em5_run2_postEE_matteo/best_models/average_model_from_onnx.onnx",  #  only 2022_postEE, 20 k-folds, early stopping, 1e-5 minDelta, run2
-    ### SPANET baseline
-    # "BKG_MORPHING_DNN": "/work/mmalucch/out_ML_pytorch/DNN_AN_1e-3_e20drop75_minDelta1em5_SPANet_baseline_postEE_matteo/best_models/average_model_from_onnx.onnx",  #  only 2022_postEE, 20 k-folds, early stopping, 1e-5 minDelta, spanet baseline
-    
+    # "bkg_morphing_dnn": "/work/mmalucch/out_ML_pytorch/DNN_AN_1e-3_e20drop75_minDelta1em5_SPANet_oversample_split_20folds/batch06/best_models/average_model_from_onnx.onnx",  # full 2022, 20 k-folds, early stopping, 1e-5 minDelta, spanet pt vary
+    # "bkg_morphing_dnn": "/work/mmalucch/out_ML_pytorch/DNN_AN_1e-3_e20drop75_minDelta1em5_SPANet_postEE/best_models/average_model_from_onnx.onnx",  # only 2022_postEE, 20 k-folds, early stopping, 1e-5 minDelta, spanet pt vary
+    "bkg_morphing_dnn": "/work/mmalucch/out_ML_pytorch/DNN_AN_1e-3_e20drop75_minDelta1em5_SPANet_postEE_UpdatedDatasets/best_models/average_model_from_onnx.onnx",  # only 2022_postEE, 20 k-folds, early stopping, 1e-5 minDelta, spanet pt vary
+    # "bkg_morphing_dnn": "/work/mmalucch/out_ML_pytorch/DNN_AN_VR1_1e-3_e20drop75_minDelta1em5_SPANet_oversample_split/state_dict/average_model_from_onnx.onnx",  # VR1 train, early stopping, 1e-5 minDelta, spanet pt vary
     ### SPANET pt vary 0.3, 1.7
-    "BKG_MORPHING_SPREAD_DNN": "/work/mmalucch/out_ML_pytorch/DNN_AN_1e-3_e20drop75_minDelta1em5_SPANet_postEE/best_models/all_ratios_model_onnx.onnx",  # only 2022_postEE, 20 k-folds, early stopping, 1e-5 minDelta, spanet, all ration spread model
-    
-    # "SIG_BKG_DNN": "/work/mmalucch/out_ML_pytorch/DNN_ptFlatSPANet_class_weights_e5drop75/state_dict/model_best_epoch_25.onnx", # morphing full 2022, FixedPairingMorphing, FixedModelMorphing
-    # "SIG_BKG_DNN": "/work/mmalucch/out_ML_pytorch/DNN_ptFlatSPANet_class_weights_e5drop75_postEE/state_dict/model_best_epoch_13.onnx", # only 2022postEE, FixedPairingMorphing, FixedModelMorphing
-    "SIG_BKG_DNN": "/work/mmalucch/out_ML_pytorch/DNN_ptFlatSPANet_class_weights_e5drop75_postEE_allklambda/state_dict/model_best_epoch_16.onnx", # allklambda, only 2022postEE, FixedPairingMorphing, FixedModelMorphing
-    # "SIG_BKG_DNN": "/work/mmalucch/out_ML_pytorch/DNN_ptFlatSPANet_class_weights_e5drop75_WrongMorphing/state_dict/model_best_epoch_21.onnx", # pytorch training, FixedPairingMorphing, WrongModelMorphing
-    # "SIG_BKG_DNN": "/work/mmalucch/out_ML_pytorch/DNN_ptFlatSPANet_class_weights_e5drop75_WrongPairingMorphing/state_dict/model_best_epoch_14.onnx", # pytorch training, WrongPairingMorphing
-    # "SIG_BKG_DNN": "/pnfs/psi.ch/cms/trivcat/store/user/mmalucch/keras_models_SvsB/model_fold0.onnx", # soumya's model
+    # "bkg_morphing_spread_dnn": "/work/mmalucch/out_ML_pytorch/DNN_AN_1e-3_e20drop75_minDelta1em5_SPANet_postEE/best_models/all_ratios_model_onnx.onnx",  # only 2022_postEE, 20 k-folds, early stopping, 1e-5 minDelta, spanet, all ration spread model
+    # "sig_bkg_dnn": "/work/mmalucch/out_ML_pytorch/DNN_ptFlatSPANet_class_weights_e5drop75/state_dict/model_best_epoch_25.onnx", # morphing full 2022, FixedPairingMorphing, FixedModelMorphing
+    # "sig_bkg_dnn": "/work/mmalucch/out_ML_pytorch/DNN_ptFlatSPANet_class_weights_e5drop75_postEE/state_dict/model_best_epoch_13.onnx", # only 2022postEE, FixedPairingMorphing, FixedModelMorphing
+    # "sig_bkg_dnn": "/work/mmalucch/out_ML_pytorch/DNN_ptFlatSPANet_class_weights_e5drop75_postEE_allklambda/state_dict/model_best_epoch_16.onnx", # allklambda, only 2022postEE, FixedPairingMorphing, FixedModelMorphing
+    # "sig_bkg_dnn": "/work/mmalucch/out_ML_pytorch/DNN_ptFlatSPANet_class_weights_e5drop75_WrongMorphing/state_dict/model_best_epoch_21.onnx", # pytorch training, FixedPairingMorphing, WrongModelMorphing
+    # "sig_bkg_dnn": "/work/mmalucch/out_ML_pytorch/DNN_ptFlatSPANet_class_weights_e5drop75_WrongPairingMorphing/state_dict/model_best_epoch_14.onnx", # pytorch training, WrongPairingMorphing
+    # "sig_bkg_dnn": "/pnfs/psi.ch/cms/trivcat/store/user/mmalucch/keras_models_SvsB/model_fold0.onnx", # soumya's model
 }
 
-VBF_PARTON_MATCHING = False
-TIGHT_CUTS = False
-CLASSIFICATION = False
-SAVE_CHUNK = False
-VBF_PRESEL = False
-SEMI_TIGHT_VBF = True
-DNN_VARIABLES = True
-VR1 = False
-BLIND = True if onnx_model_dict["SIG_BKG_DNN"] else False
-RUN2 = False
+
+config_options_dict = {
+    "higgs_parton_matching": False,
+    "vbf_parton_matching": False,
+    "tight_cuts": False,
+    "classification": False,
+    "save_chunk": False,
+    "vbf_presel": False,
+    "semi_tight_vbf": True,
+    "dnn_variables": True,
+    "run2": False,
+    "vr1": False,
+    "random_pt": False,
+    "rand_type": 0.3,
+    "blind": True if onnx_model_dict["sig_bkg_dnn"] else False,
+    "sig_bkg_dnn_input_variables": sig_bkg_dnn_input_variables,
+    "bkg_morphing_dnn_input_variables": bkg_morphing_dnn_input_variables,
+    "parton_jet_min_dR": 0.4,
+    "max_num_jets": 5,
+    "which_bquark": "last",
+    "fifth_jet": "pt",
+    "donotscale_sumgenweights": True,
+    "pad_value": -999.0,
+    "arctanh_delta_prob_bin_edge": 2.44,
+    "arctanh_delta_prob_pad_limit": 2.,
+} | onnx_model_dict
