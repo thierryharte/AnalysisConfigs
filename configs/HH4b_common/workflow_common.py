@@ -666,6 +666,7 @@ class HH4bCommonProcessor(BaseProcessorABC):
                 self.events["HiggsLeading"],
                 self.events["HiggsSubLeading"],
                 self.events["JetGoodFromHiggsOrdered"],
+                pairing_true,
             ) = reconstruct_higgs_from_provenance(self.events.JetGoodMatched)
 
             matched_jet_higgs_idx_not_none = self.events.JetGoodMatched.index[
@@ -745,10 +746,50 @@ class HH4bCommonProcessor(BaseProcessorABC):
                 (self.events.HiggsLeading.mass - 125) ** 2
                 + (self.events.HiggsSubLeading.mass - 120) ** 2
             )
+            if self._isMC:
+                # do truth matching to get b-jet from Higgs
+                self.get_jet_higgs_provenance(which_bquark=self.which_bquark)
+                self.events["nbQuarkHiggsMatched"] = ak.num(
+                    self.events.bQuarkHiggsMatched, axis=1
+                )
+                self.events["nbQuarkMatched"] = ak.num(self.events.bQuarkMatched, axis=1)
+
+                # reconstruct the higgs candidates
+                (
+                    self.events["HiggsLeadingTrue"],
+                    self.events["HiggsSubLeadingTrue"],
+                    self.events["JetGoodFromHiggsOrderedTrue"],
+                    pairing_true,
+                ) = reconstruct_higgs_from_provenance(self.events.JetGoodMatched)
+
+                matched_jet_higgs_idx_not_none = self.events.JetGoodMatched.index[
+                    ~ak.is_none(self.events.JetGoodMatched.index, axis=1)
+                ]
+
+                # Define distance parameter for selection:
+                self.events["RhhTrue"] = np.sqrt(
+                    (self.events.HiggsLeadingTrue.mass - 125) ** 2
+                    + (self.events.HiggsSubLeadingTrue.mass - 120) ** 2
+                )
+                # Masking and calculating efficiency
+                pairing_predictions = ak.Array(pairing_predictions)
+                mask_fully_matched = ak.all(ak.flatten(pairing_true, axis=2) >= 0, axis=1)
+
+                match_0 = ak.any(ak.all(pairing_true[:, 0][:, None] == pairing_predictions, axis=-1), axis=-1)  # shape: (N_events, 2)
+                match_1 = ak.any(ak.all(pairing_true[:, 1][:, None] == pairing_predictions, axis=-1), axis=-1)  # shape: (N_events, 2)
+                correct_prediction = match_0 & match_1
+                correct_fully_matched = correct_prediction[mask_fully_matched]
+
+                pairing_efficiency = ak.sum(correct_fully_matched)/len(correct_fully_matched)
+                print(f"Correct matching SPANet: {pairing_efficiency}")
+                self.events["correct_prediction"] = correct_prediction
+                self.events["correct_prediction_fully_matched"] = ak.mask(correct_prediction, mask_fully_matched)
+                self.events["mask_fully_matched"] = mask_fully_matched
 
         # reconstruct the higgs candidates for Run2 method
         if self.run2:
             (
+                pairing_predictions,
                 self.events["delta_dhh"],
                 self.events["HiggsLeadingRun2"],
                 self.events["HiggsSubLeadingRun2"],
@@ -762,6 +803,45 @@ class HH4bCommonProcessor(BaseProcessorABC):
                 (self.events.HiggsLeadingRun2.mass - 125) ** 2
                 + (self.events.HiggsSubLeadingRun2.mass - 120) ** 2
             )
+            if self._isMC:
+                # do truth matching to get b-jet from Higgs
+                self.get_jet_higgs_provenance(which_bquark=self.which_bquark)
+                self.events["nbQuarkHiggsMatched"] = ak.num(
+                    self.events.bQuarkHiggsMatched, axis=1
+                )
+                self.events["nbQuarkMatched"] = ak.num(self.events.bQuarkMatched, axis=1)
+
+                # reconstruct the higgs candidates
+                (
+                    self.events["HiggsLeadingTrue"],
+                    self.events["HiggsSubLeadingTrue"],
+                    self.events["JetGoodFromHiggsOrderedTrue"],
+                    pairing_true,
+                ) = reconstruct_higgs_from_provenance(self.events.JetGoodMatched)
+
+                matched_jet_higgs_idx_not_none = self.events.JetGoodMatched.index[
+                    ~ak.is_none(self.events.JetGoodMatched.index, axis=1)
+                ]
+
+                # Define distance parameter for selection:
+                self.events["RhhTrue"] = np.sqrt(
+                    (self.events.HiggsLeadingTrue.mass - 125) ** 2
+                    + (self.events.HiggsSubLeadingTrue.mass - 120) ** 2
+                )
+                # Masking and calculating efficiency
+                pairing_predictions = ak.Array(pairing_predictions)
+                mask_fully_matched = ak.all(ak.flatten(pairing_true, axis=2) >= 0, axis=1)
+
+                match_0 = ak.any(ak.all(pairing_true[:, 0][:, None] == pairing_predictions, axis=-1), axis=-1)  # shape: (N_events, 2)
+                match_1 = ak.any(ak.all(pairing_true[:, 1][:, None] == pairing_predictions, axis=-1), axis=-1)  # shape: (N_events, 2)
+                correct_prediction = match_0 & match_1
+                correct_fully_matched = correct_prediction[mask_fully_matched]
+
+                pairing_efficiency = ak.sum(correct_fully_matched)/len(correct_fully_matched)
+                print(f"Correct matching Run2: {pairing_efficiency}")
+                self.events["correct_predictionRun2"] = correct_prediction
+                self.events["correct_prediction_fully_matchedRun2"] = ak.mask(correct_prediction, mask_fully_matched)
+                self.events["mask_fully_matched"] = mask_fully_matched
 
         if not (self._isMC and not self.spanet):
             self.dummy_provenance()

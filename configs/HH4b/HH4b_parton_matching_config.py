@@ -155,7 +155,11 @@ if config_options_dict["sig_bkg_dnn"] and config_options_dict["spanet"]:
     column_list += get_columns_list({"events": ["sig_bkg_dnn_score"]})
 if config_options_dict["sig_bkg_dnn"] and config_options_dict["run2"]:
     column_listRun2 += get_columns_list({"events": ["sig_bkg_dnn_scoreRun2"]})
-    
+if config_options_dict["spanet"] and not any(["DATA" in sample for sample in sample_list]):
+    column_list += get_columns_list({"events": ["correct_prediction", "correct_prediction_fully_matched", "mask_fully_matched"]})
+if config_options_dict["run2"] and not any(["DATA" in sample for sample in sample_list]):
+    column_listRun2 += get_columns_list({"events": ["correct_predictionRun2", "correct_prediction_fully_matchedRun2", "mask_fully_matched"]})
+
 
 bysample_bycategory_column_dict = {}
 for sample in sample_list:
