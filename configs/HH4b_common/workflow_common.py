@@ -772,12 +772,16 @@ class HH4bCommonProcessor(BaseProcessorABC):
                     + (self.events.HiggsSubLeadingTrue.mass - 120) ** 2
                 )
                 # Masking and calculating efficiency
-                pairing_predictions = ak.Array(pairing_predictions)
+                # Need to sort the double pairs in innermost dimension for easier evaluation
+                pairing_predictions = ak.sort(ak.Array(pairing_predictions), axis=-1)
+                pairing_true = ak.sort(pairing_true, axis=-1)
                 mask_fully_matched = ak.all(ak.flatten(pairing_true, axis=2) >= 0, axis=1)
 
-                match_0 = ak.any(ak.all(pairing_true[:, 0][:, None] == pairing_predictions, axis=-1), axis=-1)  # shape: (N_events, 2)
-                match_1 = ak.any(ak.all(pairing_true[:, 1][:, None] == pairing_predictions, axis=-1), axis=-1)  # shape: (N_events, 2)
-                correct_prediction = match_0 & match_1
+                match_0 = ak.all(pairing_true[:, 0] == pairing_predictions[:,0], axis=-1)  # shape: (N_events, 2)
+                match_1 = ak.all(pairing_true[:, 0] == pairing_predictions[:,1], axis=-1)  # shape: (N_events, 2)
+                match_2 = ak.all(pairing_true[:, 1] == pairing_predictions[:,0], axis=-1)  # shape: (N_events, 2)
+                match_3 = ak.all(pairing_true[:, 1] == pairing_predictions[:,1], axis=-1)  # shape: (N_events, 2)
+                correct_prediction = (match_0 | match_1) & (match_2 | match_3)
                 correct_fully_matched = correct_prediction[mask_fully_matched]
 
                 pairing_efficiency = ak.sum(correct_fully_matched)/len(correct_fully_matched)
@@ -829,12 +833,16 @@ class HH4bCommonProcessor(BaseProcessorABC):
                     + (self.events.HiggsSubLeadingTrue.mass - 120) ** 2
                 )
                 # Masking and calculating efficiency
-                pairing_predictions = ak.Array(pairing_predictions)
+                # Need to sort the double pairs in innermost dimension for easier evaluation
+                pairing_predictions = ak.sort(ak.Array(pairing_predictions), axis=-1)
+                pairing_true = ak.sort(pairing_true, axis=-1)
                 mask_fully_matched = ak.all(ak.flatten(pairing_true, axis=2) >= 0, axis=1)
 
-                match_0 = ak.any(ak.all(pairing_true[:, 0][:, None] == pairing_predictions, axis=-1), axis=-1)  # shape: (N_events, 2)
-                match_1 = ak.any(ak.all(pairing_true[:, 1][:, None] == pairing_predictions, axis=-1), axis=-1)  # shape: (N_events, 2)
-                correct_prediction = match_0 & match_1
+                match_0 = ak.all(pairing_true[:, 0] == pairing_predictions[:,0], axis=-1)  # shape: (N_events, 2)
+                match_1 = ak.all(pairing_true[:, 0] == pairing_predictions[:,1], axis=-1)  # shape: (N_events, 2)
+                match_2 = ak.all(pairing_true[:, 1] == pairing_predictions[:,0], axis=-1)  # shape: (N_events, 2)
+                match_3 = ak.all(pairing_true[:, 1] == pairing_predictions[:,1], axis=-1)  # shape: (N_events, 2)
+                correct_prediction = (match_0 | match_1) & (match_2 | match_3)
                 correct_fully_matched = correct_prediction[mask_fully_matched]
 
                 pairing_efficiency = ak.sum(correct_fully_matched)/len(correct_fully_matched)
