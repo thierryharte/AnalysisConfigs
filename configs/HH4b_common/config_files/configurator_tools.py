@@ -1169,5 +1169,9 @@ def define_categories(bkg_morphing_dnn=False, blind=False, spanet=False,  run2=F
                 categories_dict |= define_single_category("2b_VR1_control_region_postWRun2")
                 categories_dict |= define_single_category("2b_VR1_signal_region_postWRun2")
     
+    if not spanet and not run2:
+        # add the 2b control region post W for the old DNN
+        categories_dict |= define_single_category("4b_region")    
+    
     return categories_dict    
             

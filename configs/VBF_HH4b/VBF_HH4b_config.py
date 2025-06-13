@@ -11,8 +11,8 @@ from pocket_coffea.lib.columns_manager import ColOut
 from pocket_coffea.parameters import defaults
 from pocket_coffea.lib.weights.common.common import common_weights
 
-from workflow import VBFHH4bProcessor
-from custom_cuts import vbf_hh4b_presel, vbf_hh4b_presel_tight
+from configs.VBF_HH4b.workflow import VBFHH4bProcessor
+from configs.VBF_HH4b.custom_cuts import vbf_hh4b_presel, vbf_hh4b_presel_tight
 
 from configs.HH4b_common.custom_weights import (
     bkg_morphing_dnn_weight,
