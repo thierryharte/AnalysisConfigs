@@ -144,7 +144,7 @@ if config_options_dict["dnn_variables"]:
     )
 elif all([model=="" for model in onnx_model_dict]):
     column_list = get_columns_list(SPANET_TRAINING_DEFAULT_COLUMNS)
-    if RANDOM_PT:
+    if config_options_dict["random_pt"]:
         column_list += get_columns_list({"events": ["random_pt_weights"]})
 else:
     column_list = get_columns_list()
