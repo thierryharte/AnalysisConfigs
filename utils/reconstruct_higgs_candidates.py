@@ -18,14 +18,14 @@ def reconstruct_higgs_from_provenance(matched_jets_higgs):
     idx_higgs2 = ak.local_index(matched_jets_higgs.pt)[mask_h2]
 
     jet_higgs1 = jet_higgs1[ak.argsort(jet_higgs1.pt, axis=1, ascending=False)]
-    #idx_higgs1 = idx_higgs1[ak.argsort(jet_higgs1.pt, axis=1, ascending=False)]
+    # idx_higgs1 = idx_higgs1[ak.argsort(jet_higgs1.pt, axis=1, ascending=False)]
     jet_higgs2 = jet_higgs2[ak.argsort(jet_higgs2.pt, axis=1, ascending=False)]
-    #idx_higgs2 = idx_higgs2[ak.argsort(jet_higgs2.pt, axis=1, ascending=False)]
+    # idx_higgs2 = idx_higgs2[ak.argsort(jet_higgs2.pt, axis=1, ascending=False)]
 
     higgs_lead = add_fields(jet_higgs1[:, 0] + jet_higgs1[:, 1])
     higgs_sub = add_fields(jet_higgs2[:, 0] + jet_higgs2[:, 1])
 
-    #idx_pairing = ak.concatenate([ak.pad_none(idx_higgs1, 1), ak.pad_none(idx_higgs2, 1)], axis=1)
+    # idx_pairing = ak.concatenate([ak.pad_none(idx_higgs1, 1), ak.pad_none(idx_higgs2, 1)], axis=1)
     idx_higgs1 = ak.fill_none(ak.pad_none(idx_higgs1, 2, axis=1, clip=True), -1)  # shape: (n_events, 2)
     idx_higgs2 = ak.fill_none(ak.pad_none(idx_higgs2, 2, axis=1, clip=True), -1)  # shape: (n_events, 2)
     # Combine to final structure: shape (n_events, 2, 2)

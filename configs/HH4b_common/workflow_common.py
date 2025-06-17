@@ -4,8 +4,6 @@ from pprint import pprint
 
 import vector
 
-vector.register_awkward()
-
 from pocket_coffea.workflows.base import BaseProcessorABC
 from pocket_coffea.lib.deltaR_matching import object_matching
 
@@ -22,6 +20,8 @@ from utils.reconstruct_higgs_candidates import (
 )
 from utils.inference_session_onnx import get_model_session
 from utils.dnn_evaluation_functions import get_dnn_prediction
+
+vector.register_awkward()
 
 era_dict = {
     "2022_preEE_C": 0,
@@ -52,10 +52,9 @@ year_dict = {
 class HH4bCommonProcessor(BaseProcessorABC):
     def __init__(self, cfg) -> None:
         super().__init__(cfg=cfg)
-        
+
         for key, value in self.workflow_options.items():
-            setattr(self, key, value)   
-            
+            setattr(self, key, value)
 
     def apply_object_preselection(self, variation):
         self.events["Jet"] = ak.with_field(
@@ -777,10 +776,10 @@ class HH4bCommonProcessor(BaseProcessorABC):
                 pairing_true = ak.sort(pairing_true, axis=-1)
                 mask_fully_matched = ak.all(ak.flatten(pairing_true, axis=2) >= 0, axis=1)
 
-                match_0 = ak.all(pairing_true[:, 0] == pairing_predictions[:,0], axis=-1)  # shape: (N_events, 2)
-                match_1 = ak.all(pairing_true[:, 0] == pairing_predictions[:,1], axis=-1)  # shape: (N_events, 2)
-                match_2 = ak.all(pairing_true[:, 1] == pairing_predictions[:,0], axis=-1)  # shape: (N_events, 2)
-                match_3 = ak.all(pairing_true[:, 1] == pairing_predictions[:,1], axis=-1)  # shape: (N_events, 2)
+                match_0 = ak.all(pairing_true[:, 0] == pairing_predictions[:, 0], axis=-1)  # shape: (N_events, 2)
+                match_1 = ak.all(pairing_true[:, 0] == pairing_predictions[:, 1], axis=-1)  # shape: (N_events, 2)
+                match_2 = ak.all(pairing_true[:, 1] == pairing_predictions[:, 0], axis=-1)  # shape: (N_events, 2)
+                match_3 = ak.all(pairing_true[:, 1] == pairing_predictions[:, 1], axis=-1)  # shape: (N_events, 2)
                 correct_prediction = (match_0 | match_1) & (match_2 | match_3)
                 correct_fully_matched = correct_prediction[mask_fully_matched]
 
@@ -821,7 +820,7 @@ class HH4bCommonProcessor(BaseProcessorABC):
                     self.events["HiggsSubLeadingTrue"],
                     self.events["JetGoodFromHiggsOrderedTrue"],
                     pairing_true,
-                ) = reconstruct_higgs_from_provenance(self.events.JetGoodMatched)
+                ) = reconstruct_higgs_from_provenance(self.events.JetGoodHiggsMatched)
 
                 matched_jet_higgs_idx_not_none = self.events.JetGoodMatched.index[
                     ~ak.is_none(self.events.JetGoodMatched.index, axis=1)
@@ -838,10 +837,10 @@ class HH4bCommonProcessor(BaseProcessorABC):
                 pairing_true = ak.sort(pairing_true, axis=-1)
                 mask_fully_matched = ak.all(ak.flatten(pairing_true, axis=2) >= 0, axis=1)
 
-                match_0 = ak.all(pairing_true[:, 0] == pairing_predictions[:,0], axis=-1)  # shape: (N_events, 2)
-                match_1 = ak.all(pairing_true[:, 0] == pairing_predictions[:,1], axis=-1)  # shape: (N_events, 2)
-                match_2 = ak.all(pairing_true[:, 1] == pairing_predictions[:,0], axis=-1)  # shape: (N_events, 2)
-                match_3 = ak.all(pairing_true[:, 1] == pairing_predictions[:,1], axis=-1)  # shape: (N_events, 2)
+                match_0 = ak.all(pairing_true[:, 0] == pairing_predictions[:, 0], axis=-1)  # shape: (N_events, 2)
+                match_1 = ak.all(pairing_true[:, 0] == pairing_predictions[:, 1], axis=-1)  # shape: (N_events, 2)
+                match_2 = ak.all(pairing_true[:, 1] == pairing_predictions[:, 0], axis=-1)  # shape: (N_events, 2)
+                match_3 = ak.all(pairing_true[:, 1] == pairing_predictions[:, 1], axis=-1)  # shape: (N_events, 2)
                 correct_prediction = (match_0 | match_1) & (match_2 | match_3)
                 correct_fully_matched = correct_prediction[mask_fully_matched]
 
