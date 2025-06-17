@@ -1127,30 +1127,32 @@ def define_categories(bkg_morphing_dnn=False, blind=False, spanet=False,  run2=F
     """
     Define the categories for the analysis.
     """
-    categories_dict={}
+    categories_dict = {}
     if not vr1:
         if spanet:
+            categories_dict |= define_single_category("4b_region")
             categories_dict |= define_single_category("4b_control_region")
             categories_dict |= define_single_category("2b_control_region_preW")
             categories_dict |= define_single_category("4b_signal_region" + "_blind") if blind else {}
-            categories_dict |= define_single_category("4b_signal_region" )
-            categories_dict |= define_single_category("2b_signal_region_preW"+ "_blind") if blind else {}
+            categories_dict |= define_single_category("4b_signal_region")
+            categories_dict |= define_single_category("2b_signal_region_preW" + "_blind") if blind else {}
             categories_dict |= define_single_category("2b_signal_region_preW")
             if bkg_morphing_dnn:
                 categories_dict |= define_single_category("2b_control_region_postW")
                 categories_dict |= define_single_category("2b_signal_region_postW" + "_blind") if blind else {}
-                categories_dict |= define_single_category("2b_signal_region_postW" )
+                categories_dict |= define_single_category("2b_signal_region_postW")
         if run2:
+            categories_dict |= define_single_category("4b_regionRun2")
             categories_dict |= define_single_category("4b_control_regionRun2")
             categories_dict |= define_single_category("2b_control_region_preWRun2")
             categories_dict |= define_single_category("4b_signal_region" + "_blind"+"Run2") if blind else {}
-            categories_dict |= define_single_category("4b_signal_region" +"Run2")
+            categories_dict |= define_single_category("4b_signal_region" + "Run2")
             categories_dict |= define_single_category("2b_signal_region_preW" + "_blind" + "Run2") if blind else {}
-            categories_dict |= define_single_category("2b_signal_region_preW"  + "Run2")
+            categories_dict |= define_single_category("2b_signal_region_preW" + "Run2")
             if bkg_morphing_dnn:
                 categories_dict |= define_single_category("2b_control_region_postWRun2")
                 categories_dict |= define_single_category("2b_signal_region_postW" + "_blind" + "Run2") if blind else {}
-                categories_dict |= define_single_category("2b_signal_region_postW"  + "Run2")
+                categories_dict |= define_single_category("2b_signal_region_postW" + "Run2")
     else:
         if spanet:
             categories_dict |= define_single_category("4b_VR1_control_region")
@@ -1168,10 +1170,9 @@ def define_categories(bkg_morphing_dnn=False, blind=False, spanet=False,  run2=F
             if bkg_morphing_dnn:
                 categories_dict |= define_single_category("2b_VR1_control_region_postWRun2")
                 categories_dict |= define_single_category("2b_VR1_signal_region_postWRun2")
-    
+
     if not spanet and not run2:
         # add the 2b control region post W for the old DNN
-        categories_dict |= define_single_category("4b_region")    
-    
-    return categories_dict    
-            
+        categories_dict |= define_single_category("4b_region")
+
+    return categories_dict

@@ -11,7 +11,10 @@ def get_era_lumi(dataset_data):
         "23 Era Cv4": 10.68,
         "23 Era Dv1": 7.83,
         "23 Era Dv2": 1.67,
+        "22 preEE": 4.95+2.92,
+        "22 postEE": 5.79+17.6+2.88
     }
+    # GluGlutoHHto4B_spanet_kl-1p00_kt-1p00_c2-0p00_2022_postEE
     era_list = []
     for dataset in dataset_data:
         if "2022" in dataset:
@@ -25,6 +28,10 @@ def get_era_lumi(dataset_data):
                 era_list.append("22 Era F")
             elif "EraG" in dataset:
                 era_list.append("22 Era G")
+            elif "GluGlu" in dataset and "preEE" in dataset:
+                era_list.append("22 preEE")
+            elif "GluGlu" in dataset and "postEE" in dataset:
+                era_list.append("22 postEE")
             else:
                 print("2022 data, but not identified")
         elif "2023" in dataset:

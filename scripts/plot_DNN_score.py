@@ -196,7 +196,7 @@ def plot_single_var_from_columns(
     print(f"bin_edges {bin_edges}")
 
     # this is the mc data that I want to add to the histogram of the reweighted data
-    mc_signal = f"{cat_list[1].replace('Run2', '_DHH')}_MC"
+    mc_signal = f"{cat_list[1]}_MC"
     for i, cat in enumerate(cat_list):
         # I only want the following columns:
         # postW data
@@ -310,10 +310,12 @@ def plot_single_var_from_columns(
             )
             if "postW" in region:
                 namesuffix = r" + $\kappa_\lambda$=" + kl
+                savesuffix = f"plus_kl_{kl}"
             if "MC" in region:
                 namesuffix = r" ($\kappa_\lambda$=" + kl + ")"
+                savesuffix = f"kl_{kl}"
 
-        cat_plot_name = plot_regions_names(region, namesuffix)
+        cat_plot_name = plot_regions_names(region, namesuffix).replace("Run2","_DHH")
         # Filling the histograms
         idx_den = np.digitize(values["col_den"], values["bin_edges"])
         idx_num = np.digitize(values["col_num"], values["bin_edges"])
@@ -537,6 +539,30 @@ def plot_single_var_from_columns(
                     label=cat_plot_name,
                     color=values["color"][0],
                 )
+
+                ## Save the histogram
+                np.savez(os.path.join(dir_cat, f"hist_columns_{region}_{var_plot_name}_{savesuffix}.npz".replace("Run2", "_DHH")), 
+                        counts=np.append(values["h_den"],values["h_den"][-1]),
+                        count_err=values["err_den"],
+                        bin_edges=values["bin_edges_plotting"],
+                        plot=var_plot_name,
+                        num_events=len(values["col_den"]))
+                np.savez(os.path.join(dir_cat, f"hist_columns_{region}_{var_plot_name}.npz".replace("Run2", "_DHH")), 
+                        counts=np.append(values["h_den_onlybg"],values["h_den_onlybg"][-1]),
+                        count_err=values["err_den_onlybg"],
+                        bin_edges=values["bin_edges_plotting"],
+                        sob=sob_list,
+                        sob_err=sob_err_list,
+                        plot=var_plot_name,
+                        num_events=len(values["col_den"]))
+            else: # For mainly MC and 4b_data, as there we are not calculating the sob
+                ## Save the histogram
+                np.savez(os.path.join(dir_cat, f"hist_columns_{region}_{var_plot_name}_{savesuffix}.npz".replace("Run2", "_DHH")), 
+                        counts=np.append(values["h_den"],values["h_den"][-1]),
+                        count_err=values["err_den"],
+                        bin_edges=values["bin_edges_plotting"],
+                        plot=var_plot_name,
+                        num_events=len(values["col_den"]))
 
             ## plot the histogram
             ax.step(

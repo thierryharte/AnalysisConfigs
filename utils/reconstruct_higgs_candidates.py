@@ -9,21 +9,35 @@ from utils.basic_functions import add_fields
 
 def reconstruct_higgs_from_provenance(matched_jets_higgs):
 
-    jet_higgs1 = matched_jets_higgs[matched_jets_higgs.provenance == 1]
-    jet_higgs2 = matched_jets_higgs[matched_jets_higgs.provenance == 2]
+    mask_h1 = matched_jets_higgs.provenance == 1
+    mask_h2 = matched_jets_higgs.provenance == 2
+
+    jet_higgs1 = matched_jets_higgs[mask_h1]
+    idx_higgs1 = ak.local_index(matched_jets_higgs.pt)[mask_h1]
+    jet_higgs2 = matched_jets_higgs[mask_h2]
+    idx_higgs2 = ak.local_index(matched_jets_higgs.pt)[mask_h2]
 
     jet_higgs1 = jet_higgs1[ak.argsort(jet_higgs1.pt, axis=1, ascending=False)]
+    # idx_higgs1 = idx_higgs1[ak.argsort(jet_higgs1.pt, axis=1, ascending=False)]
     jet_higgs2 = jet_higgs2[ak.argsort(jet_higgs2.pt, axis=1, ascending=False)]
+    # idx_higgs2 = idx_higgs2[ak.argsort(jet_higgs2.pt, axis=1, ascending=False)]
 
     higgs_lead = add_fields(jet_higgs1[:, 0] + jet_higgs1[:, 1])
     higgs_sub = add_fields(jet_higgs2[:, 0] + jet_higgs2[:, 1])
+
+    # idx_pairing = ak.concatenate([ak.pad_none(idx_higgs1, 1), ak.pad_none(idx_higgs2, 1)], axis=1)
+    idx_higgs1 = ak.fill_none(ak.pad_none(idx_higgs1, 2, axis=1, clip=True), -1)  # shape: (n_events, 2)
+    idx_higgs2 = ak.fill_none(ak.pad_none(idx_higgs2, 2, axis=1, clip=True), -1)  # shape: (n_events, 2)
+    # Combine to final structure: shape (n_events, 2, 2)
+
+    idx_pairing = np.stack([idx_higgs1, idx_higgs2], axis=1)
 
     jets_ordered = ak.with_name(
         ak.concatenate([jet_higgs1[:, :2], jet_higgs2[:, :2]], axis=1),
         name="PtEtaPhiMCandidate",
     )
 
-    return higgs_lead, higgs_sub, jets_ordered
+    return higgs_lead, higgs_sub, jets_ordered, idx_pairing
 
 
 def reconstruct_higgs_from_idx(jet_collection, idx_collection):
@@ -220,6 +234,7 @@ def run2_matching_algorithm(jet_collection):
     best_idx_expanded = ak.Array(
         comb_idx_order_reshape[np.arange(len(min_idx)), min_idx]
     )
+    best_idx_origshape = ak.Array(comb_idx_order[np.arange(len(min_idx)), min_idx])
 
     # get the jets ordered like higg1_jet1, higg1_jet2, higg2_jet1, higg2_jet2
     jets_list = []
@@ -251,6 +266,7 @@ def run2_matching_algorithm(jet_collection):
     )
 
     return (
+        best_idx_origshape,
         delta_dhh,
         higgs_lead,
         higgs_sub,

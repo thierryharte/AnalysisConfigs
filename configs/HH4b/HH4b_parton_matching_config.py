@@ -31,6 +31,7 @@ from configs.HH4b_common.dnn_input_variables import (
     sig_bkg_dnn_input_variables,
 )
 from configs.HH4b_common.config_files.__config_file__ import (
+    onnx_model_dict,
     config_options_dict
 )
 
@@ -99,7 +100,8 @@ categories_dict = define_categories(
     run2=config_options_dict["run2"],
     vr1=config_options_dict["vr1"],
 )
-if config_options_dict["random_pt"]:
+# AKA if no model is applied
+if all([model=="" for model in onnx_model_dict]):
     categories_dict = define_single_category("4b_region")
 
 print("categories_dict", categories_dict)
@@ -125,7 +127,7 @@ print("categories_dict", categories_dict)
 
 
 ## Define the columns to save
-assert (config_options_dict["random_pt"] ^ config_options_dict["run2"])
+assert not (config_options_dict["random_pt"] and config_options_dict["run2"])
 if config_options_dict["dnn_variables"]:
     total_input_variables = (
         sig_bkg_dnn_input_variables
@@ -140,9 +142,10 @@ if config_options_dict["dnn_variables"]:
     column_listRun2 = create_DNN_columns_list(
         True, not config_options_dict["save_chunk"], total_input_variables, btag=False
     )
-elif config_options_dict["random_pt"]:
+elif all([model=="" for model in onnx_model_dict]):
     column_list = get_columns_list(SPANET_TRAINING_DEFAULT_COLUMNS)
-    column_list += get_columns_list({"events": ["random_pt_weights"]})
+    if config_options_dict["random_pt"]:
+        column_list += get_columns_list({"events": ["random_pt_weights"]})
 else:
     column_list = get_columns_list()
     column_listRun2 = get_columns_list()
@@ -152,7 +155,11 @@ if config_options_dict["sig_bkg_dnn"] and config_options_dict["spanet"]:
     column_list += get_columns_list({"events": ["sig_bkg_dnn_score"]})
 if config_options_dict["sig_bkg_dnn"] and config_options_dict["run2"]:
     column_listRun2 += get_columns_list({"events": ["sig_bkg_dnn_scoreRun2"]})
-    
+if config_options_dict["spanet"] and not any(["DATA" in sample for sample in sample_list]):
+    column_list += get_columns_list({"events": ["correct_prediction", "correct_prediction_fully_matched", "mask_fully_matched"]})
+if config_options_dict["run2"] and not any(["DATA" in sample for sample in sample_list]):
+    column_listRun2 += get_columns_list({"events": ["correct_predictionRun2", "correct_prediction_fully_matchedRun2", "mask_fully_matched"]})
+
 
 bysample_bycategory_column_dict = {}
 for sample in sample_list:
