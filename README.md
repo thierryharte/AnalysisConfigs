@@ -15,6 +15,7 @@ the import of customization code into the framework configuration and also to ma
 Once you have a `PocketCoffea` local installation, you can install the `configs` and `utils` package with:
 
 ```python
+cd AnalysisConfigs
 pip install -e .
 ```
 
