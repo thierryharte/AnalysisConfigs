@@ -1,0 +1,14 @@
+scaleout: 3
+cores-per-worker: 1
+mem-per-worker: "10GB"
+disk-per-worker: "1GB"
+queue: "microcentury"
+walltime: "00:40:00"
+chunksize: 50000
+local-virtualenv: true
+jobs-dir: "test3"
+# dry-run: true
+
+# custom-setup-commands:
+#   - source ~/PocketCoffea/pocket_coffea_env/bin/activate
+#   - export PYTHONPATH=/afs/cern.ch/user/m/mmalucch/PocketCoffea:$PYTHONPATH
