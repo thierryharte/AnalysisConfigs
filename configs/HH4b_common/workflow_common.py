@@ -79,6 +79,11 @@ class HH4bCommonProcessor(BaseProcessorABC):
             ),
             "mass",
         )
+        # reorder the jets by pt regressed
+        self.events["Jet"] = self.events["Jet"][
+            ak.argsort(self.events["Jet"].pt, axis=1, ascending=False)
+        ]
+
         self.events["Jet"] = ak.with_field(
             self.events.Jet, ak.local_index(self.events.Jet, axis=1), "index"
         )
@@ -432,8 +437,6 @@ class HH4bCommonProcessor(BaseProcessorABC):
         jet2_sigma_conc = ak.concatenate((jet2_up_sigma, jet2_down_sigma), axis=1)
         sigma_hbbCand_B = ak.max(jet2_sigma_conc, axis=1)
 
-        # breakpoint()
-
         return ak.flatten(np.sqrt(sigma_hbbCand_A**2 + sigma_hbbCand_B**2), axis=None)
 
     def get_jets_no_higgs(self, jet_higgs_idx_per_event):
@@ -487,6 +490,31 @@ class HH4bCommonProcessor(BaseProcessorABC):
         self.events["JetNotFromHiggs"] = jet_selection_nopu(
             self.events, "JetNotFromHiggs", self.params, tight_cuts=self.tight_cuts
         )
+
+        if self.fifth_jet == "pt":
+            # order the self.events["JetNotFromHiggs"] according to btag or to pt
+            # depending on wether the pairing chose the 5th jet or not
+            self.events["JetNotFromHiggs"] = ak.where(
+                self.events["btag_order_add_jet"],
+                self.events["JetNotFromHiggs"][
+                    ak.argsort(
+                        self.events["JetNotFromHiggs"].btagPNetB,
+                        axis=1,
+                        ascending=False,
+                    )
+                ],
+                self.events["JetNotFromHiggs"][
+                    ak.argsort(
+                        self.events["JetNotFromHiggs"].pt, axis=1, ascending=False
+                    )
+                ],
+            )
+        else:
+            self.events["JetNotFromHiggs"] = self.events["JetNotFromHiggs"][
+                ak.argsort(
+                    self.events["JetNotFromHiggs"].btagPNetB, axis=1, ascending=False
+                )
+            ]
 
         add_jet1pt = ak.pad_none(self.events.JetNotFromHiggs, 1, clip=True)[:, 0]
 
@@ -679,15 +707,30 @@ class HH4bCommonProcessor(BaseProcessorABC):
             + (self.events[f"HiggsSubLeading{suffix}"].mass - 120) ** 2
         )
 
-        mask_fully_matched = ak.all(ak.flatten(pairing_true, axis=2) >= 0, axis=1)
-        self.events["mask_fully_matched"] = mask_fully_matched
 
         if pairing_predictions is not None:
             # Masking and calculating efficiency
             # Need to sort the double pairs in innermost dimension for easier evaluation
             pairing_predictions = ak.sort(ak.Array(pairing_predictions), axis=-1)
+            if pairing_suffix=="Run2":
+                # keep up to 4 jets
+                pairing_true=ak.where(
+                    pairing_true < 4,
+                    pairing_true,
+                    -1,
+                )
+            else:
+                # keep up to 5 jets
+                pairing_true = ak.where(
+                    pairing_true < self.max_num_jets,
+                    pairing_true,
+                    -1,
+                )
+            
+            mask_fully_matched = ak.all(ak.flatten(pairing_true, axis=2) >= 0, axis=1)
             pairing_true = ak.sort(pairing_true, axis=-1)
 
+            breakpoint()
             match_0 = ak.all(
                 pairing_true[:, 0] == pairing_predictions[:, 0], axis=-1
             )  # shape: (N_events, 2)
@@ -706,7 +749,11 @@ class HH4bCommonProcessor(BaseProcessorABC):
             self.events[f"correct_prediction_fully_matched{pairing_suffix}"] = ak.mask(
                 correct_prediction, mask_fully_matched
             )
+        else:
+            mask_fully_matched = ak.all(ak.flatten(pairing_true, axis=2) >= 0, axis=1)
 
+        self.events["mask_fully_matched"] = mask_fully_matched
+        
         return matched_jet_higgs_idx_not_none
 
     def process_extra_after_presel(self, variation):  # -> ak.Array:
@@ -788,6 +835,12 @@ class HH4bCommonProcessor(BaseProcessorABC):
                     pairing_suffix="",
                 )
 
+            # if the 5th jet is matched, then the add jet should be order by btag
+            # because we want to consider the leading in btag which the pairing discarded
+            self.events["btag_order_add_jet"] = ak.any(
+                ak.flatten(pairing_predictions, axis=-1) > 3, axis=-1
+            )
+
         # reconstruct the higgs candidates for Run2 method
         if self.run2:
             (
@@ -811,6 +864,13 @@ class HH4bCommonProcessor(BaseProcessorABC):
                     pairing_predictions=pairing_predictions,
                     pairing_suffix="Run2",
                 )
+
+            # if the 5th jet is matched, then the add jet should be order by btag
+            # because we want to consider the leading in btag which the pairing discarded
+            # (useless for Run2 pairing because it's always 4 jets)
+            self.events["btag_order_add_jet"] = ak.any(
+                ak.flatten(pairing_predictions, axis=-1) > 3, axis=-1
+            )
 
         if not (self._isMC and not self.spanet):
             self.dummy_provenance()
