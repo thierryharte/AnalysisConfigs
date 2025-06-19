@@ -51,4 +51,5 @@ config_options_dict = {
     "arctanh_delta_prob_bin_edge": 2.44,
     "arctanh_delta_prob_pad_limit": 2.,
     "arctanh_delta_prob_pad_limit": 2.,
+    "add_jet_spanet": False,
 } | onnx_model_dict

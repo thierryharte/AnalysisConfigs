@@ -1,7 +1,5 @@
 import awkward as ak
 import numpy as np
-from pprint import pprint
-
 import vector
 
 from pocket_coffea.workflows.base import BaseProcessorABC
@@ -79,10 +77,12 @@ class HH4bCommonProcessor(BaseProcessorABC):
             ),
             "mass",
         )
-        # reorder the jets by pt regressed
-        self.events["Jet"] = self.events["Jet"][
-            ak.argsort(self.events["Jet"].pt, axis=1, ascending=False)
-        ]
+        
+        if self.add_jet_spanet:
+            # reorder the jets by pt regressed
+            self.events["Jet"] = self.events["Jet"][
+                ak.argsort(self.events["Jet"].pt, axis=1, ascending=False)
+            ]
 
         self.events["Jet"] = ak.with_field(
             self.events.Jet, ak.local_index(self.events.Jet, axis=1), "index"
@@ -490,31 +490,32 @@ class HH4bCommonProcessor(BaseProcessorABC):
         self.events["JetNotFromHiggs"] = jet_selection_nopu(
             self.events, "JetNotFromHiggs", self.params, tight_cuts=self.tight_cuts
         )
-
-        if self.fifth_jet == "pt":
-            # order the self.events["JetNotFromHiggs"] according to btag or to pt
-            # depending on wether the pairing chose the 5th jet or not
-            self.events["JetNotFromHiggs"] = ak.where(
-                self.events["btag_order_add_jet"],
-                self.events["JetNotFromHiggs"][
-                    ak.argsort(
-                        self.events["JetNotFromHiggs"].btagPNetB,
-                        axis=1,
-                        ascending=False,
-                    )
-                ],
-                self.events["JetNotFromHiggs"][
-                    ak.argsort(
-                        self.events["JetNotFromHiggs"].pt, axis=1, ascending=False
-                    )
-                ],
-            )
-        else:
-            self.events["JetNotFromHiggs"] = self.events["JetNotFromHiggs"][
-                ak.argsort(
-                    self.events["JetNotFromHiggs"].btagPNetB, axis=1, ascending=False
+        
+        if self.add_jet_spanet:
+            if self.fifth_jet == "pt":
+                # order the self.events["JetNotFromHiggs"] according to btag or to pt
+                # depending on wether the pairing chose the 5th jet or not
+                self.events["JetNotFromHiggs"] = ak.where(
+                    self.events["btag_order_add_jet"],
+                    self.events["JetNotFromHiggs"][
+                        ak.argsort(
+                            self.events["JetNotFromHiggs"].btagPNetB,
+                            axis=1,
+                            ascending=False,
+                        )
+                    ],
+                    self.events["JetNotFromHiggs"][
+                        ak.argsort(
+                            self.events["JetNotFromHiggs"].pt, axis=1, ascending=False
+                        )
+                    ],
                 )
-            ]
+            else:
+                self.events["JetNotFromHiggs"] = self.events["JetNotFromHiggs"][
+                    ak.argsort(
+                        self.events["JetNotFromHiggs"].btagPNetB, axis=1, ascending=False
+                    )
+                ]
 
         add_jet1pt = ak.pad_none(self.events.JetNotFromHiggs, 1, clip=True)[:, 0]
 
@@ -730,7 +731,6 @@ class HH4bCommonProcessor(BaseProcessorABC):
             mask_fully_matched = ak.all(ak.flatten(pairing_true, axis=2) >= 0, axis=1)
             pairing_true = ak.sort(pairing_true, axis=-1)
 
-            breakpoint()
             match_0 = ak.all(
                 pairing_true[:, 0] == pairing_predictions[:, 0], axis=-1
             )  # shape: (N_events, 2)
