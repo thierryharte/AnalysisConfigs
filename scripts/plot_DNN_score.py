@@ -722,15 +722,19 @@ def plot_from_columns(cat_cols, lumi, era_string):
                         assert (cat_col[cat_list[0]][v_pref + "_N"] == N).all()
                     except AssertionError:
                         print(
-                            f"Variables {v_pref} have different N values: {cat_col[cat_list[0]][v_pref + '_N']}"
+                            f"WARNING: Variables {v_pref} have different N values: {cat_col[cat_list[0]][v_pref + '_N']}. Skipping..."
                         )
-                        sys.exit(1)
+                        # skip the variable
+                        continue
 
                     for idx in range(N):
                         if not f"{v}_{idx}" in col_dict.keys():
                             col_dict[f"{v}_{idx}"] = {}
                         vars_to_plot.append(f"{v}_{idx}")
                         for cat in cat_list:
+                            if "2b" in cat and data_mc == "MC":
+                                print(f"Skipping {v} for {cat} in {data_mc}")
+                                continue  # skip 2b MC
                             if not cat in col_dict[f"{v}_{idx}"].keys():
                                 col_dict[f"{v}_{idx}"][cat] = {}
                             try:
@@ -751,6 +755,9 @@ def plot_from_columns(cat_cols, lumi, era_string):
                     if v != "weight":
                         vars_to_plot.append(v)
                     for cat in cat_list:
+                        if "2b" in cat and data_mc == "MC":
+                            print(f"Skipping {v} for {cat} in {data_mc}")
+                            continue  # skip 2b MC
                         if not cat in col_dict[v].keys():
                             col_dict[v][cat] = {}
                         try:
@@ -783,6 +790,9 @@ def plot_from_columns(cat_cols, lumi, era_string):
                     vars_to_plot.append(v)
 
                 for cat in cat_list:
+                    if "2b" in cat and data_mc == "MC":
+                        print(f"Skipping {v} for {cat} in {data_mc}")
+                        continue  # skip 2b MC
                     if not cat in col_dict[v].keys():
                         col_dict[v][cat] = {}
                     # if data_mc in col_dict[v][cat].keys():
