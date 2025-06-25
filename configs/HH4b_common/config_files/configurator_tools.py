@@ -1023,6 +1023,10 @@ DEFAULT_JET_COLUMNS = {
     "JetGood": DEFAULT_JET_COLUMN_PARAMS,
 }
 
+DEFAULT_JET_COLUMNS_DICT={
+    f"JetGood_{x}": ["JetGood", x] for x in DEFAULT_JET_COLUMN_PARAMS
+}
+
 
 def get_columns_list(
     columns_dict=DEFAULT_JET_COLUMNS,
