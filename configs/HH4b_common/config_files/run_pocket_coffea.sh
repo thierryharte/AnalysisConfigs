@@ -45,7 +45,6 @@ else
         --custom-run-options "$run_options" \
         -o "$output" \
         ${EXECUTOR_CUSTOM_SETUP} \
-        # --executor-custom-setup "$SCRIPT_DIR/../onnx_executor_common.py" \
         --process-separately
 fi
 
