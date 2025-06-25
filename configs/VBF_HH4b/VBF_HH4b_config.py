@@ -21,7 +21,9 @@ from configs.HH4b_common.custom_weights import (
 from configs.HH4b_common.config_files.configurator_tools import (
     get_variables_dict,
     get_columns_list,
+    DEFAULT_JET_COLUMNS_DICT,
     create_DNN_columns_list,
+    define_single_category,
     define_categories,
 )
 
@@ -107,9 +109,14 @@ categories_dict = define_categories(
     run2=config_options_dict["run2"],
     vr1=config_options_dict["vr1"],
 )
+
+# categories_dict=define_single_category("control_region")
+# categories_dict|=define_single_category("signal_region")
+# categories_dict|= {"baseline": [passthrough]}
+
 print("categories_dict", categories_dict)
 
-## VBF SPECIFIC REGIONS
+### VBF SPECIFIC REGIONS ###
 # **{f"4b_semiTight_LeadingPt_region": [hh4b_4b_region, semiTight_leadingPt]},
 # **{f"4b_semiTight_LeadingMjj_region": [hh4b_4b_region, semiTight_leadingMjj]},
 # **{f"4b_semiTight_LeadingMjj_region": [hh4b_4b_region, semiTight_leadingMjj]}
@@ -131,40 +138,44 @@ print("categories_dict", categories_dict)
 
 
 ## Define the columns to save
+total_input_variables={}
+
+if config_options_dict["spanet"]:
+    total_input_variables |= {
+        "Delta_pairing_probabilities": ["events", "Delta_pairing_probabilities"],
+        "Arctanh_Delta_pairing_probabilities": [
+            "events",
+            "Arctanh_Delta_pairing_probabilities",
+        ],
+        "Binned_Arctanh_Delta_pairing_probabilities": [
+            "events",
+            "Binned_Arctanh_Delta_pairing_probabilities",
+        ],
+        "Padded_Arctanh_Delta_pairing_probabilities": [
+            "events",
+            "Padded_Arctanh_Delta_pairing_probabilities",
+        ],
+    }
+    
 if config_options_dict["dnn_variables"]:
-    total_input_variables = (
+    total_input_variables |= (
         config_options_dict["sig_bkg_dnn_input_variables"]
         | config_options_dict["bkg_morphing_dnn_input_variables"]
         | {"year": ["events", "year"]}
     )
-
-    if config_options_dict["spanet"]:
-        total_input_variables |= {
-            "Delta_pairing_probabilities": ["events", "Delta_pairing_probabilities"],
-            "Arctanh_Delta_pairing_probabilities": [
-                "events",
-                "Arctanh_Delta_pairing_probabilities",
-            ],
-            "Binned_Arctanh_Delta_pairing_probabilities": [
-                "events",
-                "Binned_Arctanh_Delta_pairing_probabilities",
-            ],
-            "Padded_Arctanh_Delta_pairing_probabilities": [
-                "events",
-                "Padded_Arctanh_Delta_pairing_probabilities",
-            ],
-        }
-    print(total_input_variables)
-
-    column_list = create_DNN_columns_list(
-        False, not config_options_dict["save_chunk"], total_input_variables, btag=False
-    )
-    column_listRun2 = create_DNN_columns_list(
-        True, not config_options_dict["save_chunk"], total_input_variables, btag=False
-    )
 else:
-    column_list = get_columns_list()
-    column_listRun2 = get_columns_list()
+    total_input_variables |= DEFAULT_JET_COLUMNS_DICT
+
+print(total_input_variables)
+
+column_list = create_DNN_columns_list(
+    False, not config_options_dict["save_chunk"], total_input_variables, btag=False
+)
+column_listRun2 = create_DNN_columns_list(
+    True, not config_options_dict["save_chunk"], total_input_variables, btag=False
+)
+
+print(column_list)
 
 # Add special columns
 if config_options_dict["sig_bkg_dnn"] and config_options_dict["spanet"]:
