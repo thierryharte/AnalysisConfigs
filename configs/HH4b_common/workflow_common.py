@@ -765,7 +765,12 @@ class HH4bCommonProcessor(BaseProcessorABC):
             model_session_spanet, input_name_spanet, output_name_spanet = (
                 get_model_session(self.spanet, "spanet")
             )
-
+            
+            try:
+                spanet_input_name_list=self.spanet_input_name_list
+            except AttributeError:
+                spanet_input_name_list=["log_pt", "eta", "phi", "btag"]
+                
             # compute the pairing information using the SPANET model
             pairing_outputs = get_pairing_information(
                 model_session_spanet,
@@ -773,6 +778,7 @@ class HH4bCommonProcessor(BaseProcessorABC):
                 output_name_spanet,
                 self.events,
                 self.max_num_jets,
+                spanet_input_name_list,
             )
 
             (

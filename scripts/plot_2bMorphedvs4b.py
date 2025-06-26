@@ -686,9 +686,10 @@ def plot_from_columns(cat_cols, lumi, era_string):
                         assert (cat_col_DATA[cat_list[0]][v_pref + "_N"] == N).all()
                     except AssertionError:
                         print(
-                            f"Variables {v_pref} have different N values: {cat_col_DATA[cat_list[0]][v_pref + '_N']}"
+                            f"WARNING: Variables {v_pref} have different N values: {cat_col_DATA[cat_list[0]][v_pref + '_N']}. Skipping..."
                         )
-                        sys.exit(1)
+                        # skip the variable
+                        continue
 
                     for idx in range(N):
                         if f"{var_name}_{idx}" not in col_dict:

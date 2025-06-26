@@ -1,8 +1,8 @@
-scaleout: 30
+scaleout: 15
 cores-per-worker: 1
-mem-per-worker: "17GB"
-disk-per-worker: "1GB"
+mem-per-worker: "40GB"
+disk-per-worker: "5GB"
 queue: "standard"
-walltime: "06:00:00"
+walltime: "08:00:00"
 chunksize: 50000
 retries: 2
