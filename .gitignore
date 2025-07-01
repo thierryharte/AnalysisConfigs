@@ -157,3 +157,4 @@ load.ipynb
 
 # Ignoring tempfile for running scans
 configs/HH4b_common/config_files/__config_file__.py
+__*[0-9]*.py
