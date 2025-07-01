@@ -22,12 +22,15 @@ if not args.output:
     args.output = "plots_2bVS4b"
 
 if args.test:
-    args.workers = 1
+    # args.workers = 1
     args.output = "test"
 
 NUMBER_OF_BINS = 20
 PAD_VALUE = -999
 BLIND_VALUE = 0.9
+ARCTANH_BINS=False
+VARIABLES_TEST=["score", "weight", "prob"]
+
 
 input_dir = os.path.dirname(args.input_data[0])
 log_scale = not args.linear
@@ -362,6 +365,10 @@ def plot_single_var_from_columns(
                 col_den = col_den[mask_den_range4b]
 
                 bins = np.linspace(range_4b[0], range_4b[1], NUMBER_OF_BINS + 1)
+                
+                if ARCTANH_BINS:
+                    # transform the bins to arctanh space
+                    bins = np.arctanh(np.linspace(-0.1, 0.999, NUMBER_OF_BINS + 1))
 
                 # print(f"weights_den {weights_den}", type(weights_den))
                 # print(f"weights_num {weights_num}")
@@ -670,7 +677,9 @@ def plot_from_columns(cat_cols, lumi, era_string):
 
             if args.test:
                 # vars_tot = vars_tot[:3]
-                vars_tot=[v for v in vars_tot if "prob" in v or "weight" in v]
+                # vars_tot=[v for v in vars_tot if "prob" in v or "weight" in v]
+                vars_tot=[v for v in vars_tot if any(test_var in v for test_var in VARIABLES_TEST)]
+                
             print("vars_tot", vars_tot)
 
             vars_to_plot = []
@@ -838,25 +847,40 @@ def plot_from_columns(cat_cols, lumi, era_string):
             plot_categories = True
 
         if plot_categories:
-            with Pool(args.workers) as p:
-                p.starmap(
-                    plot_single_var_from_columns,
-                    [
-                        (
-                            var,
-                            col_dict[var.replace("_TRANSFORM", "")],
-                            col_dict["weight"],
-                            cats_name,
-                            cat_lists_final,
-                            dir_cat,
-                            chi_squared,
-                            color_list,
-                            lumi,
-                            era_string,
-                        )
-                        for var in vars_to_plot
-                    ],
-                )
+            if args.workers>1:
+                with Pool(args.workers) as p:
+                    p.starmap(
+                        plot_single_var_from_columns,
+                        [
+                            (
+                                var,
+                                col_dict[var.replace("_TRANSFORM", "")],
+                                col_dict["weight"],
+                                cats_name,
+                                cat_lists_final,
+                                dir_cat,
+                                chi_squared,
+                                color_list,
+                                lumi,
+                                era_string,
+                            )
+                            for var in vars_to_plot
+                        ],
+                    )
+            else:
+                for var in vars_to_plot:
+                    plot_single_var_from_columns(
+                        var,
+                        col_dict[var.replace("_TRANSFORM", "")],
+                        col_dict["weight"],
+                        cats_name,
+                        cat_lists_final,
+                        dir_cat,
+                        chi_squared,
+                        color_list,
+                        lumi,
+                        era_string,
+                    )
         # del col_dict
 
 
