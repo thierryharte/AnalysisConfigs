@@ -33,11 +33,12 @@ from configs.HH4b_common.config_files.__config_file__ import (
 
 import configs.HH4b_common.custom_cuts_common as cuts
 
+BASELINE=False
+
 
 localdir = os.path.dirname(os.path.abspath(__file__))
 
 # Loading default parameters
-
 default_parameters = defaults.get_default_parameters()
 defaults.register_configuration_dir("config_dir", localdir + "/params")
 
@@ -112,7 +113,8 @@ categories_dict = define_categories(
 
 # categories_dict=define_single_category("control_region")
 # categories_dict|=define_single_category("signal_region")
-# categories_dict|= {"baseline": [passthrough]}
+if BASELINE:
+    categories_dict = {"baseline": [passthrough]}
 
 print("categories_dict", categories_dict)
 
@@ -165,7 +167,8 @@ if config_options_dict["dnn_variables"]:
     )
 else:
     total_input_variables |= DEFAULT_JET_COLUMNS_DICT
-
+if BASELINE:
+    total_input_variables |= DEFAULT_JET_COLUMNS_DICT
 print(total_input_variables)
 
 column_list = create_DNN_columns_list(
@@ -262,7 +265,7 @@ cfg = Configurator(
     preselections=preselection,
     categories=categories_dict,
     weights_classes=common_weights
-    + [bkg_morphing_dnn_weight, bkg_morphing_dnn_weightRun2],
+    + ([bkg_morphing_dnn_weight, bkg_morphing_dnn_weightRun2] if not BASELINE else [])
     weights={
         "common": {
             "inclusive": [
