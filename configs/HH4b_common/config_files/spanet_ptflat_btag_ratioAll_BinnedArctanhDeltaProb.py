@@ -15,6 +15,7 @@ onnx_model_dict = {
 onnx_model_dict |= {
     "spanet": "/work/tharte/datasets/output_spanet/spanet_hh4b_inclusive_5jets_100_pvary_loose_s300_bratio_all.onnx",  # spanet pt vary 0.3, 1.7, btag ratio all
     "bkg_morphing_dnn": "/work/mmalucch/out_ML_pytorch/DNN_AN_1e-3_e20drop75_minDelta1em5_SPANet_btag_ratioAll_postEE_BinnedArctanhDeltaProb/best_models/average_model_from_onnx.onnx",
+    "sig_bkg_dnn": "/work/mmalucch/out_ML_pytorch/DNN_ptFlatSPANet_btag_ratioAll_class_weights_e5drop75_postEE_allklambda_BinnedArctanhDeltaProb/state_dict/model_best_epoch_31.onnx",
 }
 
 
