@@ -13,7 +13,7 @@ onnx_model_dict = {
 
 
 onnx_model_dict |= {
-    "spanet": "/work/tharte/datasets/mass_sculpting_data/hh4b_5jets_e300_s100_ptvary_wide_loose_btag.onnx",  # spanet pt vary 0.3, 1.7
+    "spanet": "/work/tharte/datasets/onnx_spanet_models_for_pairing_and_mass_sculpting_studies/hh4b_5jets_e300_s100_ptvary_wide_loose_btag.onnx",  # spanet pt vary 0.3, 1.7
 }
 
 

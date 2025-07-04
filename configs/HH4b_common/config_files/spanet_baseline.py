@@ -14,7 +14,7 @@ onnx_model_dict = {
 
 
 onnx_model_dict  |= {
-    "spanet": "/work/tharte/datasets/mass_sculpting_data/hh4b_5jets_e300_s160_btag.onnx",
+    "spanet": "/work/tharte/datasets/onnx_spanet_models_for_pairing_and_mass_sculpting_studies/hh4b_5jets_e300_s160_btag.onnx",
     # "spanet": "params/out_hh4b_5jets_ATLAS_ptreg_c0_lr1e4_wp0_noklininp_oc_300e_kl3p5.onnx",
     #"bkg_morphing_dnn": "/pnfs/psi.ch/cms/trivcat/store/user/mmalucch/keras_models_morphing/average_model_from_keras.onnx",
     #"bkg_morphing_dnn": "/work/tharte/datasets/ML_pytorch/out/AN_1e-2_noDropout_e20lrdrop95/state_dict/ratio/average_model_from_onnx.onnx",

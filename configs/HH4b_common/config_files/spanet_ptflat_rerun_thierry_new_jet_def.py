@@ -15,9 +15,10 @@ onnx_model_dict = {
 onnx_model_dict  |= {
     "spanet": "/work/tharte/datasets/onnx_spanet_models_for_pairing_and_mass_sculpting_studies/hh4b_5jets_e300_s100_ptvary_wide_loose_btag.onnx",
     "vbf_ggf_dnn": "",
-    "bkg_morphing_dnn": "/work/tharte/datasets/ML_pytorch/out/bkg_reweighting/SPANET_ptFlat_20_runs_postEE/best_models/ratio/average_model_from_onnx.onnx", # --> trained on postEE only
-    #"sig_bkg_dnn": "",
-    "sig_bkg_dnn": "/work/tharte/datasets/ML_pytorch/out/sig_bkg_classifier/SPANET_ptflat_norm_e5drop75_postEE/state_dict/model_best_epoch_23.onnx",
+    "bkg_morphing_dnn": "", # --> trained on postEE only
+    #"bkg_morphing_dnn": "/work/tharte/datasets/ML_pytorch/out/bkg_reweighting/SPANET_ptFlat_20_runs_postEE/best_models/ratio/average_model_from_onnx.onnx", # --> trained on postEE only
+    "sig_bkg_dnn": "",
+    #"sig_bkg_dnn": "/work/tharte/datasets/ML_pytorch/out/sig_bkg_classifier/SPANET_ptflat_norm_e5drop75_postEE/state_dict/model_best_epoch_23.onnx",
 }
 
 
@@ -45,5 +46,5 @@ config_options_dict = {
     "pad_value": -999.0,
     "arctanh_delta_prob_bin_edge": 2.44,
     "arctanh_delta_prob_pad_limit": 2.,
-    "add_jet_spanet": False,
+    "add_jet_spanet": True,
 } | onnx_model_dict
