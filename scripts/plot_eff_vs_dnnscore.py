@@ -60,13 +60,13 @@ parser.add_argument(
     "-is",
     "--input-spanet",
     type=str,
-    default="/work/tharte/datasets/data_samples/spanet_ptflat_true_idx_fix/output_GluGlutoHHto4B_spanet_kl-1p00_kt-1p00_c2-0p00_2022_postEE.coffea",
+    default="/work/tharte/datasets/sig_bkg_classifier_pairing_eff_vs_dnnscore/spanet_ptflat_true_idx_new_fixes/output_GluGlutoHHto4B_spanet_kl-1p00_kt-1p00_c2-0p00_2022_postEE.coffea",
 )
 parser.add_argument(
     "-ir",
     "--input-run2",
     type=str,
-    default="/work/tharte/datasets/data_samples/DHH_method_true_idx_fix/output_GluGlutoHHto4B_spanet_kl-1p00_kt-1p00_c2-0p00_2022_postEE.coffea",
+    default="/work/tharte/datasets/sig_bkg_classifier_pairing_eff_vs_dnnscore/DHH_method_true_idx_new_fixes/output_GluGlutoHHto4B_spanet_kl-1p00_kt-1p00_c2-0p00_2022_postEE.coffea",
 )
 parser.add_argument(
     "-o",
