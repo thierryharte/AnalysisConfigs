@@ -3,11 +3,11 @@ import os
 localdir = os.path.dirname(os.path.abspath(__file__))
 
 onnx_model_dict = {
-    "SPANET": "",
-    "VBF_GGF_DNN": "",
-    "BKG_MORPHING_DNN": "",
-    "SIG_BKG_DNN": "",
-    "BKG_MORPHING_SPREAD_DNN": "",
+    "spanet": "",
+    "vbf_ggf_dnn": "",
+    "bkg_morphing_dnn": "",
+    "sig_bkg_dnn": "",
+    "bkg_morphing_spread_dnn": "",
 }
 
 config_options_dict = {
@@ -34,5 +34,5 @@ config_options_dict = {
     "pad_value": -999.0,
     "arctanh_delta_prob_bin_edge": 2.44,
     "arctanh_delta_prob_pad_limit": 2.,
-    "add_jet_spanet": False,
+    "add_jet_spanet": True,
 } | onnx_model_dict

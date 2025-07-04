@@ -13,8 +13,8 @@ onnx_model_dict = {
 
 
 onnx_model_dict |= {
-    "spanet": "/work/tharte/datasets/mass_sculpting_data/hh4b_5jets_e300_s100_ptvary_wide_loose_btag.onnx",  # spanet pt vary 0.3, 1.7
-    # "spanet": "/work/tharte/datasets/mass_sculpting_data/hh4b_5jets_e300_s160_btag.onnx", # thierry's model, spanet baseline
+    "spanet": "/work/tharte/datasets/onnx_spanet_models_for_pairing_and_mass_sculpting_studies/hh4b_5jets_e300_s100_ptvary_wide_loose_btag.onnx",  # spanet pt vary 0.3, 1.7
+    # "spanet": "/work/tharte/datasets/onnx_spanet_models_for_pairing_and_mass_sculpting_studies/hh4b_5jets_e300_s160_btag.onnx", # thierry's model, spanet baseline
     # "spanet": "params/out_hh4b_5jets_ATLAS_ptreg_c0_lr1e4_wp0_noklininp_oc_300e_kl3p5.onnx", # ruth's model
     #
     # "vbf_ggf_dnn":"/t3home/rcereghetti/ML_pytorch/out/20241212_223142_SemitTightPtLearningRateConstant/models/model_28.onnx",
