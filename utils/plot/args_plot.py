@@ -79,3 +79,7 @@ parser.add_argument(
 )
 
 args = parser.parse_args()
+
+print("Arguments:")
+for arg in vars(args):
+    print(f"{arg}: {getattr(args, arg)}")

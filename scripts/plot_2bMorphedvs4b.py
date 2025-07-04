@@ -6,7 +6,7 @@ from scipy.stats.distributions import chi2
 import mplhep as hep
 from multiprocessing import Pool
 
-from configs.HH4b_common.dnn_input_variables import sig_bkg_dnn_input_variables
+import configs.HH4b_common.dnn_input_variables as dnn_input_variables
 from utils.inference_session_onnx import get_model_session
 from utils.get_DNN_input_list import get_DNN_input_list
 
@@ -148,7 +148,8 @@ if args.onnx_model:
         output_name_SIG_BKG_DNN,
     ) = get_model_session(args.onnx_model, "SIG_BKG_DNN")
     # load the variables for the DNN
-    dnn_input_list = get_DNN_input_list(args.run2, sig_bkg_dnn_input_variables)
+    dnn_variables = getattr(dnn_input_variables, args.input_variables)
+    dnn_input_list = get_DNN_input_list(args.run2, dnn_variables)
     print(f"Input list for DNN: {dnn_input_list}")
 
 
@@ -185,22 +186,26 @@ cat_col_mc = None
 if args.input_mc:
     if args.input_mc[0].endswith(".coffea"):
         inputfiles_mc = args.input_mc
-        CONST_SIG_BINNING = True if len(inputfiles_mc) == 1 else False
     else:
-        CONST_SIG_BINNING = False
-
         # get list of coffea files
         inputfiles_mc = [
             os.path.join(input_dir, file)
             for file in os.listdir(input_dir)
             if file.endswith(".coffea") and "DATA" not in file
         ]
+        
     cat_col_mc, _ = get_columns_from_files(inputfiles_mc, filter_lambda)
 
     if args.run2:
         cols_sig_mc = cat_col_mc[f"4b{args.region_suffix}_signal_regionRun2"]
     else:
         cols_sig_mc = cat_col_mc[f"4b{args.region_suffix}_signal_region"]
+        
+    if args.input_mc[0].endswith(".coffea") and any(["score" in col for col in cols_sig_mc]):
+        CONST_SIG_BINNING = True if len(inputfiles_mc) == 1 else False
+    else:
+        CONST_SIG_BINNING = False
+        
     for col in cols_sig_mc:
         print(col)
         if "score" in col:

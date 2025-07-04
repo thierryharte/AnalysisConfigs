@@ -28,6 +28,7 @@ def get_columns_from_files(inputfiles, filter_lambda=None):
                         #filter with lamda function
                         if filter_lambda is not None:
                             if not filter_lambda(column):
+                                print(f"Skipping column {column} due to filter")
                                 continue
                         column_array = accumulator["columns"][sample][dataset][
                             category
