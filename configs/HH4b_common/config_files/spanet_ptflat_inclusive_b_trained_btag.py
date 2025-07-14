@@ -1,4 +1,3 @@
-"""Config file for spanet_pT model with the correct definition for the 5th jet."""
 from configs.HH4b_common.dnn_input_variables import (
     bkg_morphing_dnn_input_variables,
     sig_bkg_dnn_input_variables,
@@ -14,10 +13,10 @@ onnx_model_dict = {
 
 
 onnx_model_dict |= {
-    "spanet": "/work/tharte/datasets/onnx_spanet_models_for_pairing_and_mass_sculpting_studies/hh4b_5jets_e300_s100_ptvary_wide_loose_btag.onnx",
-    "vbf_ggf_dnn": "",
-    "bkg_morphing_dnn": "/work/tharte/datasets/ML_pytorch/out/bkg_reweighting/SPANET_ptFlat_20_runs_postEE_new_jet5_def/best_models/ratio/average_model_from_onnx.onnx",  # --> trained on postEE only
-    "sig_bkg_dnn": "/work/tharte/datasets/ML_pytorch/out/sig_bkg_classifier/DNN_spanet_ptflat_e5drop75_postEE_allklambda_new_jet_def/state_dict/model_best_epoch_21.onnx",
+    "spanet": "/work/tharte/datasets/onnx_spanet_models_for_pairing_and_mass_sculpting_studies/spanet_hh4b_inclusive_b_region_5jets_loose_ptvary_wide_btag_300_inclusive_years_s100.onnx",  # spanet pt vary 0.3, 1.7
+    "bkg_morphing_dnn": "/work/tharte/datasets/ML_pytorch/out/bkg_reweighting/DNN_AN_1e-3_e20drop75_minDelta1em5_SPANet_inclusive_b_region_btag_postEE/best_models/ratio/average_model_from_onnx.onnx",
+    #
+    "sig_bkg_dnn": "/work/tharte/datasets/ML_pytorch/out/sig_bkg_classifier/DNN_AN_1e-3_e20drop75_minDelta1em5_SPANet_inclusive_b_region_btag_postEE/state_dict/model_best_epoch_17.onnx",
 }
 
 
