@@ -33,6 +33,10 @@ def get_columns_from_files(inputfiles, filter_lambda=None):
                         column_array = accumulator["columns"][sample][dataset][
                             category
                         ][column].value
+                        
+                        if column == "weight" and dataset  in accumulator["sum_genweights"]:
+                            column_array = column_array / accumulator["sum_genweights"][dataset]
+                        
                         if column not in cat_col[category]:
                             cat_col[category][column] = column_array
                         else:
@@ -40,9 +44,6 @@ def get_columns_from_files(inputfiles, filter_lambda=None):
                                 (cat_col[category][column], column_array)
                             )
                         
-                        if column == "weight" and dataset  in accumulator["sum_genweights"]:
-                            cat_col[category][column] = cat_col[category][column] / accumulator["sum_genweights"][dataset]
-
                         if i == 0:
                             print(
                                 f"column {column}",
