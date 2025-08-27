@@ -1,10 +1,9 @@
 import matplotlib.pyplot as plt
 import matplotlib
-import mplhep as hep
 import hist
-import os
+import matplotlib.ticker as mtick
 
-hep.style.use("CMS")
+import mplhep as hep
 
 class HEPPlotter:
     """
@@ -13,245 +12,257 @@ class HEPPlotter:
     Supports:
     - 1D histograms with optional ratio plots
     - 2D histograms
-    - Curve plotting (values with errors vs binning)
+    - Graph plotting (values with error bars)
 
-    Parameters
-    ----------
-    style : str, optional
-        Plotting style to use (default: "CMS").
-    figsize : tuple, optional
-        Figure size to pass to matplotlib (default: None).
+    Usage
+    -----
+    job = (HEPPlotter("CMS"
+            .set_output("out/plot")
+            .set_labels(xlabel="pT [GeV]", ylabel="Events")
+            .set_data(series_dict)
+            .set_options(log_scale=True, ratio_label="Data/MC"))
+    job.run()  # produces the plot
     """
 
-    def __init__(self, style: str = "CMS", figsize=None):
-        if style:
-            hep.style.use(style)
+    def __init__(self, style="CMS"):
+        # core settings
+        self.style = style
+        hep.style.use(style)
+        
+        self.figsize = None
+        self.lumitext = "(13.6 TeV)"
+        self.data_formats = ["png", "pdf", "svg"]
+
+        # user-configurable
+        self.output_base = None
+        self.xlabel = None
+        self.ylabel = "Events"
+        self.cbar_label = "Events"
+        self.series_dict = None
+        self.plot_type = "1d"  # "1d", "2d", "graph"
+
+        # options
+        self.log_scale = False
+        self.ratio_label = None
+        self.grid = True
+        self.legend = True
+        self.legend_loc = "best"
+        self.set_ylim = True
+        self.extra_kwargs = {}
+
+        # internal
+        self._annotations = []
+        self._lines = []
+
+    # ----------------------------
+    # CONFIGURATION METHODS
+    # ----------------------------
+
+    def set_plot_config(self, figsize=None, lumitext="(13.6 TeV)", formats=None):
+        """Set the plotting style and related options."""
         self.figsize = figsize
+        self.lumitext = lumitext
+        if formats:
+            self.data_formats = formats
+        return self
 
-    # =============================
-    # COMMON HELPERS
-    # =============================
+    def set_output(self, output_base):
+        """Set the base name for output files (without extension)."""
+        self.output_base = output_base
+        return self
 
-    def _save_figure(self, fig, output_base: str):
+    def set_labels(self, xlabel, ylabel="Events", cbar_label="Events"):
+        """Set the x and y axis labels."""
+        self.xlabel = xlabel
+        self.ylabel = ylabel
+        self.cbar_label = cbar_label
+        return self
+
+    def set_data(self, series_dict, plot_type="1d"):
+        """Provide the plotting data (dict structure varies by plot_type).
+        series_dict structure:
+        - For 1D histograms:
+            series_dict : dict
+                Dictionary mapping names to {name:{"data": hist.Hist, "style": dict}}.
+                The reference histogram must include {"is_reference": True}.
+        - For 2D histograms:
+            series_dict : dict
+                {name:{"data": hist.Hist, "style": dict}}
+        - For graphs:
+            series_dict : dict
+                Dictionary mapping names to {name:{
+                                                "data": {
+                                                    "x":[list, list],
+                                                    "y":[list, list],
+                                                },
+                                                "style": dict
+                                                }
+                                            }.
         """
-        Save a matplotlib figure to multiple formats (png, pdf, svg).
+        self.series_dict = series_dict
+        self.plot_type = plot_type
+        return self
 
-        Parameters
-        ----------
-        fig : matplotlib.figure.Figure
-            The figure object to save.
-        output_base : str
-            Base name for output files (extensions are added automatically).
+    def set_extra_kwargs(self, **kwargs):
+        """Extra kwargs passed to the plotting functions."""
+        self.extra_kwargs.update(kwargs)
+        return self
+
+    def set_options(self, **kwargs):
+        """Generic options setter (log_scale, ratio_label, legend, grid...)."""
+        self.log_scale = kwargs.get("log_scale", self.log_scale)
+        self.ratio_label = kwargs.get("ratio_label", self.ratio_label)
+        self.legend = kwargs.get("legend", self.legend)
+        self.legend_loc = kwargs.get("legend_loc", self.legend_loc)
+        self.grid = kwargs.get("grid", self.grid)
+        self.set_ylim = kwargs.get("set_ylim", self.set_ylim)
+        return self
+
+    def add_annotation(self, **kwargs):
+        """Annotation kwargs go directly to ax.text() with transform=ax.transAxes"""
+        self._annotations.append(kwargs)
+        return self
+
+    def add_line(self, orientation="h", **kwargs):
+        """Add a horizontal or vertical line to the plot.
+        orientation: 'h' for horizontal, 'v' for vertical
+        kwargs: passed directly to ax.axhline or ax.axvline
         """
-        for ext in ["png", "pdf", "svg"]:
-            fig.savefig(f"{output_base}.{ext}", bbox_inches="tight", dpi=300)
+        self._lines.append((orientation, kwargs))
+        return self
+
+    # ----------------------------
+    # INTERNAL HELPERS
+    # ----------------------------
+    
+    def _close_fig(self, fig):
+        """Close the figure to free memory."""
         plt.close(fig)
 
-    def _add_cms_labels(self, ax, lumi="(13.6 TeV)", text="Preliminary"):
-        """
-        Add CMS-style labels to a plot.
+    def _save(self, fig):
+        """Save the figure in all specified formats."""
+        for ext in self.data_formats:
+            fig.savefig(f"{self.output_base}.{ext}", bbox_inches="tight", dpi=300)
 
-        Parameters
-        ----------
-        ax : matplotlib.axes.Axes
-            Axis to which the labels are added.
-        lumi : str, optional
-            Luminosity text (default: "(13.6 TeV)").
-        text : str, optional
-            Additional label text (default: "Preliminary").
-        """
-        hep.cms.lumitext(lumi, ax=ax)
-        hep.cms.text(text, ax=ax)
-        
-    def _add_annotation(
-        self,
-        ax,
-        text: str,
-        x: float = 0.05,
-        y: float = 0.95,
-        ha: str = "left",
-        va: str = "center",
-        color: str = "black",
-        fontsize: int = 14,
-        **kwargs,
-    ):
-        """
-        Add a text annotation to the given axis.
 
-        Parameters
-        ----------
-        ax : matplotlib.axes.Axes
-            The axis to annotate.
-        text : str
-            The text to display (supports LaTeX formatting).
-        x, y : float, optional
-            Position in axis coordinates (default: (0.05, 0.95)).
-        ha, va : str, optional
-            Horizontal and vertical alignment.
-        color : str, optional
-            Text color.
-        fontsize : int, optional
-            Font size.
-        kwargs : dict, optional
-            Extra arguments forwarded to `ax.text`.
-        """
-        ax.text(
-            x,
-            y,
-            text,
-            transform=ax.transAxes,
-            horizontalalignment=ha,
-            verticalalignment=va,
-            color=color,
-            fontsize=fontsize,
-            **kwargs,
-        )
+    def _add_cms_labels(self, ax):
+        """Add CMS style labels to the plot."""
+        hep.cms.lumitext(self.lumitext, ax=ax)
+        hep.cms.text("Preliminary", ax=ax)
 
-    def _finalize_plot(
-        self,
-        fig,
-        ax,
-        output_base: str,
-        xlabel: str,
-        ylabel: str,
-        ax_ratio=None,
-        ratio_label: str = None,
-        y_log_scale: bool = False,
-        legend: bool = True,
-        grid: bool = True,
-        set_ylim: bool = True,
-        annotations: list = None,  
-    ):
-        """
-        Finalize a plot by setting labels, scales, legend, CMS text, and saving.
-
-        Parameters
-        ----------
-        fig : matplotlib.figure.Figure
-            Figure object.
-        ax : matplotlib.axes.Axes
-            Main axis.
-        output_base : str
-            Output base filename for saving.
-        xlabel : str
-            Label for x-axis.
-        ylabel : str
-            Label for y-axis.
-        ax_ratio : matplotlib.axes.Axes, optional
-            Axis for ratio plot if enabled.
-        ratio_label : str, optional
-            Label for ratio axis.
-        y_log_scale : bool, optional
-            If True, set y-axis to log scale.
-        legend : bool, optional
-            If True, draw legend.
-        grid : bool, optional
-            If True, show grid lines.
-        set_ylim : bool, optional
-            If True, extend y-axis upper limit.
-        annotations : list of dict, optional
-            List of annotation dictionaries with keys matching `ax.text` parameters.
-        """
-        if legend:
-            ax.legend(loc="upper right")
-
-        if y_log_scale:
-            ax.set_yscale("log")
-        if grid:
-            ax.grid()
-
-        if ax_ratio:
-            ax_ratio.set_xlabel(xlabel)
-            ax_ratio.set_ylabel(ratio_label if ratio_label else "Ratio")
-            ax_ratio.grid()
-            ax_ratio.set_yscale("log" if y_log_scale else "linear")
-            if not y_log_scale:
-                ax_ratio.set_ylim(0.5, 1.5)
-        else:
-            ax.set_xlabel(xlabel)
-
-        ax.set_ylabel(ylabel)
-        if set_ylim:
-            ax.set_ylim(
-                top=(
-                    1.7 * ax.get_ylim()[1]
-                    if not y_log_scale
-                    else ax.get_ylim()[1] ** (1.7)
-                )
+    def _apply_annotations(self, ax):
+        """Apply all stored annotations to the axes."""
+        for ann in self._annotations:
+            ax.text(
+                **ann,
+                transform=ax.transAxes,
             )
-        
-        if annotations:
-            for ann in annotations:
-                self._add_annotation(
-                    ax,
-                    text=ann.get("text", ""),
-                    x=ann.get("x", 0.05),
-                    y=ann.get("y", 0.95),
-                    ha=ann.get("ha", "left"),
-                    va=ann.get("va", "center"),
-                    color=ann.get("color", "black"),
-                    fontsize=ann.get("fontsize", 14),
-                    **{k: v for k, v in ann.items() if k not in ["x", "y", "text", "ha", "va", "color", "fontsize"]}
+
+    def _add_lines(self, ax):
+        """Add all stored horizontal/vertical lines to the axes."""
+        for orient, kwargs in self._lines:
+            if orient == "h":
+                ax.axhline(**kwargs)
+            else:
+                ax.axvline(**kwargs)
+
+    # ----------------------------
+    # IMPLEMENTATIONS
+    # ----------------------------
+
+    def _plot_1d(self):
+        """Plot 1D histograms with optional ratio plot."""
+        ratio_plot, ref_name = self._validate_inputs(self.series_dict)
+        fig, ax, ax_ratio = self._create_figure(ratio_plot)
+
+        for name, props in self.series_dict.items():
+            hist_1d = props["data"]
+            style = props.get("style", {})
+            is_ref = style.get("is_reference", False)
+
+            # draw histogram
+            self._plot_histogram(ax, name, hist_1d, style, **self.extra_kwargs)
+
+            # ratio
+            if ratio_plot and ax_ratio is not None:
+                self._plot_ratio(
+                    ax_ratio,
+                    hist_1d,
+                    self.series_dict[ref_name]["data"],
+                    name,
+                    is_ref,
+                    style.get("color"),
                 )
 
-        self._add_cms_labels(ax)
-        self._save_figure(fig, output_base)
+        self._finalize(fig, ax, ax_ratio)
 
-    # =============================
-    # 1D PLOTTING
-    # =============================
+    def _plot_2d(self):
+        """Plot 2D histograms."""
+        fig, ax, _ = self._create_figure()
+        for name, props in self.series_dict.items():
+            if not isinstance(props["data"], hist.Hist) or props["data"].ndim != 2:
+                raise ValueError(
+                    f"Expected 2D hist.Hist for {name}, got {type(props['data'])} with ndim={props['data'].ndim}"
+                )
+            hist2d = props["data"]
+            label = props["style"].get("label", "")
+            hep.hist2dplot(
+                hist2d,
+                ax=ax,
+                label=label,
+                norm=matplotlib.colors.LogNorm() if self.log_scale else None,
+                cmap=props["style"].get("cmap", "viridis"),
+                **self.extra_kwargs,
+            )
+        self._finalize(fig, ax)
 
-    def plot_1d_histograms_pool_map(self, kwargs):
-        """
-        Wrapper for multiprocessing (picklable) version of `plot_1d_histograms`.
-        """
-        return self.plot_1d_histograms(**kwargs)
+    def _plot_graph(self):
+        """Plot graphs with error bars."""
+        fig, ax, _ = self._create_figure()
+        for name, props in self.series_dict.items():
+            y_values, y_errors = (
+                props["data"]["y"][0],
+                props["data"]["y"][1],
+            )
+            x_values, x_errors = (
+                props["data"]["x"][0],
+                props["data"]["x"][1],
+            )
+            style = props.get("style", {})
+            ax.errorbar(
+                y=y_values,
+                x=x_values,
+                yerr=y_errors,
+                xerr=x_errors,
+                fmt=style.get("fmt", "o"),
+                label=name,
+                color=style.get("color"),
+                markersize=style.get("markersize"),
+                **self.extra_kwargs,
+            )
+        self._finalize(fig, ax)
+
+    # ----------------------------
+    # UTILITIES
+    # ----------------------------
 
     def _validate_inputs(self, series_dict):
-        """
-        Validate inputs for 1D histograms and determine if a ratio plot is needed.
-
-        Parameters
-        ----------
-        series_dict : dict
-            Dictionary of histograms with styles.
-
-        Returns
-        -------
-        ratio_plot : bool
-            Whether a ratio plot is required.
-        ref_name : str
-            Name of the reference histogram for ratio plots.
-        """
+        """Validate the input series_dict for 1D plotting."""
         ratio_plot = False
         ref_name = None
         for name, props in series_dict.items():
             hist_1d = props["data"]
-            is_reference = props.get("style", {}).get("is_reference", False)
             if not isinstance(hist_1d, hist.Hist):
                 raise ValueError(f"Expected hist.Hist for {name}, got {type(hist_1d)}")
-            if is_reference and ratio_plot:
-                raise ValueError("Multiple reference histograms found.")
-            if is_reference:
+            if props.get("style", {}).get("is_reference", False):
+                if ratio_plot:
+                    raise ValueError("Multiple reference histograms found.")
                 ratio_plot = True
                 ref_name = name
         return ratio_plot, ref_name
 
     def _create_figure(self, ratio_plot=False):
-        """
-        Create a figure and axes, with optional ratio subplot.
-
-        Parameters
-        ----------
-        ratio_plot : bool, optional
-            If True, create a ratio subplot.
-
-        Returns
-        -------
-        fig : matplotlib.figure.Figure
-        ax : matplotlib.axes.Axes
-        ax_ratio : matplotlib.axes.Axes or None
-        """
+        """Create figure and axes, with optional ratio subplot."""
         if ratio_plot:
             fig, (ax, ax_ratio) = plt.subplots(
                 2,
@@ -266,20 +277,7 @@ class HEPPlotter:
             return fig, ax, None
 
     def _plot_histogram(self, ax, name, hist_1d, style, **kwargs):
-        """
-        Plot a 1D histogram onto the given axis.
-
-        Parameters
-        ----------
-        ax : matplotlib.axes.Axes
-            Axis to draw on.
-        name : str
-            Label for legend.
-        hist_1d : hist.Hist
-            Histogram to plot.
-        style : dict
-            Style dictionary (histtype, color, etc.).
-        """
+        """Plot a single 1D histogram on the given axes."""
         histtype = style.get("histtype", "step")
         if histtype == "fill":
             hep.histplot(
@@ -290,7 +288,7 @@ class HEPPlotter:
                 facecolor=style.get("facecolor", style.get("color")),
                 edgecolor=style.get("edgecolor", style.get("color")),
                 alpha=style.get("alpha", 0.5),
-                **kwargs
+                **kwargs,
             )
         else:
             hep.histplot(
@@ -300,277 +298,101 @@ class HEPPlotter:
                 label=name,
                 ax=ax,
                 color=style.get("color"),
-                **kwargs
+                **kwargs,
             )
         ax.set_xlabel("")
 
     def _plot_ratio(self, ax_ratio, hist_1d, ref_hist, name, is_reference, color):
-        """
-        Plot ratio of histogram to a reference histogram.
-
-        Parameters
-        ----------
-        ax_ratio : matplotlib.axes.Axes
-            Ratio subplot axis.
-        hist_1d : hist.Hist
-            Histogram to compare.
-        ref_hist : hist.Hist
-            Reference histogram.
-        name : str
-            Label for legend.
-        is_reference : bool
-            If True, draw uncertainty band instead of points.
-        color : str
-            Color of markers or band.
-        """
+        """Plot the ratio of hist_1d to ref_hist on the ratio axes."""
         bins = hist_1d.axes[0].edges
-        bins_center = (bins[1:] + bins[:-1]) / 2
-
+        centers = (bins[1:] + bins[:-1]) / 2
         ratio, err_up, err_down = hep.get_comparison(
             hist_1d,
             ref_hist,
             comparison="split_ratio" if is_reference else "ratio",
         )
-
         if is_reference:
             ax_ratio.axhline(y=1, linestyle="--", color=color)
             ax_ratio.fill_between(
-                bins_center,
-                1 - err_up,
-                1 + err_up,
-                alpha=0.5,
-                color=color,
+                centers, 1 - err_up, 1 + err_up, alpha=0.5, color=color
             )
         else:
             hep.histplot(
                 ratio,
                 bins=bins,
                 yerr=err_up,
+                xerr=True,
                 histtype="errorbar",
                 label=name,
                 ax=ax_ratio,
                 color=color,
             )
 
-    def plot_1d_histograms(
-        self,
-        series_dict,
-        output_base,
-        xlabel,
-        ylabel="Events",
-        log_scale=False,
-        ratio_label=None,
-        annotations=None,
-        **kwargs
-    ):
-        """
-        Plot one or more 1D histograms, optionally with ratio subplot.
+    def _finalize(self, fig, ax, ax_ratio=None):
+        """Final adjustments and saving the figure."""
+        if self.legend:
+            handles, labels = ax.get_legend_handles_labels()
+            if len(handles) > 5:
+                ax.legend(loc=self.legend_loc, ncol=2, fontsize="small")
+            else:
+                ax.legend(loc=self.legend_loc)
 
-        Parameters
-        ----------
-        series_dict : dict
-            Dictionary mapping names to {"data": hist.Hist, "style": dict}.
-            The reference histogram must include {"is_reference": True}.
-        output_base : str
-            Base name for saved figures.
-        xlabel : str
-            Label for x-axis.
-        ylabel : str, optional
-            Label for y-axis (default: "Events").
-        log_scale : bool, optional
-            If True, use logarithmic y-axis.
-        ratio_label : str, optional
-            Label for ratio subplot (default: "Ratio").
-        annotations : list of dict, optional
-            List of annotation dictionaries with keys matching `ax.text` parameters.
-        """
-        print(f"Plotting 1D histograms to {output_base}")
-        ratio_plot, ref_name = self._validate_inputs(series_dict)
-        fig, ax, ax_ratio = self._create_figure(ratio_plot)
-        for name, props in series_dict.items():
-            hist_1d = props["data"]
-            style = props.get("style")
-            is_reference = style.get("is_reference", False) if style else False
+        if self.log_scale and self.plot_type != "2d":
+            ax.set_yscale("log")
+        if self.grid:
+            ax.grid()
 
-            self._plot_histogram(ax, name, hist_1d, style, **kwargs)
+        if ax_ratio:
+            ax_ratio.set_xlabel(self.xlabel)
+            ax_ratio.set_ylabel(self.ratio_label or "Ratio")
+            if self.grid:
+                ax_ratio.grid()
+            if self.log_scale:
+                ax_ratio.set_yscale("log")
+            if not self.log_scale and self.set_ylim:
+                ax_ratio.set_ylim(0.5, 1.5)
+        else:
+            ax.set_xlabel(self.xlabel)
 
-            if ratio_plot and ax_ratio is not None:
-                self._plot_ratio(
-                    ax_ratio,
-                    hist_1d,
-                    series_dict[ref_name]["data"],
-                    name,
-                    is_reference,
-                    style["color"],
+        ax.set_ylabel(self.ylabel)
+        
+        # define the scalar format for y-axis
+        # ax.yaxis.set_major_formatter(mtick.ScalarFormatter())
+        # ax.ticklabel_format(style="sci", axis="y", scilimits=(0, 0))
+
+
+        if self.set_ylim and self.plot_type != "2d":
+            ax.set_ylim(
+                top=(
+                    1.7 * ax.get_ylim()[1]
+                    if not self.log_scale
+                    else ax.get_ylim()[1] ** (1.7)
                 )
+            )
+        
+        if self.plot_type == "2d":
+            # label colorbar
+            cbar = ax.collections[0].colorbar
+            cbar.set_label(self.cbar_label)
+        
+        self._apply_annotations(ax)
+        self._add_lines(ax)
+        
+        self._add_cms_labels(ax)
+        self._save(fig)
+        self._close_fig(fig)
 
-        self._finalize_plot(
-            fig,
-            ax,
-            output_base,
-            xlabel=xlabel,
-            ylabel=ylabel,
-            ax_ratio=ax_ratio,
-            ratio_label=ratio_label,
-            y_log_scale=log_scale,
-            annotations=annotations,
-        )
+    # ----------------------------
+    # PLOTTING DISPATCH
+    # ----------------------------
 
-    # =============================
-    # 2D PLOTTING
-    # =============================
-
-    def plot_2d_histograms_pool_map(self, kwargs):
-        """Wrapper for multiprocessing version of `plot_2d_histogram`."""
-        return self.plot_2d_histogram(**kwargs)
-
-    def _plot_2d_histogram(self, ax, hist2d, log_scale, label, **kwargs):
-        """
-        Plot a 2D histogram.
-
-        Parameters
-        ----------
-        ax : matplotlib.axes.Axes
-            Axis to draw on.
-        hist2d : hist.Hist
-            2D histogram to plot.
-        log_scale : bool
-            If True, use log color scale.
-        label : str
-            Label for legend.
-        """
-        hep.hist2dplot(
-            hist2d,
-            ax=ax,
-            label=label,
-            norm=matplotlib.colors.LogNorm() if log_scale else None,
-            cmap="viridis" if "cmap" not in kwargs else kwargs.pop("cmap"),
-            **kwargs,
-        )
-
-    def plot_2d_histogram(
-        self, hist2d, output_base, xlabel, ylabel, log_scale=False, label="", annotations=None, **kwargs
-    ):
-        """
-        Plot and save a 2D histogram.
-
-        Parameters
-        ----------
-        hist2d : hist.Hist
-            2D histogram to plot.
-        output_base : str
-            Base name for saved figures.
-        xlabel : str
-            Label for x-axis.
-        ylabel : str
-            Label for y-axis.
-        log_scale : bool, optional
-            If True, use log color scale (default: False).
-        label : str, optional
-            Legend label (default: "").
-        annotations : list of dict, optional
-            List of annotation dictionaries with keys matching `ax.text` parameters.
-        """
-        fig, ax, _ = self._create_figure()
-        self._plot_2d_histogram(ax, hist2d, log_scale, label, **kwargs)
-
-        self._finalize_plot(
-            fig,
-            ax,
-            output_base,
-            xlabel=xlabel,
-            ylabel=ylabel,
-            y_log_scale=False,
-            legend=False,
-            set_ylim=False,
-            annotations=annotations
-        )
-
-    # =============================
-    # CURVE PLOTTING
-    # =============================
-
-    def plot_curves_pool_map(self, kwargs):
-        """Wrapper for multiprocessing version of `plot_curves`."""
-        return self.plot_curves(**kwargs)
-
-    def _plot_curve(self, ax, x_bins, values, errors, label, style, **kwargs):
-        """
-        Plot values with errors vs binning (curve).
-
-        Parameters
-        ----------
-        ax : matplotlib.axes.Axes
-            Axis to draw on.
-        x_bins : array-like
-            Bin edges for x-axis.
-        values : array-like
-            Y values to plot.
-        errors : array-like
-            Errors associated with y values.
-        label : str
-            Legend label.
-        style : dict
-            Style dictionary (color, marker, etc.).
-        """
-        hep.histplot(
-            values,
-            bins=x_bins,
-            yerr=errors,
-            xerr=True,
-            histtype="errorbar",
-            label=label,
-            ax=ax,
-            color=style.get("color"),
-            marker=style.get("marker"),
-            markersize=style.get("markersize", 6),
-            **kwargs
-        )
-
-    def plot_curves(
-        self,
-        series_dict,
-        output_base,
-        x_bins,
-        xlabel,
-        ylabel,
-        log_scale=False,
-        annotations=None,
-        **kwargs
-    ):
-        """
-        Plot multiple curves (values with errors) and save.
-
-        Parameters
-        ----------
-        series_dict : dict
-            Mapping of names to {"values": arr, "errors": arr, "style": dict}.
-        output_base : str
-            Base name for saved figures.
-        x_bins : array-like
-            Bin edges for x-axis.
-        xlabel : str
-            Label for x-axis.
-        ylabel : str
-            Label for y-axis.
-        log_scale : bool, optional
-            If True, set y-axis to log scale.
-        annotations : list of dict, optional
-            List of annotation dictionaries with keys matching `ax.text` parameters.
-        """
-        fig, ax, _ = self._create_figure()
-
-        for name, props in series_dict.items():
-            values, errors = props["values"], props["errors"]
-            style = props.get("style")
-            self._plot_curve(ax, x_bins, values, errors, name, style, **kwargs)
-
-        self._finalize_plot(
-            fig,
-            ax,
-            output_base,
-            xlabel=xlabel,
-            ylabel=ylabel,
-            y_log_scale=log_scale,
-            annotations=annotations,
-        )
+    def run(self):
+        """Execute the plotting based on the configured plot_type."""
+        if self.plot_type == "1d":
+            self._plot_1d()
+        elif self.plot_type == "2d":
+            self._plot_2d()
+        elif self.plot_type == "graph":
+            self._plot_graph()
+        else:
+            raise ValueError(f"Unknown plot_type={self.plot_type}")
