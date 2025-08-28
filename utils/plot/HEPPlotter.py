@@ -3,7 +3,10 @@ import matplotlib
 import hist
 import matplotlib.ticker as mtick
 
+from scipy.stats import chisquare
+import numpy as np
 import mplhep as hep
+
 
 class HEPPlotter:
     """
@@ -16,41 +19,79 @@ class HEPPlotter:
 
     Usage
     -----
-    job = (HEPPlotter("CMS"
+    job = (HEPPlotter("CMS")
             .set_output("out/plot")
             .set_labels(xlabel="pT [GeV]", ylabel="Events")
             .set_data(series_dict)
-            .set_options(log_scale=True, ratio_label="Data/MC"))
+            .set_options(y_log=True, ratio_label="Data/MC"))
     job.run()  # produces the plot
+
+    Parameters
+    ----------
+    style : str
+        The mplhep style to use (default "CMS").
+    debug : bool
+        If True, print debug information during plotting (default False).
+    -----------
+
+    Methods
+    -------
+    - set_plot_config(figsize=None, lumitext="(13.6 TeV)", formats=None)
+    - set_output(output_base)
+    - set_labels(xlabel, ylabel="Events", cbar_label="Events", ratio_label="Ratio")
+    - set_data(series_dict, plot_type="1d")
+    - set_extra_kwargs(**kwargs)
+    - set_options(**kwargs)
+    - add_ratio_hists(ratio_hists)
+    - add_annotation(**kwargs)
+    - add_chi_square(**kwargs)
+    - add_line(orientation="h", **kwargs)
+    - run()
     """
 
-    def __init__(self, style="CMS"):
+    def __init__(self, style="CMS", debug=False):
         # core settings
         self.style = style
         hep.style.use(style)
-        
+        self.debug = debug
+
         self.figsize = None
         self.lumitext = "(13.6 TeV)"
         self.data_formats = ["png", "pdf", "svg"]
 
-        # user-configurable
+        # inputs
         self.output_base = None
-        self.xlabel = None
-        self.ylabel = "Events"
-        self.cbar_label = "Events"
         self.series_dict = None
         self.plot_type = "1d"  # "1d", "2d", "graph"
 
-        # options
-        self.log_scale = False
-        self.ratio_label = None
+        # labels
+        self.xlabel = None
+        self.ylabel = "Events"
+        self.cbar_label = "Events"
+        self.ratio_label = "Ratio"
+
+        # log scales
+        self.y_log = False
+        self.x_log = False
+        self.y_log_ratio = False
+        self.cbar_log = False
+
+        self.reference_to_den = True
         self.grid = True
+
+        # legend
         self.legend = True
         self.legend_loc = "best"
+        self.legend_ratio = False
+        self.legend_ratio_loc = "best"
+
         self.set_ylim = True
         self.extra_kwargs = {}
 
+        self.plot_chi_square = None
+
         # internal
+        self._ratio_hists = {}
         self._annotations = []
         self._lines = []
 
@@ -71,11 +112,14 @@ class HEPPlotter:
         self.output_base = output_base
         return self
 
-    def set_labels(self, xlabel, ylabel="Events", cbar_label="Events"):
+    def set_labels(
+        self, xlabel, ylabel="Events", cbar_label="Events", ratio_label="Ratio"
+    ):
         """Set the x and y axis labels."""
         self.xlabel = xlabel
         self.ylabel = ylabel
         self.cbar_label = cbar_label
+        self.ratio_label = ratio_label
         return self
 
     def set_data(self, series_dict, plot_type="1d"):
@@ -109,18 +153,31 @@ class HEPPlotter:
         return self
 
     def set_options(self, **kwargs):
-        """Generic options setter (log_scale, ratio_label, legend, grid...)."""
-        self.log_scale = kwargs.get("log_scale", self.log_scale)
-        self.ratio_label = kwargs.get("ratio_label", self.ratio_label)
-        self.legend = kwargs.get("legend", self.legend)
-        self.legend_loc = kwargs.get("legend_loc", self.legend_loc)
-        self.grid = kwargs.get("grid", self.grid)
-        self.set_ylim = kwargs.get("set_ylim", self.set_ylim)
+        """Generic options setter (y_log, legend, grid...)."""
+        for key, value in kwargs.items():
+            if hasattr(self, key):
+                setattr(self, key, value)
+
+        return self
+
+    def add_ratio_hists(self, ratio_hists):
+        """Add precomputed ratio histograms to be plotted on the ratio subplot.
+        ratio_hists: dict of histograms with the same keys as series_dict
+        """
+        self._ratio_hists = ratio_hists
         return self
 
     def add_annotation(self, **kwargs):
         """Annotation kwargs go directly to ax.text() with transform=ax.transAxes"""
         self._annotations.append(kwargs)
+        return self
+
+    def add_chi_square(self, **kwargs):
+        """Add chi-square text to the plot (only for 1D with ratio).
+        kwargs: passed directly to ax.text()
+        """
+        self.plot_chi_square = True
+        self._chi_square_pos = kwargs
         return self
 
     def add_line(self, orientation="h", **kwargs):
@@ -134,7 +191,7 @@ class HEPPlotter:
     # ----------------------------
     # INTERNAL HELPERS
     # ----------------------------
-    
+
     def _close_fig(self, fig):
         """Close the figure to free memory."""
         plt.close(fig)
@@ -144,8 +201,7 @@ class HEPPlotter:
         for ext in self.data_formats:
             fig.savefig(f"{self.output_base}.{ext}", bbox_inches="tight", dpi=300)
 
-
-    def _add_cms_labels(self, ax):
+    def _apply_cms_labels(self, ax):
         """Add CMS style labels to the plot."""
         hep.cms.lumitext(self.lumitext, ax=ax)
         hep.cms.text("Preliminary", ax=ax)
@@ -158,13 +214,42 @@ class HEPPlotter:
                 transform=ax.transAxes,
             )
 
-    def _add_lines(self, ax):
+    def _apply_lines(self, ax):
         """Add all stored horizontal/vertical lines to the axes."""
         for orient, kwargs in self._lines:
             if orient == "h":
                 ax.axhline(**kwargs)
             else:
                 ax.axvline(**kwargs)
+
+    def _apply_chi_square(self, ax, hist_1d, ref_hist, index, style):
+        """Compute and add chi-square text to the plot."""
+
+        # compute the chi square between the two histograms (divide by the error on data)
+        chi2_value, pvalue = chisquare(
+            f_obs=hist_1d.values(),
+            f_exp=ref_hist.values(),
+            sum_check=False,
+        )
+        chi2_norm = chi2_value / (len(hist_1d.values()) - 1)
+
+        self.chi_square_text = (
+            r"$\chi^2$/ndof= {:.3f},".format(chi2_norm) + f"  p-value= {pvalue:.3f}"
+        )
+
+        color_chi2 = self._chi_square_pos.get(
+            "color",
+            style.get("color", style.get("edgecolor", style.get("facecolor"))),
+        )
+        # plot the chi2 text
+        ax.text(
+            self._chi_square_pos.get("x", 0.05),
+            self._chi_square_pos.get("y", 0.95) - index * 0.05,
+            self.chi_square_text,
+            transform=ax.transAxes,
+            fontsize=self._chi_square_pos.get("fontsize", 20),
+            color=color_chi2,
+        )
 
     # ----------------------------
     # IMPLEMENTATIONS
@@ -175,23 +260,69 @@ class HEPPlotter:
         ratio_plot, ref_name = self._validate_inputs(self.series_dict)
         fig, ax, ax_ratio = self._create_figure(ratio_plot)
 
-        for name, props in self.series_dict.items():
+        for index, (name, props) in enumerate(self.series_dict.items()):
             hist_1d = props["data"]
             style = props.get("style", {})
             is_ref = style.get("is_reference", False)
+            ref_hist = self.series_dict[ref_name]["data"] if ref_name else None
+
+            legend_name = (
+                style.get("legend_name", name)
+                if style.get("appear_in_legend", True)
+                else None
+            )
+            legend_name_ratio = (
+                style.get("legend_name_ratio", name)
+                if style.get("appear_in_legend_ratio", True)
+                else None
+            )
 
             # draw histogram
-            self._plot_histogram(ax, name, hist_1d, style, **self.extra_kwargs)
+            self._plot_histogram(ax, legend_name, hist_1d, style, **self.extra_kwargs)
+
+            if self.plot_chi_square and ratio_plot and not is_ref:
+                self._apply_chi_square(ax, hist_1d, ref_hist, index, style)
 
             # ratio
             if ratio_plot and ax_ratio is not None:
+                if self.reference_to_den:
+                    self._plot_ratio(
+                        ax_ratio,
+                        hist_1d,
+                        ref_hist,
+                        legend_name_ratio,
+                        is_ref,
+                        style,
+                    )
+                else:
+                    self._plot_ratio(
+                        ax_ratio,
+                        ref_hist,
+                        hist_1d,
+                        legend_name_ratio,
+                        is_ref,
+                        style,
+                    )
+
+        # plot precomputed ratio hists
+        if self._ratio_hists and ratio_plot and ax_ratio is not None:
+            for name, props in self._ratio_hists.items():
+                style = self._ratio_hists[name].get("style", {})
+                is_ref = self._ratio_hists[name]["style"].get("is_reference", False)
+                ratio_hist = props["data"]
+                legend_name_ratio = (
+                    style.get("legend_name_ratio", name)
+                    if style.get("appear_in_legend_ratio", True)
+                    else None
+                )
                 self._plot_ratio(
                     ax_ratio,
-                    hist_1d,
-                    self.series_dict[ref_name]["data"],
-                    name,
+                    None,
+                    None,
+                    legend_name_ratio,
                     is_ref,
-                    style.get("color"),
+                    style,
+                    ratio_hist=ratio_hist,
                 )
 
         self._finalize(fig, ax, ax_ratio)
@@ -210,7 +341,7 @@ class HEPPlotter:
                 hist2d,
                 ax=ax,
                 label=label,
-                norm=matplotlib.colors.LogNorm() if self.log_scale else None,
+                norm=matplotlib.colors.LogNorm() if self.cbar_log else None,
                 cmap=props["style"].get("cmap", "viridis"),
                 **self.extra_kwargs,
             )
@@ -270,6 +401,7 @@ class HEPPlotter:
                 figsize=self.figsize,
                 sharex=True,
                 gridspec_kw={"height_ratios": [2.5, 1]},
+                constrained_layout=True,
             )
             return fig, ax, ax_ratio
         else:
@@ -279,106 +411,151 @@ class HEPPlotter:
     def _plot_histogram(self, ax, name, hist_1d, style, **kwargs):
         """Plot a single 1D histogram on the given axes."""
         histtype = style.get("histtype", "step")
+        plot_errors = style.get("plot_errors", True)
+
         if histtype == "fill":
-            hep.histplot(
-                hist_1d,
-                histtype="fill",
-                label=name,
-                ax=ax,
-                facecolor=style.get("facecolor", style.get("color")),
-                edgecolor=style.get("edgecolor", style.get("color")),
-                alpha=style.get("alpha", 0.5),
-                **kwargs,
+            kwargs.update(
+                {
+                    "facecolor": style.get("facecolor", style.get("color")),
+                    "edgecolor": style.get("edgecolor", style.get("color")),
+                    "alpha": style.get("alpha", 0.5),
+                }
             )
         else:
-            hep.histplot(
-                hist_1d,
-                w2method="sqrt",
-                histtype=histtype,
-                label=name,
-                ax=ax,
-                color=style.get("color"),
-                **kwargs,
+            kwargs.update(
+                {
+                    "color": style.get("color"),
+                }
             )
+
+        hep.histplot(
+            hist_1d,
+            w2method="sqrt" if plot_errors else None,
+            histtype=histtype,
+            label=name,
+            yerr=False if not plot_errors else None,
+            xerr=True,
+            ax=ax,
+            linewidth=style.get("linewidth", 2),
+            **kwargs,
+        )
         ax.set_xlabel("")
 
-    def _plot_ratio(self, ax_ratio, hist_1d, ref_hist, name, is_reference, color):
+    def _plot_ratio(
+        self, ax_ratio, hist_num, hist_den, name, is_reference, style, ratio_hist=None
+    ):
         """Plot the ratio of hist_1d to ref_hist on the ratio axes."""
-        bins = hist_1d.axes[0].edges
-        centers = (bins[1:] + bins[:-1]) / 2
-        ratio, err_up, err_down = hep.get_comparison(
-            hist_1d,
-            ref_hist,
-            comparison="split_ratio" if is_reference else "ratio",
-        )
-        if is_reference:
-            ax_ratio.axhline(y=1, linestyle="--", color=color)
-            ax_ratio.fill_between(
-                centers, 1 - err_up, 1 + err_up, alpha=0.5, color=color
+
+        if not ratio_hist:
+            bins = hist_num.axes[0].edges
+            ratio, err_up, err_down = hep.get_comparison(
+                hist_num,
+                hist_den,
+                comparison="split_ratio" if is_reference else "ratio",
+                h1_w2method="sqrt",
             )
         else:
+            bins = None
+            ratio = ratio_hist
+            err_up, err_down = None, None
+
+        color = style.get("color", style.get("edgecolor", style.get("facecolor")))
+        histtype_ratio = style.get("histtype_ratio", "errorbar")
+        if color is None:
+            breakpoint()
+
+        if is_reference:
+            ax_ratio.axhline(y=1, linestyle="--", color=color, zorder=0)
+
+            # centers = (bins[1:] + bins[:-1]) / 2
+            # ax_ratio.fill_between(
+            #     centers, 1 - err_up, 1 + err_up, alpha=0.2, color=color, label=name,zorder=0
+            # )
             hep.histplot(
                 ratio,
                 bins=bins,
                 yerr=err_up,
                 xerr=True,
-                histtype="errorbar",
+                histtype="band",
+                label=name,
+                ax=ax_ratio,
+                facecolor=color,
+                zorder=0,
+                alpha=0.2,
+            )
+        else:
+            hep.histplot(
+                ratio,
+                bins=bins,
+                yerr=err_up if style.get("plot_errors", True) else None,
+                xerr=True,
+                histtype=histtype_ratio,
                 label=name,
                 ax=ax_ratio,
                 color=color,
+                edges=style.get("edges_ratio", True),
+                linewidth=style.get("linewidth", 2),
             )
+
+    def _set_legend(self, ax, pos):
+        """Set the legend on the axes."""
+        handles, labels = ax.get_legend_handles_labels()
+        if len(handles) > 5:
+            ax.legend(loc=pos, ncol=2, fontsize="small")
+        else:
+            ax.legend(loc=pos)
 
     def _finalize(self, fig, ax, ax_ratio=None):
         """Final adjustments and saving the figure."""
         if self.legend:
-            handles, labels = ax.get_legend_handles_labels()
-            if len(handles) > 5:
-                ax.legend(loc=self.legend_loc, ncol=2, fontsize="small")
-            else:
-                ax.legend(loc=self.legend_loc)
+            self._set_legend(ax, self.legend_loc)
 
-        if self.log_scale and self.plot_type != "2d":
+        if self.y_log:
             ax.set_yscale("log")
+        if self.x_log:
+            ax.set_xscale("log")
+
         if self.grid:
             ax.grid()
 
         if ax_ratio:
             ax_ratio.set_xlabel(self.xlabel)
-            ax_ratio.set_ylabel(self.ratio_label or "Ratio")
+            ax_ratio.set_ylabel(self.ratio_label)
             if self.grid:
                 ax_ratio.grid()
-            if self.log_scale:
+            if self.y_log_ratio:
                 ax_ratio.set_yscale("log")
-            if not self.log_scale and self.set_ylim:
+            if not self.y_log_ratio and self.set_ylim:
                 ax_ratio.set_ylim(0.5, 1.5)
+            if self.legend_ratio:
+                self._set_legend(ax_ratio, self.legend_ratio_loc)
         else:
             ax.set_xlabel(self.xlabel)
 
         ax.set_ylabel(self.ylabel)
-        
+
         # define the scalar format for y-axis
         # ax.yaxis.set_major_formatter(mtick.ScalarFormatter())
         # ax.ticklabel_format(style="sci", axis="y", scilimits=(0, 0))
-
 
         if self.set_ylim and self.plot_type != "2d":
             ax.set_ylim(
                 top=(
                     1.7 * ax.get_ylim()[1]
-                    if not self.log_scale
+                    if not self.y_log
                     else ax.get_ylim()[1] ** (1.7)
                 )
             )
-        
+
         if self.plot_type == "2d":
             # label colorbar
             cbar = ax.collections[0].colorbar
             cbar.set_label(self.cbar_label)
-        
+
         self._apply_annotations(ax)
-        self._add_lines(ax)
-        
-        self._add_cms_labels(ax)
+        self._apply_lines(ax)
+
+        self._apply_cms_labels(ax)
         self._save(fig)
         self._close_fig(fig)
 
@@ -388,6 +565,10 @@ class HEPPlotter:
 
     def run(self):
         """Execute the plotting based on the configured plot_type."""
+        if self.debug:
+            print(
+                f"Running HEPPlotter with plot_type={self.plot_type}, output_base={self.output_base}"
+            )
         if self.plot_type == "1d":
             self._plot_1d()
         elif self.plot_type == "2d":

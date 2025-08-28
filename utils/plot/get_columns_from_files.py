@@ -1,24 +1,24 @@
 from coffea.util import load
 import numpy as np
 
-def get_columns_from_files(inputfiles, filter_lambda=None):
+def get_columns_from_files(inputfiles, filter_lambda=None, debug=False):
     cat_col = {}
     total_datasets_list = []
     # get the columns
     for inputfile in inputfiles:
         accumulator = load(inputfile)
         samples = list(accumulator["columns"].keys())
-        print(f"inputfile {inputfile}")
+        if debug: print(f"inputfile {inputfile}")
         for sample in samples:
-            print(f"sample {sample}")
+            if debug: print(f"sample {sample}")
             datasets = list(accumulator["columns"][sample].keys())
             for dataset in datasets:
                 if dataset not in total_datasets_list:
                     total_datasets_list.append(dataset)
-                print(f"dataset {dataset}")
+                if debug: print(f"dataset {dataset}")
                 categories = list(accumulator["columns"][sample][dataset].keys())
                 for category in categories:
-                    print(f"category {category}")
+                    if debug: print(f"category {category}")
                     if category not in cat_col:
                         cat_col[category] = {}
                     columns = list(
@@ -28,7 +28,7 @@ def get_columns_from_files(inputfiles, filter_lambda=None):
                         #filter with lamda function
                         if filter_lambda is not None:
                             if not filter_lambda(column):
-                                print(f"Skipping column {column} due to filter")
+                                if debug: print(f"Skipping column {column} due to filter")
                                 continue
                         column_array = accumulator["columns"][sample][dataset][
                             category
@@ -45,7 +45,7 @@ def get_columns_from_files(inputfiles, filter_lambda=None):
                             )
                         
                         if i == 0:
-                            print(
+                            if debug: print(
                                 f"column {column}",
                                 column_array.shape,
                                 cat_col[category][column].shape,
