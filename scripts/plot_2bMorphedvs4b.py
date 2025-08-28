@@ -24,7 +24,6 @@ if not args.output:
     args.output = "plots_2bVS4b"
 
 if args.test:
-    # args.workers = 1
     args.output = "test"
 
 NUMBER_OF_BINS = 20
@@ -32,7 +31,6 @@ PAD_VALUE = -999
 BLIND_VALUE = 0.9
 ARCTANH_BINS = False
 VARIABLES_TEST = ["score", "weight", "prob"]
-
 DEBUG = args.test
 
 input_dir = os.path.dirname(args.input_data[0])
@@ -150,6 +148,16 @@ if args.test:
         ],
     }
 
+
+color_list_orig = [[("black",), ("blue", "dodgerblue"), ("red",)]]
+color_list_spread = [[("red", "red")] + [("green",)] * 20 + [("orange",)] + [("blue",)]]
+color_list_alt = [[("purple",), ("darkorange", "orange"), ("green",)]]
+color_list_DATAMC = [
+    [("red",), ("darkorange",), ("purple",)],
+    [("blue",), ("dodgerblue",)],
+    [("green",), ("limegreen",)],
+]
+
 ## Load the onnx model
 if args.onnx_model:
     (
@@ -161,16 +169,6 @@ if args.onnx_model:
     dnn_variables = getattr(dnn_input_variables, args.input_variables)
     dnn_input_list = get_DNN_input_list(args.run2, dnn_variables)
     print(f"Input list for DNN: {dnn_input_list}")
-
-
-color_list_orig = [[("black",), ("blue", "dodgerblue"), ("red",)]]
-color_list_spread = [[("red", "red")] + [("green",)] * 20 + [("orange",)] + [("blue",)]]
-color_list_alt = [[("purple",), ("darkorange", "orange"), ("green",)]]
-color_list_DATAMC = [
-    [("red",), ("darkorange",), ("purple",)],
-    [("blue",), ("dodgerblue",)],
-    [("green",), ("limegreen",)],
-]
 
 
 if not os.path.exists(outputdir):
@@ -565,7 +563,7 @@ def plot_single_var_from_columns(
     p.run()
 
 
-def plot_from_columns(cat_cols, lumi, era_string):
+def main(cat_cols, lumi, era_string):
 
     print(f"CATEGORIES ARE:")
     print(cat_dict)
@@ -768,19 +766,6 @@ def plot_from_columns(cat_cols, lumi, era_string):
 
             vars_to_plot += [f"{v}_TRANSFORM" for v in vars_to_plot if "score" in v]
 
-            # print("vars_to_plot", vars_to_plot)
-            # print("col_dict", col_dict)
-            # print("cat_list_final", cat_list_final)
-
-            # for col in col_dict:
-            #     for cat in col_dict[col]:
-            #         print(
-            #             col,
-            #             cat,
-            #             col_dict[col][cat],
-            #             len(col_dict[col][cat]),
-            #         )
-
             cat_lists_final.append(cat_list_final)
 
             plot_categories = True
@@ -823,11 +808,6 @@ def plot_from_columns(cat_cols, lumi, era_string):
 
 
 if __name__ == "__main__":
-
-    # print(cat_col_data)
-    # for k in cat_col_data.keys():
-    #     for kk in cat_col_data[k].keys():
-    #         print(k, kk, len(cat_col_data[k][kk]))
             
     lumi, era_string = get_era_lumi(total_datasets_list)
 
@@ -837,6 +817,6 @@ if __name__ == "__main__":
             weights = cat_col_data[category]["weight"]
             plot_weights([weights], category, lumi, era_string)
 
-    plot_from_columns([cat_col_data, cat_col_mc], lumi, era_string)
+    main([cat_col_data, cat_col_mc], lumi, era_string)
 
     print(f"\nPlots saved in {outputdir}")

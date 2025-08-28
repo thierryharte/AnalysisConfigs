@@ -251,6 +251,50 @@ class HEPPlotter:
             color=color_chi2,
         )
 
+    def _color_handler(self, histtype, style, kwargs, use_lists=False):
+        if use_lists:
+            if histtype == "fill":
+                if "edgecolor" not in kwargs:
+                    kwargs.update(
+                        {
+                            "edgecolor": [style.get("edgecolor", style.get("color"))],
+                            "facecolor": [style.get("facecolor", style.get("color"))],
+                            "alpha": [style.get("alpha", 0.5)],
+                        }
+                    )
+                else:
+                    kwargs["edgecolor"].append(
+                        style.get("edgecolor", style.get("color"))
+                    )
+                    kwargs["facecolor"].append(
+                        style.get("facecolor", style.get("color"))
+                    )
+                    kwargs["alpha"].append(style.get("alpha", 0.5))
+            else:
+                if "color" not in kwargs:
+                    kwargs.update(
+                        {
+                            "color": [style.get("color")],
+                        }
+                    )
+                else:
+                    kwargs["color"].append(style.get("color"))
+        else:
+            if histtype == "fill":
+                kwargs.update(
+                    {
+                        "edgecolor": style.get("edgecolor", style.get("color")),
+                        "facecolor": style.get("facecolor", style.get("color")),
+                        "alpha": style.get("alpha", 0.5),
+                    }
+                )
+            else:
+                kwargs.update(
+                    {
+                        "color": style.get("color"),
+                    }
+                )
+
     # ----------------------------
     # IMPLEMENTATIONS
     # ----------------------------
@@ -259,6 +303,10 @@ class HEPPlotter:
         """Plot 1D histograms with optional ratio plot."""
         ratio_plot, ref_name = self._validate_inputs(self.series_dict)
         fig, ax, ax_ratio = self._create_figure(ratio_plot)
+
+        hist_1d_stack = []
+        kwargs_stack = {}
+        legend_name_stack = []
 
         for index, (name, props) in enumerate(self.series_dict.items()):
             hist_1d = props["data"]
@@ -277,8 +325,37 @@ class HEPPlotter:
                 else None
             )
 
-            # draw histogram
-            self._plot_histogram(ax, legend_name, hist_1d, style, **self.extra_kwargs)
+            if style.get("stack", False):
+                hist_1d_stack.append(hist_1d)
+                legend_name_stack.append(legend_name)
+                histtype = style.get("histtype", "step")
+
+                if not kwargs_stack:
+                    kwargs_stack = {
+                        "histtype": histtype,
+                        "linewidth": [style.get("linewidth", 2)],
+                        "stack": True,
+                    }
+                    self._color_handler(histtype, style, kwargs_stack, use_lists=True)
+                else:
+                    kwargs_stack["linewidth"].append(style.get("linewidth", 2))
+                    self._color_handler(histtype, style, kwargs_stack, use_lists=True)
+
+            else:
+                kwargs = self.extra_kwargs.copy()
+                histtype = style.get("histtype", "step")
+                kwargs.update(
+                    {
+                        "histtype": histtype,
+                        "linewidth": style.get("linewidth", 2),
+                    }
+                )
+                self._color_handler(histtype, style, kwargs)
+
+                # draw histogram
+                self._plot_histogram(
+                    ax, legend_name, hist_1d, style.get("plot_errors", True), **kwargs
+                )
 
             if self.plot_chi_square and ratio_plot and not is_ref:
                 self._apply_chi_square(ax, hist_1d, ref_hist, index, style)
@@ -303,6 +380,16 @@ class HEPPlotter:
                         is_ref,
                         style,
                     )
+
+        # plot stack
+        if hist_1d_stack:
+            self._plot_histogram(
+                ax,
+                legend_name_stack,
+                hist_1d_stack,
+                style.get("plot_errors", True),
+                **kwargs_stack,
+            )
 
         # plot precomputed ratio hists
         if self._ratio_hists and ratio_plot and ax_ratio is not None:
@@ -408,35 +495,15 @@ class HEPPlotter:
             fig, ax = plt.subplots(figsize=self.figsize)
             return fig, ax, None
 
-    def _plot_histogram(self, ax, name, hist_1d, style, **kwargs):
+    def _plot_histogram(self, ax, name, hist_1d, plot_errors, **kwargs):
         """Plot a single 1D histogram on the given axes."""
-        histtype = style.get("histtype", "step")
-        plot_errors = style.get("plot_errors", True)
-
-        if histtype == "fill":
-            kwargs.update(
-                {
-                    "facecolor": style.get("facecolor", style.get("color")),
-                    "edgecolor": style.get("edgecolor", style.get("color")),
-                    "alpha": style.get("alpha", 0.5),
-                }
-            )
-        else:
-            kwargs.update(
-                {
-                    "color": style.get("color"),
-                }
-            )
-
         hep.histplot(
             hist_1d,
             w2method="sqrt" if plot_errors else None,
-            histtype=histtype,
             label=name,
             yerr=False if not plot_errors else None,
             xerr=True,
             ax=ax,
-            linewidth=style.get("linewidth", 2),
             **kwargs,
         )
         ax.set_xlabel("")
