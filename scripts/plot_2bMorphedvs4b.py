@@ -1,8 +1,6 @@
 import os
 import sys
-from matplotlib import pyplot as plt
 import numpy as np
-from scipy.stats.distributions import chi2
 from multiprocessing import Pool
 from hist import Hist
 

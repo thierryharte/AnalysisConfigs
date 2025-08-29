@@ -177,7 +177,7 @@ class HEPPlotter:
         kwargs: passed directly to ax.text()
         """
         self.plot_chi_square = True
-        self._chi_square_pos = kwargs
+        self._chi_square_style = kwargs
         return self
 
     def add_line(self, orientation="h", **kwargs):
@@ -225,11 +225,20 @@ class HEPPlotter:
     def _apply_chi_square(self, ax, hist_1d, ref_hist, index, style):
         """Compute and add chi-square text to the plot."""
 
+        # if bin is empty in one of the two histograms, set it to nan
+        hist_1d = hist_1d.copy()
+        ref_hist = ref_hist.copy()
+        for i in range(len(hist_1d.values())):
+            if hist_1d.values()[i] == 0 or ref_hist.values()[i] == 0:
+                hist_1d.values()[i] = np.nan
+                ref_hist.values()[i] = np.nan
+
         # compute the chi square between the two histograms (divide by the error on data)
         chi2_value, pvalue = chisquare(
             f_obs=hist_1d.values(),
             f_exp=ref_hist.values(),
             sum_check=False,
+            nan_policy="omit",
         )
         chi2_norm = chi2_value / (len(hist_1d.values()) - 1)
 
@@ -237,17 +246,20 @@ class HEPPlotter:
             r"$\chi^2$/ndof= {:.3f},".format(chi2_norm) + f"  p-value= {pvalue:.3f}"
         )
 
-        color_chi2 = self._chi_square_pos.get(
+        color_chi2 = self._chi_square_style.get(
             "color",
             style.get("color", style.get("edgecolor", style.get("facecolor"))),
         )
+        # if isinstance(color_chi2, list):
+        #     color_chi2 = color_chi2[0]
+
         # plot the chi2 text
         ax.text(
-            self._chi_square_pos.get("x", 0.05),
-            self._chi_square_pos.get("y", 0.95) - index * 0.05,
+            self._chi_square_style.get("x", 0.05),
+            self._chi_square_style.get("y", 0.95) - index * 0.05,
             self.chi_square_text,
             transform=ax.transAxes,
-            fontsize=self._chi_square_pos.get("fontsize", 20),
+            fontsize=self._chi_square_style.get("fontsize", 20),
             color=color_chi2,
         )
 
@@ -295,6 +307,32 @@ class HEPPlotter:
                     }
                 )
 
+    # def _order_series_dict(self):
+    #     # check if there is a plot_order request in the styles
+    #     if any("plot_order" in props.get("style", {}) for props in self.series_dict.values()):
+    #         self.series_dict = dict(
+    #             sorted(
+    #                 self.series_dict.items(),
+    #                 key=lambda item: item[1].get("style", {}).get("plot_order", 10),
+    #             )
+    #         )
+
+    def _stack_plot_order(self, hist_1d, style):
+        # reorder the histograms to be plotted in stack order (first is bottom)
+        if isinstance(hist_1d, list):
+            # get the sorting indexes
+            idxes = sorted(
+                range(len(hist_1d)),
+                key=lambda i: hist_1d[i].integrate(name=hist_1d[i].axes[0].name).value,
+            )
+            hist_1d = [hist_1d[i] for i in idxes]
+            # orer the elements in the style dict if they are lists
+            for key in style:
+                if isinstance(style[key], list):
+                    style[key] = [style[key][i] for i in idxes]
+            
+        return hist_1d, style
+
     # ----------------------------
     # IMPLEMENTATIONS
     # ----------------------------
@@ -308,11 +346,17 @@ class HEPPlotter:
         kwargs_stack = {}
         legend_name_stack = []
 
+        # self._order_series_dict()
+
+        ref_hist = self.series_dict[ref_name]["data"] if ref_name else None
+
         for index, (name, props) in enumerate(self.series_dict.items()):
+            
             hist_1d = props["data"]
             style = props.get("style", {})
+            hist_1d, style = self._stack_plot_order(hist_1d.copy(), style.copy())
+            
             is_ref = style.get("is_reference", False)
-            ref_hist = self.series_dict[ref_name]["data"] if ref_name else None
 
             legend_name = (
                 style.get("legend_name", name)
@@ -325,38 +369,51 @@ class HEPPlotter:
                 else None
             )
 
-            if style.get("stack", False):
-                hist_1d_stack.append(hist_1d)
-                legend_name_stack.append(legend_name)
-                histtype = style.get("histtype", "step")
+            # if False:#style.get("stack", False):
+            #     hist_1d_stack.append(hist_1d)
+            #     legend_name_stack.append(legend_name)
+            #     histtype = style.get("histtype", "step")
 
-                if not kwargs_stack:
-                    kwargs_stack = {
-                        "histtype": histtype,
-                        "linewidth": [style.get("linewidth", 2)],
-                        "stack": True,
-                    }
-                    self._color_handler(histtype, style, kwargs_stack, use_lists=True)
-                else:
-                    kwargs_stack["linewidth"].append(style.get("linewidth", 2))
-                    self._color_handler(histtype, style, kwargs_stack, use_lists=True)
+            #     if not kwargs_stack:
+            #         kwargs_stack = {
+            #             "histtype": histtype,
+            #             "linewidth": [style.get("linewidth", 2)],
+            #             "stack": True,
+            #         }
+            #         self._color_handler(histtype, style, kwargs_stack, use_lists=True)
+            #     else:
+            #         kwargs_stack["linewidth"].append(style.get("linewidth", 2))
+            #         self._color_handler(histtype, style, kwargs_stack, use_lists=True)
 
-            else:
-                kwargs = self.extra_kwargs.copy()
-                histtype = style.get("histtype", "step")
-                kwargs.update(
-                    {
-                        "histtype": histtype,
-                        "linewidth": style.get("linewidth", 2),
-                    }
-                )
-                self._color_handler(histtype, style, kwargs)
+            # else:
+            
+            kwargs = self.extra_kwargs.copy()
+            histtype = style.get("histtype", "step")
+            stack = style.get("stack", False)
+            kwargs.update(
+                {
+                    "histtype": histtype,
+                    "linewidth": style.get("linewidth", 2),
+                    "stack": stack,
+                }
+            )
 
-                # draw histogram
-                self._plot_histogram(
-                    ax, legend_name, hist_1d, style.get("plot_errors", True), **kwargs
-                )
+            self._color_handler(histtype, style, kwargs)
 
+
+            # breakpoint()
+            # draw histogram
+            self._plot_histogram(
+                ax, legend_name, hist_1d, style.get("plot_errors", True), **kwargs
+            )
+            
+            if isinstance(hist_1d, list):
+                hist_1d = sum(hist_1d)
+            # keep the style of the last histogram in the list
+            for key in style:
+                if isinstance(style[key], list):
+                    style[key] = style[key][-1]
+                
             if self.plot_chi_square and ratio_plot and not is_ref:
                 self._apply_chi_square(ax, hist_1d, ref_hist, index, style)
 
@@ -380,16 +437,36 @@ class HEPPlotter:
                         is_ref,
                         style,
                     )
+                    
+            # elif ratio_plot and ax_ratio is not None and isinstance(hist_1d, list) and stack:
+            #     if self.reference_to_den:
+            #         self._plot_ratio(
+            #             ax_ratio,
+            #             hist_1d,
+            #             ref_hist,
+            #             legend_name_ratio,
+            #             is_ref,
+            #             style,
+            #         )
+            #     else:
+            #         self._plot_ratio(
+            #             ax_ratio,
+            #             ref_hist,
+            #             hist_1d,
+            #             legend_name_ratio,
+            #             is_ref,
+            #             style,
+            #         )
 
         # plot stack
-        if hist_1d_stack:
-            self._plot_histogram(
-                ax,
-                legend_name_stack,
-                hist_1d_stack,
-                style.get("plot_errors", True),
-                **kwargs_stack,
-            )
+        # if hist_1d_stack:
+        #     self._plot_histogram(
+        #         ax,
+        #         legend_name_stack,
+        #         hist_1d_stack,
+        #         style.get("plot_errors", True),
+        #         **kwargs_stack,
+        #     )
 
         # plot precomputed ratio hists
         if self._ratio_hists and ratio_plot and ax_ratio is not None:
@@ -446,14 +523,38 @@ class HEPPlotter:
                 props["data"]["x"][0],
                 props["data"]["x"][1],
             )
+            
             style = props.get("style", {})
+            # extra_kwargs = self.extra_kwargs.copy()
+            # extra_kwargs.update(
+            #     {
+            #         "color": style.get("color"),
+            #         "markersize": style.get("markersize", 6),
+            #     }
+            # )
+            # hep.histplot(
+            #     (y_values, x_values),
+            #     yerr=y_errors,
+            #     xerr=x_errors,
+            #     histtype="errorbar",
+            #     # fmt=style.get("fmt", "o"),
+            #     label=name,
+            #     color=style.get("color"),
+            #     markersize=style.get("markersize"),
+            #     **self.extra_kwargs,
+            # )
+            legend_name = (
+                style.get("legend_name", name)
+                if style.get("appear_in_legend", True)
+                else None
+            )
             ax.errorbar(
                 y=y_values,
                 x=x_values,
                 yerr=y_errors,
                 xerr=x_errors,
                 fmt=style.get("fmt", "o"),
-                label=name,
+                label=legend_name,
                 color=style.get("color"),
                 markersize=style.get("markersize"),
                 **self.extra_kwargs,
@@ -470,13 +571,28 @@ class HEPPlotter:
         ref_name = None
         for name, props in series_dict.items():
             hist_1d = props["data"]
-            if not isinstance(hist_1d, hist.Hist):
+            if not isinstance(hist_1d, hist.Hist) and not isinstance(
+                hist_1d[0], hist.Hist
+            ):
                 raise ValueError(f"Expected hist.Hist for {name}, got {type(hist_1d)}")
             if props.get("style", {}).get("is_reference", False):
                 if ratio_plot:
                     raise ValueError("Multiple reference histograms found.")
                 ratio_plot = True
                 ref_name = name
+            if isinstance(
+                hist_1d[0], hist.Hist
+            ):
+                style = props.get("style", {})
+                # check that the lists of histograms have the same dimension
+                lenght_hists = len(hist_1d)
+                for key in style:
+                    if isinstance(style[key], list):
+                        if len(style[key]) != lenght_hists:
+                            raise ValueError(
+                                f"Length mismatch in style lists for {name}: expected {lenght_hists}, got {len(style[key])} for key {key}"
+                            )
+                    
         return ratio_plot, ref_name
 
     def _create_figure(self, ratio_plot=False):
@@ -497,6 +613,7 @@ class HEPPlotter:
 
     def _plot_histogram(self, ax, name, hist_1d, plot_errors, **kwargs):
         """Plot a single 1D histogram on the given axes."""
+        # breakpoint()
         hep.histplot(
             hist_1d,
             w2method="sqrt" if plot_errors else None,
@@ -528,8 +645,6 @@ class HEPPlotter:
 
         color = style.get("color", style.get("edgecolor", style.get("facecolor")))
         histtype_ratio = style.get("histtype_ratio", "errorbar")
-        if color is None:
-            breakpoint()
 
         if is_reference:
             ax_ratio.axhline(y=1, linestyle="--", color=color, zorder=0)
@@ -611,7 +726,8 @@ class HEPPlotter:
                     1.7 * ax.get_ylim()[1]
                     if not self.y_log
                     else ax.get_ylim()[1] ** (1.7)
-                )
+                ),
+                bottom=(0 if not self.y_log else 1e-1),
             )
 
         if self.plot_type == "2d":
