@@ -250,8 +250,6 @@ class HEPPlotter:
             "color",
             style.get("color", style.get("edgecolor", style.get("facecolor"))),
         )
-        # if isinstance(color_chi2, list):
-        #     color_chi2 = color_chi2[0]
 
         # plot the chi2 text
         ax.text(
@@ -307,16 +305,6 @@ class HEPPlotter:
                     }
                 )
 
-    # def _order_series_dict(self):
-    #     # check if there is a plot_order request in the styles
-    #     if any("plot_order" in props.get("style", {}) for props in self.series_dict.values()):
-    #         self.series_dict = dict(
-    #             sorted(
-    #                 self.series_dict.items(),
-    #                 key=lambda item: item[1].get("style", {}).get("plot_order", 10),
-    #             )
-    #         )
-
     def _stack_plot_order(self, hist_1d, style):
         # reorder the histograms to be plotted in stack order (first is bottom)
         if isinstance(hist_1d, list):
@@ -346,8 +334,6 @@ class HEPPlotter:
         kwargs_stack = {}
         legend_name_stack = []
 
-        # self._order_series_dict()
-
         ref_hist = self.series_dict[ref_name]["data"] if ref_name else None
 
         for index, (name, props) in enumerate(self.series_dict.items()):
@@ -369,24 +355,6 @@ class HEPPlotter:
                 else None
             )
 
-            # if False:#style.get("stack", False):
-            #     hist_1d_stack.append(hist_1d)
-            #     legend_name_stack.append(legend_name)
-            #     histtype = style.get("histtype", "step")
-
-            #     if not kwargs_stack:
-            #         kwargs_stack = {
-            #             "histtype": histtype,
-            #             "linewidth": [style.get("linewidth", 2)],
-            #             "stack": True,
-            #         }
-            #         self._color_handler(histtype, style, kwargs_stack, use_lists=True)
-            #     else:
-            #         kwargs_stack["linewidth"].append(style.get("linewidth", 2))
-            #         self._color_handler(histtype, style, kwargs_stack, use_lists=True)
-
-            # else:
-            
             kwargs = self.extra_kwargs.copy()
             histtype = style.get("histtype", "step")
             stack = style.get("stack", False)
@@ -401,7 +369,6 @@ class HEPPlotter:
             self._color_handler(histtype, style, kwargs)
 
 
-            # breakpoint()
             # draw histogram
             self._plot_histogram(
                 ax, legend_name, hist_1d, style.get("plot_errors", True), **kwargs
@@ -438,36 +405,6 @@ class HEPPlotter:
                         style,
                     )
                     
-            # elif ratio_plot and ax_ratio is not None and isinstance(hist_1d, list) and stack:
-            #     if self.reference_to_den:
-            #         self._plot_ratio(
-            #             ax_ratio,
-            #             hist_1d,
-            #             ref_hist,
-            #             legend_name_ratio,
-            #             is_ref,
-            #             style,
-            #         )
-            #     else:
-            #         self._plot_ratio(
-            #             ax_ratio,
-            #             ref_hist,
-            #             hist_1d,
-            #             legend_name_ratio,
-            #             is_ref,
-            #             style,
-            #         )
-
-        # plot stack
-        # if hist_1d_stack:
-        #     self._plot_histogram(
-        #         ax,
-        #         legend_name_stack,
-        #         hist_1d_stack,
-        #         style.get("plot_errors", True),
-        #         **kwargs_stack,
-        #     )
-
         # plot precomputed ratio hists
         if self._ratio_hists and ratio_plot and ax_ratio is not None:
             for name, props in self._ratio_hists.items():
@@ -613,7 +550,6 @@ class HEPPlotter:
 
     def _plot_histogram(self, ax, name, hist_1d, plot_errors, **kwargs):
         """Plot a single 1D histogram on the given axes."""
-        # breakpoint()
         hep.histplot(
             hist_1d,
             w2method="sqrt" if plot_errors else None,
