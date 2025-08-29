@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import matplotlib
 import hist
 import matplotlib.ticker as mtick
+from scipy.stats.distributions import chi2
 
 from scipy.stats import chisquare
 import numpy as np
@@ -226,21 +227,29 @@ class HEPPlotter:
         """Compute and add chi-square text to the plot."""
 
         # if bin is empty in one of the two histograms, set it to nan
-        hist_1d = hist_1d.copy()
-        ref_hist = ref_hist.copy()
-        for i in range(len(hist_1d.values())):
-            if hist_1d.values()[i] == 0 or ref_hist.values()[i] == 0:
-                hist_1d.values()[i] = np.nan
-                ref_hist.values()[i] = np.nan
+        # hist_1d = hist_1d.copy()
+        # ref_hist = ref_hist.copy()
+        # for i in range(len(hist_1d.values())):
+        #     if hist_1d.values()[i] == 0 or ref_hist.values()[i] == 0:
+        #         hist_1d.values()[i] = np.nan
+        #         ref_hist.values()[i] = np.nan
 
-        # compute the chi square between the two histograms (divide by the error on data)
-        chi2_value, pvalue = chisquare(
-            f_obs=hist_1d.values(),
-            f_exp=ref_hist.values(),
-            sum_check=False,
-            nan_policy="omit",
+        # # compute the chi square between the two histograms (divide by the error on data)
+        # chi2_value, pvalue = chisquare(
+        #     f_obs=hist_1d.values(),
+        #     f_exp=ref_hist.values(),
+        #     sum_check=False,
+        #     nan_policy="omit",
+        # )
+
+        chi2_value = np.sum(
+            (hist_1d.values() - ref_hist.values()) ** 2 / (hist_1d.variance())
         )
-        chi2_norm = chi2_value / (len(hist_1d.values()) - 1)
+        ndof = len(hist_1d.values()) - 1
+
+        chi2_norm = chi2_value / (  ndof if ndof > 0 else 1)
+        
+        pvalue=chi2.sf(chi2_value, ndof)
 
         self.chi_square_text = (
             r"$\chi^2$/ndof= {:.3f},".format(chi2_norm) + f"  p-value= {pvalue:.3f}"
@@ -318,7 +327,7 @@ class HEPPlotter:
             for key in style:
                 if isinstance(style[key], list):
                     style[key] = [style[key][i] for i in idxes]
-            
+
         return hist_1d, style
 
     # ----------------------------
@@ -337,11 +346,11 @@ class HEPPlotter:
         ref_hist = self.series_dict[ref_name]["data"] if ref_name else None
 
         for index, (name, props) in enumerate(self.series_dict.items()):
-            
+
             hist_1d = props["data"]
             style = props.get("style", {})
             hist_1d, style = self._stack_plot_order(hist_1d.copy(), style.copy())
-            
+
             is_ref = style.get("is_reference", False)
 
             legend_name = (
@@ -368,19 +377,18 @@ class HEPPlotter:
 
             self._color_handler(histtype, style, kwargs)
 
-
             # draw histogram
             self._plot_histogram(
                 ax, legend_name, hist_1d, style.get("plot_errors", True), **kwargs
             )
-            
+
             if isinstance(hist_1d, list):
                 hist_1d = sum(hist_1d)
             # keep the style of the last histogram in the list
             for key in style:
                 if isinstance(style[key], list):
                     style[key] = style[key][-1]
-                
+
             if self.plot_chi_square and ratio_plot and not is_ref:
                 self._apply_chi_square(ax, hist_1d, ref_hist, index, style)
 
@@ -404,7 +412,7 @@ class HEPPlotter:
                         is_ref,
                         style,
                     )
-                    
+
         # plot precomputed ratio hists
         if self._ratio_hists and ratio_plot and ax_ratio is not None:
             for name, props in self._ratio_hists.items():
@@ -460,7 +468,7 @@ class HEPPlotter:
                 props["data"]["x"][0],
                 props["data"]["x"][1],
             )
-            
+
             style = props.get("style", {})
             # extra_kwargs = self.extra_kwargs.copy()
             # extra_kwargs.update(
@@ -517,9 +525,7 @@ class HEPPlotter:
                     raise ValueError("Multiple reference histograms found.")
                 ratio_plot = True
                 ref_name = name
-            if isinstance(
-                hist_1d[0], hist.Hist
-            ):
+            if isinstance(hist_1d[0], hist.Hist):
                 style = props.get("style", {})
                 # check that the lists of histograms have the same dimension
                 lenght_hists = len(hist_1d)
@@ -529,7 +535,7 @@ class HEPPlotter:
                             raise ValueError(
                                 f"Length mismatch in style lists for {name}: expected {lenght_hists}, got {len(style[key])} for key {key}"
                             )
-                    
+
         return ratio_plot, ref_name
 
     def _create_figure(self, ratio_plot=False):
