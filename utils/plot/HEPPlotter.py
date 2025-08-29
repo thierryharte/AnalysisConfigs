@@ -243,13 +243,14 @@ class HEPPlotter:
         # )
 
         chi2_value = np.sum(
-            (hist_1d.values() - ref_hist.values()) ** 2 / (hist_1d.variance())
+            (hist_1d.values() - ref_hist.values()) ** 2
+            / (np.where(ref_hist.values() > 0, ref_hist.values(), 1))
         )
         ndof = len(hist_1d.values()) - 1
 
-        chi2_norm = chi2_value / (  ndof if ndof > 0 else 1)
-        
-        pvalue=chi2.sf(chi2_value, ndof)
+        chi2_norm = chi2_value / (ndof if ndof > 0 else 1)
+
+        pvalue = chi2.sf(chi2_value, ndof)
 
         self.chi_square_text = (
             r"$\chi^2$/ndof= {:.3f},".format(chi2_norm) + f"  p-value= {pvalue:.3f}"
