@@ -3,7 +3,7 @@ import os
 from pocket_coffea.utils.configurator import Configurator
 from pocket_coffea.parameters.cuts import passthrough
 from pocket_coffea.lib.columns_manager import ColOut
-from pocket_coffea.lib.cut_functions import get_nObj_min
+from pocket_coffea.lib.cut_functions import get_HLTsel
 from pocket_coffea.lib.categorization import CartesianSelection, MultiCut
 from pocket_coffea.parameters.histograms import (
     met_hists,
@@ -13,10 +13,14 @@ from pocket_coffea.parameters.histograms import (
     Axis,
 )
 from pocket_coffea.parameters import defaults
+from pocket_coffea.lib.calibrators.common.common import (
+    JetsCalibrator,
+    JetsPtRegressionCalibrator,
+)
 
-from workflow import METProcessor
+from configs.MET_studies.workflow import METProcessor
 from configs.jme.cuts import PV_presel
-from custom_cuts import dimuon_presel
+from custom_cuts import dimuon_presel, at_least_one_jet
 
 localdir = os.path.dirname(os.path.abspath(__file__))
 
@@ -25,28 +29,39 @@ localdir = os.path.dirname(os.path.abspath(__file__))
 default_parameters = defaults.get_default_parameters()
 defaults.register_configuration_dir("config_dir", localdir + "/params")
 
+year = os.environ.get("YEAR", "2022_preEE")
+# default_parameters.lepton_scale_factors.electron_sf["apply_ele_scale_and_smearing"][year] = False
 
-year = os.environ.get("YEAR", "2023_preBPix")
+
 # adding object preselection
 parameters = defaults.merge_parameters_from_files(
     default_parameters,
     f"{localdir}/params/object_preselection.yaml",
+    f"{localdir}/params/triggers.yaml",
     f"{localdir}/params/jets_calibration.yaml",
     update=True,
 )
 
 
-samples_PNetReg15_dict = {
-    "2022_preEE": "QCD_PT-15to7000_PNetReg15_JMENano_Summer22",
-    "2022_postEE": "QCD_PT-15to7000_PNetReg15_JMENano_Summer22EE",
-    "2023_preBPix": "QCD_PT-15to7000_PNetReg15_JMENano_Summer23",
-    "2023_postBPix": "QCD_PT-15to7000_PNetReg15_JMENano_Summer23BPix",
-}
-
-
 common_cats = {
     "baseline": [passthrough],
 }
+
+met_vars = ["pt", "phi"]
+recoil_vars = ["pt", "phi", "u_perp_predict", "u_paral_predict", "response"]
+
+tot_cols = []
+for recoil, vars_col in zip(["u", ""], [recoil_vars, met_vars]):
+    for raw in ["Raw", ""]:
+        for type1 in [
+            "",
+            "-Type1",
+            "-Type1JEC",
+            "-Type1PNet",
+            "-Type1PNetPlusNeutrino",
+        ]:
+
+            tot_cols.append(ColOut(f"{recoil}{raw}PuppiMET{type1}", vars_col))
 
 cfg = Configurator(
     parameters=parameters,
@@ -59,8 +74,8 @@ cfg = Configurator(
         "filter": {
             "samples": [
                 (
-                    # samples_PNetReg15_dict[year]
                     "DYJetsToLL_M-50"
+                    # "DYJetsToLL_M-50_local"
                 )
             ],
             "samples_exclude": [],
@@ -71,13 +86,18 @@ cfg = Configurator(
     workflow=METProcessor,
     workflow_options={
         # "donotscale_sumgenweights": True,
-        "only_physisical_jet": False,
+        "only_physical_jet": True,
         "rescale_MET_with_regressed_pT": True,
+        "jec_pt_threshold": 15.0,
     },
-    skim=[],
+    skim=[
+        get_HLTsel(primaryDatasets=["SingleMuon"]),
+    ],
     preselections=[
-        # PV_presel, get_nObj_min(2, coll="MuonGood")
-        dimuon_presel
+        PV_presel,
+        dimuon_presel,
+        at_least_one_jet,
+        # get_nObj_min(2, coll="MuonGood")
     ],
     categories={
         **common_cats,
@@ -93,6 +113,7 @@ cfg = Configurator(
         },
         "bysample": {},
     },
+    calibrators=[JetsPtRegressionCalibrator, JetsCalibrator],
     variations={
         "weights": {
             "common": {
@@ -102,55 +123,55 @@ cfg = Configurator(
             "bysample": {},
         }
     },
-    variables={
-        **met_hists("PuppiMET"),
-        **met_hists("PuppiMETPNet"),
-        **met_hists("PuppiMETPNetPlusNeutrino"),
-        **met_hists("GenMET"),
-        # **met_hists("GenMETPlusNeutrino"),
-        **muon_hists(coll="MuonGood", pos=0),
-        **count_hist(
-            name="nElectronGood", coll="ElectronGood", bins=3, start=0, stop=3
-        ),
-        **count_hist(name="nMuonGood", coll="MuonGood", bins=3, start=0, stop=3),
-        "mll": HistConf(
-            [
-                Axis(
-                    coll="ll",
-                    field="mass",
-                    bins=100,
-                    start=0,
-                    stop=200,
-                    label=r"$M_{\ell\ell}$ [GeV]",
-                )
-            ]
-        ),
-        "ll_pt": HistConf(
-            [
-                Axis(
-                    coll="ll",
-                    field="pt",
-                    bins=100,
-                    start=0,
-                    stop=200,
-                    label=r"$p_{T}^{\ell\ell}$ [GeV]",
-                )
-            ]
-        ),
-    },
+    variables={},
     columns={
         "common": {
             "inclusive": [
                 ColOut("ll", ["mass", "pt", "eta", "phi"]),
-                ColOut("PuppiMET", ["pt", "phi"]),
-                ColOut("PuppiMETPNet", ["pt", "phi"]),
-                ColOut("PuppiMETPNetPlusNeutrino", ["pt", "phi"]),
-                ColOut("PuppiMET_MuonGood", ["pt", "phi", "u_perp_predict", "u_paral_predict", "response"]),
-                ColOut("PuppiMETPNet_MuonGood", ["pt", "phi", "u_perp_predict", "u_paral_predict", "response"]),
-                ColOut("PuppiMETPNetPlusNeutrino_MuonGood", ["pt", "phi", "u_perp_predict", "u_paral_predict", "response"]),
                 ColOut("GenMET", ["pt", "phi"]),
-                # ColOut("GenMETPlusNeutrino", ["pt", "phi"]),
             ]
+            + tot_cols
+            #     ColOut("RawPuppiMET", ["pt", "phi"]),
+            #     ColOut("RawPuppiMETType1", ["pt", "phi"]),
+            #     ColOut("RawPuppiMETPNet", ["pt", "phi"]),
+            #     ColOut("RawPuppiMETPNetPlusNeutrino", ["pt", "phi"]),
+            #     ColOut("PuppiMET", ["pt", "phi"]),
+            #     ColOut("PuppiMETType1", ["pt", "phi"]),
+            #     ColOut("PuppiMETPNet", ["pt", "phi"]),
+            #     ColOut("PuppiMETPNetPlusNeutrino", ["pt", "phi"]),
+            #     ColOut(
+            #         "hadronic_recoil_RawPuppiMET",
+            #         ["pt", "phi", "u_perp_predict", "u_paral_predict", "response"],
+            #     ),
+            #     ColOut(
+            #         "hadronic_recoil_RawPuppiMETType1",
+            #         ["pt", "phi", "u_perp_predict", "u_paral_predict", "response"],
+            #     ),
+            #     ColOut(
+            #         "hadronic_recoil_RawPuppiMETPNet",
+            #         ["pt", "phi", "u_perp_predict", "u_paral_predict", "response"],
+            #     ),
+            #     ColOut(
+            #         "hadronic_recoil_RawPuppiMETPNetPlusNeutrino",
+            #         ["pt", "phi", "u_perp_predict", "u_paral_predict", "response"],
+            #     ),
+            #     ColOut(
+            #         "hadronic_recoil_PuppiMET",
+            #         ["pt", "phi", "u_perp_predict", "u_paral_predict", "response"],
+            #     ),
+            #     ColOut(
+            #         "hadronic_recoil_PuppiMETType1",
+            #         ["pt", "phi", "u_perp_predict", "u_paral_predict", "response"],
+            #     ),
+            #     ColOut(
+            #         "hadronic_recoil_PuppiMETPNet",
+            #         ["pt", "phi", "u_perp_predict", "u_paral_predict", "response"],
+            #     ),
+            #     ColOut(
+            #         "hadronic_recoil_PuppiMETPNetPlusNeutrino",
+            #         ["pt", "phi", "u_perp_predict", "u_paral_predict", "response"],
+            #     ),
+            # ]
         },
         "bysample": {},
     },
