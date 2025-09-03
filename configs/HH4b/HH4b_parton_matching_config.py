@@ -1,5 +1,10 @@
 import os
 
+from configs.HH4b_common.config_files.__config_file__ import (
+    config_options_dict,
+    onnx_model_dict,
+)
+from pocket_coffea.lib.calibrators.common import default_calibrators_sequence
 from pocket_coffea.lib.cut_functions import (
     get_HLTsel,
 )
@@ -15,10 +20,6 @@ from pocket_coffea.utils.configurator import Configurator
 from workflow import HH4bbQuarkMatchingProcessor
 
 import configs.HH4b_common.custom_cuts_common as cuts
-from configs.HH4b_common.config_files.__config_file__ import (
-    config_options_dict,
-    onnx_model_dict,
-)
 from configs.HH4b_common.config_files.configurator_tools import (
     SPANET_TRAINING_DEFAULT_COLUMNS,
     create_DNN_columns_list,
@@ -51,14 +52,13 @@ parameters = defaults.merge_parameters_from_files(
     default_parameters,
     f"{localdir}/params/object_preselection.yaml",
     f"{localdir}/params/triggers.yaml",
-    f"{localdir}/params/jets_calibration_withoutVariations.yaml",
+    f"{localdir}/params/jets_calibration_withVariations.yaml",
     update=True,
 )
 
 
 if config_options_dict["save_chunk"]:
-    # workflow_options["dump_columns_as_arrays_per_chunk"] = "root://t3dcachedb03.psi.ch:1094//pnfs/psi.ch/cms/trivcat/store/user/tharte/HH4b/training_samples/GluGlutoHHto4B_spanet_loose_03_17"
-    pass
+    config_options_dict["dump_columns_as_arrays_per_chunk"] = config_options_dict["save_chunk"]
 
 
 # Define the variables to save
@@ -82,11 +82,11 @@ preselection = [
 sample_list = [
     # "DATA_JetMET_JMENano_C_skimmed",
     # "DATA_JetMET_JMENano_D_skimmed",
-    "DATA_JetMET_JMENano_E_skimmed",
-    "DATA_JetMET_JMENano_F_skimmed",
-    "DATA_JetMET_JMENano_G_skimmed",
+    # "DATA_JetMET_JMENano_E_skimmed",
+    # "DATA_JetMET_JMENano_F_skimmed",
+    # "DATA_JetMET_JMENano_G_skimmed",
     "GluGlutoHHto4B_spanet",
-    "GluGlutoHHto4B",
+    # "GluGlutoHHto4B",
     # "DATA_JetMET_JMENano_2023_Cv1_skimmed",
     # "DATA_JetMET_JMENano_2023_Cv2_skimmed",
     # "DATA_ParkingHH_2023_Cv3",
@@ -132,7 +132,8 @@ print("categories_dict", categories_dict)
 
 # Define the columns to save
 total_input_variables = {}
-
+column_list = []
+column_listRun2 = []
 
 assert not (config_options_dict["random_pt"] and config_options_dict["run2"])
 if config_options_dict["dnn_variables"]:
@@ -166,12 +167,12 @@ if config_options_dict["dnn_variables"]:
         True, not config_options_dict["save_chunk"], total_input_variables, btag=False
     )
 elif all([model == "" for model in onnx_model_dict.values()]):
-    column_list = get_columns_list(SPANET_TRAINING_DEFAULT_COLUMNS)
+    column_list = get_columns_list(SPANET_TRAINING_DEFAULT_COLUMNS, not config_options_dict["save_chunk"])
     if config_options_dict["random_pt"]:
         column_list += get_columns_list({"events": ["random_pt_weights"]})
 else:
-    column_list = get_columns_list()
-    column_listRun2 = get_columns_list()
+    column_list = get_columns_list(flatten=not config_options_dict["save_chunk"])
+    column_listRun2 = get_columns_list(flatten=not config_options_dict["save_chunk"])
 
 # Add special columns
 if config_options_dict["sig_bkg_dnn"] and config_options_dict["spanet"]:
@@ -285,14 +286,13 @@ cfg = Configurator(
     categories=categories_dict,
     weights_classes=common_weights
     + [bkg_morphing_dnn_weight, bkg_morphing_dnn_weightRun2],
+    calibrators=default_calibrators_sequence,
     weights={
         "common": {
-            "inclusive": [
-                "genWeight",
-                "lumi",
-                "XS",
-            ],
-            "bycategory": {},
+            # "inclusive": ["genWeight", "lumi", "XS", "pileup",
+            "inclusive": [],
+            "bycategory": {
+            },
         },
         "bysample": bysample_bycategory_weight_dict,
     },
@@ -303,7 +303,13 @@ cfg = Configurator(
                 "bycategory": {},
             },
             "bysample": {},
-        }
+        },
+        "shape": {
+            "common": {
+                # "inclusive": ["jet_calibration"],
+                "inclusive": [],
+                },
+            }
     },
     variables=variables_dict,
     columns={
@@ -312,5 +318,6 @@ cfg = Configurator(
             "bycategory": {},
         },
         "bysample": bysample_bycategory_column_dict,
+        # "bysample": {},
     },
 )

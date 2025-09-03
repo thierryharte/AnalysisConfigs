@@ -16,6 +16,7 @@ from utils.reconstruct_higgs_candidates import (
     run2_matching_algorithm,
     get_jets_no_higgs_from_idx,
 )
+# from utils.inference_session_onnx_slurm import get_model_session
 from utils.inference_session_onnx import get_model_session
 from utils.dnn_evaluation_functions import get_dnn_prediction
 
@@ -77,7 +78,7 @@ class HH4bCommonProcessor(BaseProcessorABC):
             ),
             "mass",
         )
-        
+
         if self.add_jet_spanet:
             # reorder the jets by pt regressed
             self.events["Jet"] = self.events["Jet"][
@@ -87,11 +88,15 @@ class HH4bCommonProcessor(BaseProcessorABC):
         self.events["Jet"] = ak.with_field(
             self.events.Jet, ak.local_index(self.events.Jet, axis=1), "index"
         )
+        self.events["Jet"] = jet_selection_nopu(
+            self.events, "Jet", self.params, tight_cuts=self.tight_cuts
+        )
 
         self.events["JetGood"] = self.events.Jet
 
-        self.events["JetGood"] = jet_selection_nopu(
-            self.events, "JetGood", self.params, tight_cuts=self.tight_cuts
+        self.events["Electron"] = ak.with_field(
+                self.events.Electron,
+                self.events.Electron.eta + self.events.Electron.deltaEtaSC, "etaSC"
         )
 
         self.events["ElectronGood"] = lepton_selection(
@@ -112,8 +117,6 @@ class HH4bCommonProcessor(BaseProcessorABC):
             self.events["JetGood"] = ak.concatenate(
                 (self.events["JetGoodHiggs"], jets5plus_pt), axis=1
             )
-            del jets5plus
-            del jets5plus_pt
 
     # def apply_preselection(self, variation):
     #     """
@@ -378,6 +381,7 @@ class HH4bCommonProcessor(BaseProcessorABC):
             matched_vbf_quarks_generalSelection[maskNotNone_genSel]
         )
 
+
     def dummy_provenance(self):
         self.events["JetGoodHiggs"] = ak.with_field(
             self.events.JetGoodHiggs,
@@ -484,13 +488,13 @@ class HH4bCommonProcessor(BaseProcessorABC):
         self.events["JetNotFromHiggs"] = self.get_jets_no_higgs(jet_higgs_idx_per_event)
 
         self.params.object_preselection.update(
-            {"JetNotFromHiggs": self.params.object_preselection["JetGood"]}
+            {"JetNotFromHiggs": self.params.object_preselection["Jet"]}
         )
 
         self.events["JetNotFromHiggs"] = jet_selection_nopu(
             self.events, "JetNotFromHiggs", self.params, tight_cuts=self.tight_cuts
         )
-        
+
         if self.add_jet_spanet:
             if self.fifth_jet == "pt":
                 # order the self.events["JetNotFromHiggs"] according to btag or to pt
@@ -518,6 +522,7 @@ class HH4bCommonProcessor(BaseProcessorABC):
                 ]
 
         add_jet1pt = ak.pad_none(self.events.JetNotFromHiggs, 1, clip=True)[:, 0]
+
 
         # Minimum ∆R ( jj ) among all possible pairings of the leading b-tagged jets
         # Maximum ∆R( jj ) among all possible pairings of the leading b-tagged jets
@@ -781,6 +786,10 @@ class HH4bCommonProcessor(BaseProcessorABC):
                 self.max_num_jets,
                 spanet_input_name_list,
             )
+            # Not needed anymore
+            del model_session_spanet
+            del input_name_spanet
+            del output_name_spanet
 
             (
                 pairing_predictions,
@@ -893,6 +902,9 @@ class HH4bCommonProcessor(BaseProcessorABC):
                 input_name_vbf_ggf_dnn,
                 output_name_vbf_ggf_dnn,
             ) = get_model_session(self.vbf_ggf_dnn, "vbf_ggf_dnn")
+            del model_session_vbf_ggf_dnn
+            del input_name_vbf_ggf_dnn
+            del output_name_vbf_ggf_dnn
 
         if self.dnn_variables and self.spanet:
             (
@@ -958,6 +970,9 @@ class HH4bCommonProcessor(BaseProcessorABC):
                     )[0],
                     axis=None,
                 )
+            del model_session_bkg_morphing_dnn
+            del input_name_bkg_morphing_dnn
+            del output_name_bkg_morphing_dnn
 
         if self.bkg_morphing_spread_dnn and not self._isMC:
             (
@@ -992,6 +1007,9 @@ class HH4bCommonProcessor(BaseProcessorABC):
                         run2=True,
                     )
                 )
+            del model_session_bkg_morphing_spread_dnn
+            del input_name_bkg_morphing_spread_dnn
+            del output_name_bkg_morphing_spread_dnn
 
         if self.sig_bkg_dnn:
             (
@@ -1032,3 +1050,6 @@ class HH4bCommonProcessor(BaseProcessorABC):
                 else:
                     # if array is 2 dim take the last column
                     self.events["sig_bkg_dnn_scoreRun2"] = sig_bkg_dnn_score[:, -1]
+                del model_session_SIG_BKG_DNN
+                del input_name_SIG_BKG_DNN
+                del output_name_SIG_BKG_DNN
