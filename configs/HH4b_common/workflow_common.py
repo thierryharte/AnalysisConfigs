@@ -1,24 +1,24 @@
 import awkward as ak
 import numpy as np
 import vector
-
-from pocket_coffea.workflows.base import BaseProcessorABC
 from pocket_coffea.lib.deltaR_matching import object_matching
+from pocket_coffea.workflows.base import BaseProcessorABC
 
-from .custom_object_preselection_common import lepton_selection, jet_selection_nopu
-
-from utils.parton_matching_function import get_parton_last_copy
-from utils.spanet_evaluation_functions import get_pairing_information, get_best_pairings
 from utils.basic_functions import add_fields
-from utils.reconstruct_higgs_candidates import (
-    reconstruct_higgs_from_provenance,
-    reconstruct_higgs_from_idx,
-    run2_matching_algorithm,
-    get_jets_no_higgs_from_idx,
-)
+from utils.dnn_evaluation_functions import get_dnn_prediction
+
 # from utils.inference_session_onnx_slurm import get_model_session
 from utils.inference_session_onnx import get_model_session
-from utils.dnn_evaluation_functions import get_dnn_prediction
+from utils.parton_matching_function import get_parton_last_copy
+from utils.reconstruct_higgs_candidates import (
+    get_jets_no_higgs_from_idx,
+    reconstruct_higgs_from_idx,
+    reconstruct_higgs_from_provenance,
+    run2_matching_algorithm,
+)
+from utils.spanet_evaluation_functions import get_best_pairings, get_pairing_information
+
+from .custom_object_preselection_common import jet_selection_nopu, lepton_selection
 
 vector.register_awkward()
 
@@ -381,7 +381,6 @@ class HH4bCommonProcessor(BaseProcessorABC):
             matched_vbf_quarks_generalSelection[maskNotNone_genSel]
         )
 
-
     def dummy_provenance(self):
         self.events["JetGoodHiggs"] = ak.with_field(
             self.events.JetGoodHiggs,
@@ -522,7 +521,6 @@ class HH4bCommonProcessor(BaseProcessorABC):
                 ]
 
         add_jet1pt = ak.pad_none(self.events.JetNotFromHiggs, 1, clip=True)[:, 0]
-
 
         # Minimum ∆R ( jj ) among all possible pairings of the leading b-tagged jets
         # Maximum ∆R( jj ) among all possible pairings of the leading b-tagged jets
@@ -713,14 +711,13 @@ class HH4bCommonProcessor(BaseProcessorABC):
             + (self.events[f"HiggsSubLeading{suffix}"].mass - 120) ** 2
         )
 
-
         if pairing_predictions is not None:
             # Masking and calculating efficiency
             # Need to sort the double pairs in innermost dimension for easier evaluation
             pairing_predictions = ak.sort(ak.Array(pairing_predictions), axis=-1)
-            if pairing_suffix=="Run2":
+            if pairing_suffix == "Run2":
                 # keep up to 4 jets
-                pairing_true=ak.where(
+                pairing_true = ak.where(
                     pairing_true < 4,
                     pairing_true,
                     -1,
@@ -732,7 +729,7 @@ class HH4bCommonProcessor(BaseProcessorABC):
                     pairing_true,
                     -1,
                 )
-            
+
             mask_fully_matched = ak.all(ak.flatten(pairing_true, axis=2) >= 0, axis=1)
             pairing_true = ak.sort(pairing_true, axis=-1)
 
@@ -758,7 +755,7 @@ class HH4bCommonProcessor(BaseProcessorABC):
             mask_fully_matched = ak.all(ak.flatten(pairing_true, axis=2) >= 0, axis=1)
 
         self.events["mask_fully_matched"] = mask_fully_matched
-        
+
         return matched_jet_higgs_idx_not_none
 
     def process_extra_after_presel(self, variation):  # -> ak.Array:
@@ -770,13 +767,13 @@ class HH4bCommonProcessor(BaseProcessorABC):
             model_session_spanet, input_name_spanet, output_name_spanet = (
                 get_model_session(self.spanet, "spanet")
             )
-            
+
             try:
-                spanet_input_name_list=self.spanet_input_name_list
+                spanet_input_name_list = self.spanet_input_name_list
             except AttributeError:
                 print("Warning: Spanet input parameters not found. Will take default ones")
-                spanet_input_name_list=["log_pt", "eta", "phi", "btag"]
-                
+                spanet_input_name_list = ["log_pt", "eta", "phi", "btag"]
+
             # compute the pairing information using the SPANET model
             pairing_outputs = get_pairing_information(
                 model_session_spanet,
