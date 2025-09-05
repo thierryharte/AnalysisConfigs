@@ -142,12 +142,12 @@ filter_lambda = (
 
 ## Collecting MC dataset
 cat_col_mc, total_datasets_list_mc = get_columns_from_files(
-    inputfiles_mc, filter_lambda
+    inputfiles_mc, sel_var="nominal", filter_lambda=filter_lambda
 )
 
 ## Collecting DATA dataset
 cat_col_data, total_datasets_list_data = get_columns_from_files(
-    inputfiles_data, filter_lambda
+    inputfiles_data, sel_var="nominal", filter_lambda=filter_lambda
 )
 
 
@@ -226,6 +226,14 @@ def plot_single_var_from_columns(
     mc_signal = ""
     for cat in cat_list:
         if "_MC" in cat:
+            kl = (
+                os.path.basename(inputfiles_mc[0])
+                .split("kl-")[-1]
+                .split("_")[0]
+                .replace("p", ".")
+            )
+            namesuffix = r" ($\kappa_\lambda$=" + kl + ")"
+            mc_signal_region = plot_regions_names(cat, namesuffix)
             mc_signal = cat
             break
     if mc_signal == "":
@@ -282,6 +290,7 @@ def plot_single_var_from_columns(
             savesuffix = f"kl_{kl}"
 
         cat_plot_name = plot_regions_names(cat, namesuffix).replace("Run2", "_DHH")
+        print(cat_plot_name)
 
         print(f"Found something to plot {cat} -> {cat_plot_name}")
 
@@ -298,18 +307,18 @@ def plot_single_var_from_columns(
         histo = Hist.new.Var(bin_edges, name=var_plot_name, flow=False).Weight()
         histo.fill(col_den, weight=weights_den)
 
+       # if i == 0:
+        hist_1d_dict[cat_plot_name] = {
+            "data": histo,
+            "style": {
+                "is_reference": (i == 0),
+                "histtype": "errorbar" if i == 0 else "step",
+                "color": color_list[i][0],
+            },
+        }
 
-        if i == 0:
-            hist_1d_dict[cat_plot_name] = {
-                "data": histo,
-                "style": {
-                    "is_reference": (i == 0),
-                    "histtype": "errorbar" if i == 0 else "step",
-                    "color": color_list[i][0],
-                },
-            }
-
-        else:
+        # else:
+        if i>0:
             # if not style_dict:
             if "Sig+Bkg" not in hist_1d_dict:
 
@@ -407,8 +416,8 @@ def plot_single_var_from_columns(
     # save the histogram
     np.savez(
         os.path.join(dir_cat, f"hist_columns_{var_plot_name}_{savesuffix}.npz".replace("Run2", "_DHH")),
-        counts=np.append(hist_1d_dict[mc_signal]["data"].values(), hist_1d_dict[mc_signal]["data"].values()[-1]),
-        count_err=np.sqrt(hist_1d_dict[mc_signal]["data"].variances()),
+        counts=np.append(hist_1d_dict[mc_signal_region]["data"].values(), hist_1d_dict[mc_signal_region]["data"].values()[-1]),
+        count_err=np.sqrt(hist_1d_dict[mc_signal_region]["data"].variances()),
         bin_edges=bin_edges,
         plot=var_plot_name,
         num_events=len(col_den),
