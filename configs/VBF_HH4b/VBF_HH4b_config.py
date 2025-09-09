@@ -1,4 +1,6 @@
 import os
+import cloudpickle
+import utils.quantile_transformer as quantile_transformer
 from collections import defaultdict
 
 from pocket_coffea.utils.configurator import Configurator
@@ -49,6 +51,7 @@ parameters = defaults.merge_parameters_from_files(
     f"{localdir}/params/object_preselection.yaml",
     f"{localdir}/params/triggers.yaml",
     f"{localdir}/params/jets_calibration_withoutVariations.yaml",
+    f"{localdir}/../HH4b_common/params/quantile_transformer.yaml",
     update=True,
 )
 
@@ -295,3 +298,4 @@ cfg = Configurator(
         "bysample": bysample_bycategory_column_dict,
     },
 )
+cloudpickle.register_pickle_by_value(quantile_transformer)

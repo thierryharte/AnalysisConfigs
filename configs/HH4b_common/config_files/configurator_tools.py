@@ -987,17 +987,75 @@ variable_dict_bkg_morphing = {
     ),
 }
 
-variables_dict = {}
+variables_dict_sig_bkg_score = {
+    "sig_bkg_dnn_score" : HistConf(
+        [
+            Axis(
+                coll="events",
+                field="sig_bkg_dnn_score",
+                bins=20,
+                start=0,
+                stop=1,
+                label="Signal vs Background DNN score",
+            )
+        ],
+        storage='weight'
+    ),
+    "sig_bkg_dnn_scoreRun2" : HistConf(
+        [
+            Axis(
+                coll="events",
+                field="sig_bkg_dnn_scoreRun2",
+                bins=20,
+                start=0,
+                stop=1,
+                label=r"Signal vs Background DNN score D$_{HH}$-Method",
+            )
+        ],
+        storage='weight'
+    ),
+    "sig_bkg_dnn_score_transformed" : HistConf(
+        [
+            Axis(
+                coll="events",
+                field="sig_bkg_dnn_score_transformed",
+                bins=20,
+                start=0,
+                stop=1,
+                label="Signal vs Background DNN score transformed",
+            )
+        ],
+        storage='weight'
+    ),
+    "sig_bkg_dnn_score_transformedRun2" : HistConf(
+        [
+            Axis(
+                coll="events",
+                field="sig_bkg_dnn_score_transformedRun2",
+                bins=20,
+                start=0,
+                stop=1,
+                label=r"Signal vs Background DNN score D$_{HH}$-Method transformed",
+            )
+        ],
+        storage='weight'
+    ),
+}
+
 
 
 def get_variables_dict(
-    JETS=True,
+    JETS=False,
     CLASSIFICATION=False,
     RANDOM_PT=False,
     VBF_VARIABLES=False,
     BKG_MORPHING=False,
+    SCORE=False,
+    RUN2=False,
+    SPANET=True,
 ):
     """Function to create the variable dictionary for the PocketCoffea Configurator()."""
+    variables_dict = {}
     if JETS:
         variables_dict.update(variables_dict_jets)
     if CLASSIFICATION:
@@ -1008,6 +1066,15 @@ def get_variables_dict(
         variables_dict.update(variables_dict_vbf)
     if BKG_MORPHING:
         variables_dict.update(variable_dict_bkg_morphing)
+    if SCORE:
+        variables_dict.update(variables_dict_sig_bkg_score)
+    # Sort of lazy implementation. If neither SPANet nor RUN2 are active, no variables are saved.
+    # If not Run2, kick out all variables with Run2 in name
+    # If not SPANet, kick out all variables without Run2 in name
+    if not RUN2:
+        variables_dict = {k: v for k, v in variables_dict.items() if "Run2" not in k}
+    if not SPANET:
+        variables_dict = {k: v for k, v in variables_dict.items() if "Run2" not in k}
     return variables_dict
 
 

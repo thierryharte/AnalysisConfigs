@@ -6,6 +6,7 @@ from pocket_coffea.workflows.base import BaseProcessorABC
 
 from utils.basic_functions import add_fields
 from utils.dnn_evaluation_functions import get_dnn_prediction
+from utils.quantile_transformer import WeightedQuantileTransformer
 
 # from utils.inference_session_onnx_slurm import get_model_session
 from utils.inference_session_onnx import get_model_session
@@ -1030,7 +1031,10 @@ class HH4bCommonProcessor(BaseProcessorABC):
                 else:
                     # if array is 2 dim take the last column
                     self.events["sig_bkg_dnn_score"] = sig_bkg_dnn_score[:, -1]
-
+                params_quantile_transformer = self.params["quantile_transformer"][self.events.metadata["year"]]
+                transformer = WeightedQuantileTransformer(n_quantiles=params_quantile_transformer["n_quantiles"], output_distribution=params_quantile_transformer["output_distribution"])
+                transformer.load(params_quantile_transformer["file"])
+                self.events["sig_bkg_dnn_score_transformed"] = transformer.transform(self.events.sig_bkg_dnn_score)
             if self.run2:
                 sig_bkg_dnn_score = get_dnn_prediction(
                     model_session_SIG_BKG_DNN,
@@ -1047,6 +1051,10 @@ class HH4bCommonProcessor(BaseProcessorABC):
                 else:
                     # if array is 2 dim take the last column
                     self.events["sig_bkg_dnn_scoreRun2"] = sig_bkg_dnn_score[:, -1]
+                params_quantile_transformer = self.params["quantile_transformer"][self.events.metadata["year"]]
+                transformer = WeightedQuantileTransformer(n_quantiles=params_quantile_transformer["n_quantiles"], output_distribution=params_quantile_transformer["output_distribution"])
+                transformer.load(params_quantile_transformer["file"])
+                self.events["sig_bkg_dnn_score_transformedRun2"] = transformer.transform(self.events.sig_bkg_dnn_scoreRun2)
                 del model_session_SIG_BKG_DNN
                 del input_name_SIG_BKG_DNN
                 del output_name_SIG_BKG_DNN

@@ -1,4 +1,6 @@
 import os
+import cloudpickle
+import utils.quantile_transformer as quantile_transformer
 
 from configs.HH4b_common.config_files.__config_file__ import (
     config_options_dict,
@@ -25,8 +27,8 @@ from configs.HH4b_common.config_files.configurator_tools import (
     create_DNN_columns_list,
     define_categories,
     define_single_category,
-    # get_variables_dict,
     get_columns_list,
+    get_variables_dict,
 )
 from configs.HH4b_common.custom_weights import (
     bkg_morphing_dnn_weight,
@@ -53,6 +55,7 @@ parameters = defaults.merge_parameters_from_files(
     f"{localdir}/params/object_preselection.yaml",
     f"{localdir}/params/triggers.yaml",
     f"{localdir}/params/jets_calibration_withVariations.yaml",
+    f"{localdir}/../HH4b_common/params/quantile_transformer.yaml",
     update=True,
 )
 
@@ -61,13 +64,16 @@ if config_options_dict["save_chunk"]:
     config_options_dict["dump_columns_as_arrays_per_chunk"] = config_options_dict["save_chunk"]
 
 
-# Define the variables to save
-# variables_dict = get_variables_dict(
-#     CLASSIFICATION=CLASSIFICATION,
-#     VBF_VARIABLES=False,
-#     BKG_MORPHING=True if onnx_model_dict["BKG_MORPHING_DNN"] else False,
-# )
 variables_dict = {}
+# Define the variables to save
+variables_dict = get_variables_dict(
+    CLASSIFICATION=False,
+    VBF_VARIABLES=False,
+    BKG_MORPHING=False,  # bool(onnx_model_dict["bkg_morphing_dnn"]),
+    SCORE=bool(config_options_dict["sig_bkg_dnn"]),
+    RUN2=config_options_dict["run2"],
+    SPANET=bool(config_options_dict["spanet"]),
+)
 
 # Define the preselection to apply
 preselection = [
@@ -82,10 +88,10 @@ preselection = [
 sample_list = [
     # "DATA_JetMET_JMENano_C_skimmed",
     # "DATA_JetMET_JMENano_D_skimmed",
-    # "DATA_JetMET_JMENano_E_skimmed",
+    "DATA_JetMET_JMENano_E_skimmed",
     # "DATA_JetMET_JMENano_F_skimmed",
     # "DATA_JetMET_JMENano_G_skimmed",
-    "GluGlutoHHto4B_spanet",
+    "GluGlutoHHto4B_spanet_skimmed",
     # "GluGlutoHHto4B",
     # "DATA_JetMET_JMENano_2023_Cv1_skimmed",
     # "DATA_JetMET_JMENano_2023_Cv2_skimmed",
@@ -177,8 +183,10 @@ else:
 # Add special columns
 if config_options_dict["sig_bkg_dnn"] and config_options_dict["spanet"]:
     column_list += get_columns_list({"events": ["sig_bkg_dnn_score"]})
+    column_list += get_columns_list({"events": ["sig_bkg_dnn_score_transformed"]})
 if config_options_dict["sig_bkg_dnn"] and config_options_dict["run2"]:
     column_listRun2 += get_columns_list({"events": ["sig_bkg_dnn_scoreRun2"]})
+    column_listRun2 += get_columns_list({"events": ["sig_bkg_dnn_score_transformedRun2"]})
 if config_options_dict["spanet"] and not any(
     ["DATA" in sample for sample in sample_list]
 ):
@@ -262,6 +270,7 @@ cfg = Configurator(
         "jsons": [
             f"{localdir}/../HH4b_common/datasets/signal_ggF_HH4b_spanet_redirector.json",
             f"{localdir}/../HH4b_common/datasets/signal_ggF_HH4b.json",
+            f"{localdir}/../HH4b_common/datasets/GluGlutoHHto4B_spanet_skimmed.json",
             f"{localdir}/../HH4b_common/datasets/DATA_JetMET_skimmed.json",
             # f"{localdir}/../HH4b_common/datasets/QCD.json",
             # f"{localdir}/../HH4b_common/datasets/SPANet_classification.json",
@@ -289,8 +298,8 @@ cfg = Configurator(
     calibrators=default_calibrators_sequence,
     weights={
         "common": {
-            # "inclusive": ["genWeight", "lumi", "XS", "pileup",
-            "inclusive": [],
+            "inclusive": ["genWeight", "lumi", "XS", "pileup"],
+            # "inclusive": [],
             "bycategory": {
             },
         },
@@ -299,15 +308,16 @@ cfg = Configurator(
     variations={
         "weights": {
             "common": {
-                "inclusive": [],
+                "inclusive": ["genWeight", "lumi", "XS", "pileup"],
+                # "inclusive": [],
                 "bycategory": {},
             },
             "bysample": {},
         },
         "shape": {
             "common": {
-                # "inclusive": ["jet_calibration"],
-                "inclusive": [],
+                "inclusive": ["jet_calibration"],
+                # "inclusive": [],
                 },
             }
     },
@@ -317,7 +327,10 @@ cfg = Configurator(
             "inclusive": [],
             "bycategory": {},
         },
-        "bysample": bysample_bycategory_column_dict,
-        # "bysample": {},
+        # "bysample": bysample_bycategory_column_dict,
+        "bysample": {},
     },
 )
+
+
+cloudpickle.register_pickle_by_value(quantile_transformer)
