@@ -1,24 +1,23 @@
-import glob
 import json
 import logging
 import os
-import sys
 
 import numpy as np
-import pandas as pd
+import pyarrow.dataset as ds
 from coffea.util import load
 
 logging.basicConfig(format='%(asctime)s,%(msecs)03d %(name)s %(levelname)s %(message)s',
                     datefmt='%Y-%m-%d %H:%M:%S',
                     level=logging.DEBUG)
-logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
 logger = logging.getLogger()
 
 
-def get_columns_from_files(inputfiles, filter_lambda=None, sel_var="nominal", debug=False):
-    logger.debug(sel_var)
-    if debug:
-        logging.basicConfig(level=logging.DEBUG)
+def get_columns_from_files(inputfiles, filter_lambda=None, sel_var="nominal", debug=False, novars=False):
+    if not debug:
+        logger.setLevel(level=logging.INFO)
+    if novars:
+        return get_columns_from_files_novars(inputfiles, filter_lambda, debug)
+    logger.info(f"Loading variations: {sel_var}")
     cat_col = {}
     total_datasets_list = []
     # get the columns
@@ -26,8 +25,9 @@ def get_columns_from_files(inputfiles, filter_lambda=None, sel_var="nominal", de
         accumulator = load(inputfile)
         samples = list(accumulator["columns"].keys())
         if accumulator["columns"] == {}:
-            logger.debug("Empty columns, trying to read from parquet files")
+            logger.info("Empty columns, trying to read from parquet files")
             return get_columns_from_parquet(inputfiles, sel_var, filter_lambda, debug)
+            # return get_columns_from_parquet(inputfiles, filter_lambda, debug)
         if debug: logger.debug(f"inputfile {inputfile}")
         for sample in samples:
             if debug: logger.debug(f"sample {sample}")
@@ -130,7 +130,7 @@ def get_columns_from_parquet(input_files, sel_var="nominal", filter_lambda=None,
                 else:
                     variations = [sel_var]
 
-                single_var = True if len(variations)==1 else False
+                single_var = True if len(variations) == 1 else False
 
                 for variation in os.listdir(category_path):
                     if not sel_var.lower() == "all" and sel_var != variation:
@@ -146,43 +146,45 @@ def get_columns_from_parquet(input_files, sel_var="nominal", filter_lambda=None,
                     elif single_var:
                         coldict = cat_col[category]
 
-                    parquet_files = glob.glob(os.path.join(variation_path, "*.parquet"))
                     if debug:
                         logger.debug(f"  variation {variation}, files: {len(parquet_files)}")
 
-                    for pqfile in parquet_files:
-                        df = pd.read_parquet(pqfile)
+                    logger.info(f"Loading datasets in {variation_path}")
+                    parquet_files = ds.dataset(variation_path, format="parquet")
+                    table = parquet_files.to_table()
+                    df = table.to_pandas()
+                    logger.info(f"Loaded datasets in {variation_path}")
+                    logger.info(df)
+                    for i, column in enumerate(df.columns):
+                        # filter with lambda function
+                        if filter_lambda is not None:
+                            if not filter_lambda(column):
+                                if debug:
+                                    logger.debug(f"Skipping column {column} due to filter")
+                                continue
 
-                        for i, column in enumerate(df.columns):
-                            # filter with lambda function
-                            if filter_lambda is not None:
-                                if not filter_lambda(column):
-                                    if debug:
-                                        logger.debug(f"Skipping column {column} due to filter")
-                                    continue
+                        column_array = df[column].to_numpy()
 
-                            column_array = df[column].to_numpy()
+                        # normalize weights (if sum_genweights exists somewhere you may pass it separately)
+                        if column == "weight" and "sum_genweights" in df.columns:
+                            denom = df["sum_genweights"].iloc[0]
+                            logger.debug(denom)
+                            if denom != 0:
+                                column_array = column_array / denom
 
-                            # normalize weights (if sum_genweights exists somewhere you may pass it separately)
-                            if column == "weight" and "sum_genweights" in df.columns:
-                                denom = df["sum_genweights"].iloc[0]
-                                logger.debug(denom)
-                                if denom != 0:
-                                    column_array = column_array / denom
+                        if column not in coldict:
+                            coldict[column] = column_array
+                        else:
+                            coldict[column] = np.concatenate(
+                                (coldict[column], column_array)
+                            )
 
-                            if column not in coldict:
-                                coldict[column] = column_array
-                            else:
-                                coldict[column] = np.concatenate(
-                                    (coldict[column], column_array)
-                                )
-
-                            if i == 0 and debug:
-                                logger.debug(
-                                    f"column {column}",
-                                    column_array.shape,
-                                    coldict[column].shape,
-                                )
+                        if i == 0 and debug:
+                            logger.debug(
+                                f"column {column}",
+                                column_array.shape,
+                                coldict[column].shape,
+                            )
 
     return cat_col, total_datasets_list
 
@@ -203,3 +205,56 @@ def get_parquet_save_directory(input_parquet):
         logger.debug(f"Could not determine save directory (probably bad config.json): {e}")
         return None
     return col_dir, dataset
+
+
+def get_columns_from_files_novars(inputfiles, filter_lambda=None, debug=False):
+    cat_col = {}
+    total_datasets_list = []
+    # get the columns
+    for inputfile in inputfiles:
+        accumulator = load(inputfile)
+        samples = list(accumulator["columns"].keys())
+        if debug: print(f"inputfile {inputfile}")
+        for sample in samples:
+            if debug: print(f"sample {sample}")
+            datasets = list(accumulator["columns"][sample].keys())
+            for dataset in datasets:
+                if dataset not in total_datasets_list:
+                    total_datasets_list.append(dataset)
+                if debug: print(f"dataset {dataset}")
+                categories = list(accumulator["columns"][sample][dataset].keys())
+                for category in categories:
+                    if debug: print(f"category {category}")
+                    if category not in cat_col:
+                        cat_col[category] = {}
+                    columns = list(
+                        accumulator["columns"][sample][dataset][category].keys()
+                    )
+                    for i, column in enumerate(columns):
+                        # filter with lamda function
+                        if filter_lambda is not None:
+                            if not filter_lambda(column):
+                                if debug: print(f"Skipping column {column} due to filter")
+                                continue
+                        column_array = accumulator["columns"][sample][dataset][
+                            category
+                        ][column].value
+
+                        if column == "weight" and dataset in accumulator["sum_genweights"]:
+                            column_array = column_array / accumulator["sum_genweights"][dataset]
+
+                        if column not in cat_col[category]:
+                            cat_col[category][column] = column_array
+                        else:
+                            cat_col[category][column] = np.concatenate(
+                                (cat_col[category][column], column_array)
+                            )
+
+                        if i == 0:
+                            if debug: print(
+                                f"column {column}",
+                                column_array.shape,
+                                cat_col[category][column].shape,
+                            )
+
+    return cat_col, total_datasets_list
