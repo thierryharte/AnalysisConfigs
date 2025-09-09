@@ -57,8 +57,8 @@ parameters = defaults.merge_parameters_from_files(
 
 
 if config_options_dict["save_chunk"]:
+    workflow_options["dump_columns_as_arrays_per_chunk"] = config_options_dict["save_chunk"]
     # workflow_options["dump_columns_as_arrays_per_chunk"] = "root://t3dcachedb03.psi.ch:1094//pnfs/psi.ch/cms/trivcat/store/user/tharte/HH4b/training_samples/GluGlutoHHto4B_spanet_loose_03_17"
-    pass
 
 ## Define the variables to save
 # variables_dict = get_variables_dict(
