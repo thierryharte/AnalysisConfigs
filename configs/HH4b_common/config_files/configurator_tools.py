@@ -5,6 +5,8 @@ from pocket_coffea.lib.columns_manager import ColOut
 from pocket_coffea.parameters.histograms import jet_hists, count_hist, parton_hists
 from pocket_coffea.lib.hist_manager import HistConf, Axis
 from pocket_coffea.parameters.cuts import passthrough
+from utils.quantile_transformer import WeightedQuantileTransformer
+import numpy as np
 
 from utils.variables_helpers import jet_hists_dict, create_HistConf
 from utils.variables_helpers import jet_hists_dict, create_HistConf
@@ -987,8 +989,9 @@ variable_dict_bkg_morphing = {
     ),
 }
 
-variables_dict_sig_bkg_score = {
-    "sig_bkg_dnn_score" : HistConf(
+def get_variables_dict_sig_bkg_score(bins_spanet, bins_run2):
+    return {
+    "sig_bkg_dnn_score": HistConf(
         [
             Axis(
                 coll="events",
@@ -1019,7 +1022,8 @@ variables_dict_sig_bkg_score = {
             Axis(
                 coll="events",
                 field="sig_bkg_dnn_score_transformed",
-                bins=20,
+                bins=bins_spanet,
+                type="variable",
                 start=0,
                 stop=1,
                 label="Signal vs Background DNN score transformed",
@@ -1032,7 +1036,8 @@ variables_dict_sig_bkg_score = {
             Axis(
                 coll="events",
                 field="sig_bkg_dnn_score_transformedRun2",
-                bins=20,
+                bins=bins_run2,
+                type="variable",
                 start=0,
                 stop=1,
                 label=r"Signal vs Background DNN score D$_{HH}$-Method transformed",
@@ -1045,6 +1050,7 @@ variables_dict_sig_bkg_score = {
 
 
 def get_variables_dict(
+    parameters,
     JETS=False,
     CLASSIFICATION=False,
     RANDOM_PT=False,
@@ -1067,7 +1073,17 @@ def get_variables_dict(
     if BKG_MORPHING:
         variables_dict.update(variable_dict_bkg_morphing)
     if SCORE:
-        variables_dict.update(variables_dict_sig_bkg_score)
+        if "quantile_transformer" in parameters.keys():
+            params_qt = parameters["quantile_transformer"]['2022_postEE']
+            transformer = WeightedQuantileTransformer(n_quantiles=params_qt["n_quantiles"], output_distribution=params_qt["output_distribution"])
+            transformer.load(params_qt["file_spanet"])
+            bins_spanet = transformer.transform(np.linspace(0, 1, 20))
+            transformer.load(params_qt["file_run2"])
+            bins_run2 = transformer.transform(np.linspace(0, 1, 20))
+        else:
+            bins_spanet = np.linspace(0, 1, 20)
+            bins_run2 = np.linspace(0, 1, 20)
+            variables_dict.update(get_variables_dict_sig_bkg_score(bins_spanet,bins_run2))
     # Sort of lazy implementation. If neither SPANet nor RUN2 are active, no variables are saved.
     # If not Run2, kick out all variables with Run2 in name
     # If not SPANet, kick out all variables without Run2 in name
