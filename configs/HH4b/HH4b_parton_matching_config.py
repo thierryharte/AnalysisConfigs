@@ -1,6 +1,7 @@
 import os
 import cloudpickle
 import utils.quantile_transformer as quantile_transformer
+from utils.quantile_transformer import WeightedQuantileTransformer
 
 from configs.HH4b_common.config_files.__config_file__ import (
     config_options_dict,
@@ -64,9 +65,11 @@ if config_options_dict["save_chunk"]:
     config_options_dict["dump_columns_as_arrays_per_chunk"] = config_options_dict["save_chunk"]
 
 
+# score transform still in testing. So far hardcoded to be 2022_postEE...
 variables_dict = {}
 # Define the variables to save
 variables_dict = get_variables_dict(
+    parameters,
     CLASSIFICATION=False,
     VBF_VARIABLES=False,
     BKG_MORPHING=False,  # bool(onnx_model_dict["bkg_morphing_dnn"]),
@@ -89,9 +92,10 @@ sample_list = [
     # "DATA_JetMET_JMENano_C_skimmed",
     # "DATA_JetMET_JMENano_D_skimmed",
     "DATA_JetMET_JMENano_E_skimmed",
-    # "DATA_JetMET_JMENano_F_skimmed",
-    # "DATA_JetMET_JMENano_G_skimmed",
-    "GluGlutoHHto4B_spanet_skimmed",
+    "DATA_JetMET_JMENano_F_skimmed",
+    "DATA_JetMET_JMENano_G_skimmed",
+    # "GluGlutoHHto4B_spanet_skimmed",
+    "GluGlutoHHto4B_spanet_skimmed_SM",
     # "GluGlutoHHto4B",
     # "DATA_JetMET_JMENano_2023_Cv1_skimmed",
     # "DATA_JetMET_JMENano_2023_Cv2_skimmed",
@@ -271,6 +275,7 @@ cfg = Configurator(
             f"{localdir}/../HH4b_common/datasets/signal_ggF_HH4b_spanet_redirector.json",
             f"{localdir}/../HH4b_common/datasets/signal_ggF_HH4b.json",
             f"{localdir}/../HH4b_common/datasets/GluGlutoHHto4B_spanet_skimmed.json",
+            f"{localdir}/../HH4b_common/datasets/GluGlutoHHto4B_spanet_skimmed_SM.json",
             f"{localdir}/../HH4b_common/datasets/DATA_JetMET_skimmed.json",
             # f"{localdir}/../HH4b_common/datasets/QCD.json",
             # f"{localdir}/../HH4b_common/datasets/SPANet_classification.json",

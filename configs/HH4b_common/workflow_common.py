@@ -1033,7 +1033,7 @@ class HH4bCommonProcessor(BaseProcessorABC):
                     self.events["sig_bkg_dnn_score"] = sig_bkg_dnn_score[:, -1]
                 params_quantile_transformer = self.params["quantile_transformer"][self.events.metadata["year"]]
                 transformer = WeightedQuantileTransformer(n_quantiles=params_quantile_transformer["n_quantiles"], output_distribution=params_quantile_transformer["output_distribution"])
-                transformer.load(params_quantile_transformer["file"])
+                transformer.load(params_quantile_transformer["file_spanet"])
                 self.events["sig_bkg_dnn_score_transformed"] = transformer.transform(self.events.sig_bkg_dnn_score)
             if self.run2:
                 sig_bkg_dnn_score = get_dnn_prediction(
@@ -1053,7 +1053,7 @@ class HH4bCommonProcessor(BaseProcessorABC):
                     self.events["sig_bkg_dnn_scoreRun2"] = sig_bkg_dnn_score[:, -1]
                 params_quantile_transformer = self.params["quantile_transformer"][self.events.metadata["year"]]
                 transformer = WeightedQuantileTransformer(n_quantiles=params_quantile_transformer["n_quantiles"], output_distribution=params_quantile_transformer["output_distribution"])
-                transformer.load(params_quantile_transformer["file"])
+                transformer.load(params_quantile_transformer["file_run2"])
                 self.events["sig_bkg_dnn_score_transformedRun2"] = transformer.transform(self.events.sig_bkg_dnn_scoreRun2)
                 del model_session_SIG_BKG_DNN
                 del input_name_SIG_BKG_DNN
