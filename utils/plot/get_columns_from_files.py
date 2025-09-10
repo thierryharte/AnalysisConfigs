@@ -12,7 +12,7 @@ logging.basicConfig(format='%(asctime)s,%(msecs)03d %(name)s %(levelname)s %(mes
 logger = logging.getLogger()
 
 
-def get_columns_from_files(inputfiles, filter_lambda=None, sel_var="nominal", debug=False, novars=False):
+def get_columns_from_files(inputfiles, sel_var="nominal", filter_lambda=None, debug=False, novars=False):
     if not debug:
         logger.setLevel(level=logging.INFO)
     if novars:
