@@ -82,6 +82,7 @@ class HEPPlotter:
 
         # legend
         self.legend = True
+        self.split_legend = True
         self.legend_loc = "best"
         self.legend_ratio = False
         self.legend_ratio_loc = "best"
@@ -173,11 +174,13 @@ class HEPPlotter:
         self._annotations.append(kwargs)
         return self
 
-    def add_chi_square(self, **kwargs):
+    def add_chi_square(self, pred_unc=False, **kwargs):
         """Add chi-square text to the plot (only for 1D with ratio).
+        pred_unc: if True, include the prediction uncertainty in the chi-square calculation
         kwargs: passed directly to ax.text()
         """
         self.plot_chi_square = True
+        self._chi_square_add_prediction_uncertainty=pred_unc
         self._chi_square_style = kwargs
         return self
 
@@ -242,9 +245,22 @@ class HEPPlotter:
         #     nan_policy="omit",
         # )
 
+        # remove
+
         chi2_value = np.sum(
-            (hist_1d.values() - ref_hist.values()) ** 2
-            / (np.where(ref_hist.values() > 0, ref_hist.values(), 1))
+            np.where(
+                (ref_hist.values() > 0) & (hist_1d.values() > 0),
+                (hist_1d.values() - ref_hist.values()) ** 2
+                / (
+                    ref_hist.variances()
+                    + (
+                        hist_1d.variances()
+                        if self._chi_square_add_prediction_uncertainty
+                        else 0
+                    )
+                ),
+                0,
+            )
         )
         ndof = len(hist_1d.values()) - 1
 
@@ -625,7 +641,7 @@ class HEPPlotter:
     def _set_legend(self, ax, pos):
         """Set the legend on the axes."""
         handles, labels = ax.get_legend_handles_labels()
-        if len(handles) > 5:
+        if len(handles) > 5 and self.split_legend:
             ax.legend(loc=pos, ncol=2, fontsize="small")
         else:
             ax.legend(loc=pos)
@@ -663,7 +679,7 @@ class HEPPlotter:
         # ax.yaxis.set_major_formatter(mtick.ScalarFormatter())
         # ax.ticklabel_format(style="sci", axis="y", scilimits=(0, 0))
 
-        if self.set_ylim and self.plot_type != "2d":
+        if self.set_ylim and self.plot_type == "1d":
             ax.set_ylim(
                 top=(
                     1.7 * ax.get_ylim()[1]
