@@ -53,15 +53,18 @@ class HEPPlotter:
     def __init__(self, style="CMS", debug=False):
         # core settings
         self.style = style
-        hep.style.use(style)
         self.debug = debug
-
+        hep.style.use(style)
+        
+        # plot config
         self.figsize = None
         self.lumitext = "(13.6 TeV)"
         self.data_formats = ["png", "pdf", "svg"]
 
-        # inputs
+        # output
         self.output_base = None
+        
+        # inputs
         self.series_dict = None
         self.plot_type = "1d"  # "1d", "2d", "graph"
 
@@ -71,28 +74,36 @@ class HEPPlotter:
         self.cbar_label = "Events"
         self.ratio_label = "Ratio"
 
-        # log scales
-        self.y_log = False
-        self.x_log = False
-        self.y_log_ratio = False
-        self.cbar_log = False
-
-        self.reference_to_den = True
-        self.grid = True
-
-        # legend
-        self.legend = True
-        self.split_legend = True
-        self.legend_loc = "best"
-        self.legend_ratio = False
-        self.legend_ratio_loc = "best"
-
-        self.set_ylim = True
+        # extra kwargs for plotting functions
         self.extra_kwargs = {}
-
-        self.plot_chi_square = None
-
+        
+        # --- ATTRIBUTES THAT CAN BE SET WITH set_options ---
+        self._configurable_options = {
+            ## log scales
+            "y_log": False,
+            "x_log": False,
+            "y_log_ratio": False,
+            "cbar_log": False,
+            ## legend
+            "legend": True,
+            "split_legend": True,
+            "legend_loc": "best",
+            "legend_ratio": False,
+            "legend_ratio_loc": "best",
+            ## y lim
+            "set_ylim": True,
+            "ylim_factor": 1.7,
+            ## other
+            "reference_to_den": True,
+            "grid": True,
+        }
+        
+        # expose as attributes too (so they're accessible normally)
+        for key, val in self._configurable_options.items():
+            setattr(self, key, val)
+        
         # internal
+        self._plot_chi_square = None
         self._ratio_hists = {}
         self._annotations = []
         self._lines = []
@@ -155,11 +166,13 @@ class HEPPlotter:
         return self
 
     def set_options(self, **kwargs):
-        """Generic options setter (y_log, legend, grid...)."""
+        """Generic options setter for configurable attributes."""
         for key, value in kwargs.items():
-            if hasattr(self, key):
+            if key in self._configurable_options:
+                self._configurable_options[key] = value
                 setattr(self, key, value)
-
+            else:
+                raise ValueError(f"Unknown option '{key}'")
         return self
 
     def add_ratio_hists(self, ratio_hists):
@@ -179,7 +192,7 @@ class HEPPlotter:
         pred_unc: if True, include the prediction uncertainty in the chi-square calculation
         kwargs: passed directly to ax.text()
         """
-        self.plot_chi_square = True
+        self._plot_chi_square = True
         self._chi_square_add_prediction_uncertainty=pred_unc
         self._chi_square_style = kwargs
         return self
@@ -406,7 +419,7 @@ class HEPPlotter:
                 if isinstance(style[key], list):
                     style[key] = style[key][-1]
 
-            if self.plot_chi_square and ratio_plot and not is_ref:
+            if self._plot_chi_square and ratio_plot and not is_ref:
                 self._apply_chi_square(ax, hist_1d, ref_hist, index, style)
 
             # ratio
@@ -682,9 +695,9 @@ class HEPPlotter:
         if self.set_ylim and self.plot_type == "1d":
             ax.set_ylim(
                 top=(
-                    1.7 * ax.get_ylim()[1]
+                    self.ylim_factor * ax.get_ylim()[1]
                     if not self.y_log
-                    else ax.get_ylim()[1] ** (1.7)
+                    else ax.get_ylim()[1] ** (self.ylim_factor)
                 ),
                 bottom=(0 if not self.y_log else 1e-1),
             )
