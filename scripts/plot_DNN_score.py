@@ -322,7 +322,7 @@ def plot_single_var_from_columns(
         histo.fill(col_den, weight=weights_den)
 
 
-       # if i == 0:
+       # if i == 0: 
         hist_1d_dict[cat_plot_name] = {
             "data": histo,
             "style": {
