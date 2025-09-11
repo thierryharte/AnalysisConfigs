@@ -27,7 +27,7 @@ if not args.output:
 
 if args.test:
     args.workers = 1
-    args.output = "test_DNN_score"
+    # args.output = "test_DNN_score"
 
 NUMBER_OF_BINS = 20
 PAD_VALUE = -999
@@ -236,7 +236,7 @@ def plot_single_var_from_columns(
                 .replace("p", ".")
             )
             namesuffix = r" ($\kappa_\lambda$=" + kl + ")"
-            mc_signal_region = plot_regions_names(cat, namesuffix)
+            # mc_signal_region = plot_regions_names(cat, namesuffix)
             mc_signal = cat
             break
     if mc_signal == "":
@@ -297,11 +297,11 @@ def plot_single_var_from_columns(
                 transformer.save(os.path.join(dir_cat, f"quantiles_regressed_{var_plot_name}_{savesuffix}.pkl".replace("Run2", "_DHH")))
 
                 # For debugging to see, if transformation is fine.
-                print("Saving transformed plot")
-                col_den_transformed = transformer.transform(col_dict[mc_signal])
-                plt.hist(col_den_transformed, weights=weight_dict[mc_signal], bins=20, label="transformed")
-                plt.hist(col_den_transformed, bins=20, label="transformed, no weights")
-                plt.savefig(f"./test_transforming_{var_plot_name}_{savesuffix}.png")
+                # print("Saving transformed plot")
+                # col_den_transformed = transformer.transform(col_dict[mc_signal])
+                # plt.hist(col_den_transformed, weights=weight_dict[mc_signal], bins=20, label="transformed")
+                # plt.hist(col_den_transformed, bins=20, label="transformed, no weights")
+                # plt.savefig(f"./test_transforming_{var_plot_name}_{savesuffix}.png")
 
         cat_plot_name = plot_regions_names(cat, namesuffix).replace("Run2", "_DHH")
         print(cat_plot_name)
@@ -322,19 +322,17 @@ def plot_single_var_from_columns(
         histo.fill(col_den, weight=weights_den)
 
 
-       # if i == 0: 
-        hist_1d_dict[cat_plot_name] = {
-            "data": histo,
-            "style": {
-                "is_reference": (i == 0),
-                "histtype": "errorbar" if i == 0 else "step",
-                "color": color_list[i][0],
-            },
-        }
+        if i == 0: 
+            hist_1d_dict[cat_plot_name] = {
+                "data": histo,
+                "style": {
+                    "is_reference": (i == 0),
+                    "histtype": "errorbar" if i == 0 else "step",
+                    "color": color_list[i][0],
+                },
+            }
 
-        # else:
-        if i>0:
-            # if not style_dict:
+        else:
             if "Sig+Bkg" not in hist_1d_dict:
 
                 hist_1d_dict["Sig+Bkg"] = {
@@ -429,16 +427,16 @@ def plot_single_var_from_columns(
     p.run()
     
     # save the histogram
-    np.savez(
-        os.path.join(dir_cat, f"hist_columns_{var_plot_name}_{savesuffix}.npz".replace("Run2", "_DHH")),
-        counts=np.append(hist_1d_dict[mc_signal_region]["data"].values(), hist_1d_dict[mc_signal_region]["data"].values()[-1]),
-        count_err=np.sqrt(hist_1d_dict[mc_signal_region]["data"].variances()),
-        bin_edges=bin_edges,
-        plot=var_plot_name,
-        num_events=len(col_den),
-        sob=sob_list,
-        sob_err=sob_err_list,
-    )
+    # np.savez(
+    #     os.path.join(dir_cat, f"hist_columns_{var_plot_name}_{savesuffix}.npz".replace("Run2", "_DHH")),
+    #     counts=np.append(hist_1d_dict[mc_signal_region]["data"].values(), hist_1d_dict[mc_signal_region]["data"].values()[-1]),
+    #     count_err=np.sqrt(hist_1d_dict[mc_signal_region]["data"].variances()),
+    #     bin_edges=bin_edges,
+    #     plot=var_plot_name,
+    #     num_events=len(col_den),
+    #     sob=sob_list,
+    #     sob_err=sob_err_list,
+    # )
 
 def main(cat_cols, lumi, era_string):
 
