@@ -92,7 +92,8 @@ class HEPPlotter:
             "legend_ratio_loc": "best",
             ## y lim
             "set_ylim": True,
-            "ylim_factor": 1.7,
+            "ylim_top_factor": 1.7,
+            "ylim_bottom_factor": 1e-2,
             ## other
             "reference_to_den": True,
             "grid": True,
@@ -692,14 +693,16 @@ class HEPPlotter:
         # ax.yaxis.set_major_formatter(mtick.ScalarFormatter())
         # ax.ticklabel_format(style="sci", axis="y", scilimits=(0, 0))
 
-        if self.set_ylim and self.plot_type == "1d":
+        if self.set_ylim and self.plot_type != "2d":
             ax.set_ylim(
                 top=(
-                    self.ylim_factor * ax.get_ylim()[1]
+                    self.ylim_top_factor * ax.get_ylim()[1]
                     if not self.y_log
-                    else ax.get_ylim()[1] ** (self.ylim_factor)
+                    else ax.get_ylim()[1] ** (self.ylim_top_factor)
                 ),
-                bottom=(0 if not self.y_log else 1e-1),
+                bottom=(
+                    self.ylim_bottom_factor * ax.get_ylim()[0]
+                ),
             )
 
         if self.plot_type == "2d":
