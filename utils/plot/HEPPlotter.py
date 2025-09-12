@@ -64,6 +64,9 @@ class HEPPlotter:
         # output
         self.output_base = None
         
+        # show plot interactively (for debugging)
+        self.show_plot = False
+        
         # inputs
         self.series_dict = None
         self.plot_type = "1d"  # "1d", "2d", "graph"
@@ -174,6 +177,11 @@ class HEPPlotter:
                 setattr(self, key, value)
             else:
                 raise ValueError(f"Unknown option '{key}'")
+        return self
+
+    def show(self):
+        """Display the plot interactively (for debugging)."""
+        self.show_plot = True
         return self
 
     def add_ratio_hists(self, ratio_hists):
@@ -524,17 +532,30 @@ class HEPPlotter:
                 if style.get("appear_in_legend", True)
                 else None
             )
-            ax.errorbar(
-                y=y_values,
-                x=x_values,
-                yerr=y_errors,
-                xerr=x_errors,
-                fmt=style.get("fmt", "o"),
-                label=legend_name,
-                color=style.get("color"),
-                markersize=style.get("markersize"),
-                **self.extra_kwargs,
-            )
+            if np.any(x_errors>0) or np.any(y_errors>0):
+                # plot with error bars
+                ax.errorbar(
+                    x=x_values,
+                    y=y_values,
+                    xerr=x_errors,
+                    yerr=y_errors,
+                    fmt=style.get("fmt", "o"),
+                    label=legend_name,
+                    color=style.get("color"),
+                    markersize=style.get("markersize"),
+                    **self.extra_kwargs,
+                )
+            else:
+                # plot a curve or a graph without errors
+                ax.plot(
+                    x_values,
+                    y_values,
+                    style.get("fmt", "o"),
+                    label=legend_name,
+                    color=style.get("color"),
+                    markersize=style.get("markersize"),
+                    **self.extra_kwargs,
+                )
         self._finalize(fig, ax)
 
     # ----------------------------
@@ -715,7 +736,10 @@ class HEPPlotter:
 
         self._apply_cms_labels(ax)
         self._save(fig)
-        self._close_fig(fig)
+        if self.show_plot:
+            plt.show()
+        else:
+            self._close_fig(fig)
 
     # ----------------------------
     # PLOTTING DISPATCH
