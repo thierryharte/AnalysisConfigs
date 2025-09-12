@@ -19,11 +19,11 @@ from utils.plot.HEPPlotter import HEPPlotter
 
 
 if not args.output:
-    args.output = "plots_2bVS4b"
-
-if args.test:
-    args.output = "test"
-
+    if not args.test:
+        args.output = "plots_2bVS4b"
+    else:
+        args.output = "test_2bVS4b"
+        
 NUMBER_OF_BINS = 20
 PAD_VALUE = -999
 BLIND_VALUE = 0.9

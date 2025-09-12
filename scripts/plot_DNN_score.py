@@ -22,12 +22,10 @@ if args.save_quantiles:
     from utils.quantile_transformer import WeightedQuantileTransformer
 
 if not args.output:
-    args.output = "plots_DNN_data_and_mc"
-
-
-if args.test:
-    args.workers = 1
-    # args.output = "test_DNN_score"
+    if not args.test:
+        args.output = "plots_DNN_data_and_mc"
+    else:
+        args.output = "test_DNN_data_and_mc"
 
 NUMBER_OF_BINS = 20
 PAD_VALUE = -999
