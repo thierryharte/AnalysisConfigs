@@ -78,13 +78,6 @@ parser.add_argument(
     default="sig_bkg_dnn_input_variables",
 )
 parser.add_argument(
-    "-q",
-    "--save-quantiles",
-    action="store_true",
-    help="To save the pickle of transformed quantiles for signal plots",
-    default=False,
-)
-parser.add_argument(
     "--novars",
     action="store_true",
     help="If true, old save format without saved variations is expected",

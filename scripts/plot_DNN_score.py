@@ -18,9 +18,6 @@ from utils.plot.args_plot import args
 
 from utils.plot.HEPPlotter import HEPPlotter
 
-if args.save_quantiles:
-    from utils.quantile_transformer import WeightedQuantileTransformer
-
 if not args.output:
     if not args.test:
         args.output = "plots_DNN_data_and_mc"
@@ -288,18 +285,7 @@ def plot_single_var_from_columns(
                 .replace("p", ".")
             )
             namesuffix = r" ($\kappa_\lambda$=" + kl + ")"
-            savesuffix = f"kl_{kl}"
-            if args.save_quantiles and kl == "1.00" and "UNIFORM" in var:
-                transformer = WeightedQuantileTransformer(output_distribution="uniform")
-                transformer.fit(col_dict[mc_signal], sample_weight=weight_dict[mc_signal])
-                transformer.save(os.path.join(dir_cat, f"quantiles_regressed_{var_plot_name}_{savesuffix}.pkl".replace("Run2", "_DHH")))
-
-                # For debugging to see, if transformation is fine.
-                # print("Saving transformed plot")
-                # col_den_transformed = transformer.transform(col_dict[mc_signal])
-                # plt.hist(col_den_transformed, weights=weight_dict[mc_signal], bins=20, label="transformed")
-                # plt.hist(col_den_transformed, bins=20, label="transformed, no weights")
-                # plt.savefig(f"./test_transforming_{var_plot_name}_{savesuffix}.png")
+            # savesuffix = f"kl_{kl}"
 
         cat_plot_name = plot_regions_names(cat, namesuffix).replace("Run2", "_DHH")
         print(cat_plot_name)
