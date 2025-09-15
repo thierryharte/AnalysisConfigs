@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 import matplotlib
-import hist
+from hist import Hist
 import matplotlib.ticker as mtick
 from scipy.stats.distributions import chi2
 
@@ -55,7 +55,7 @@ class HEPPlotter:
         self.style = style
         self.debug = debug
         hep.style.use(style)
-        
+
         # plot config
         self.figsize = None
         self.lumitext = "(13.6 TeV)"
@@ -63,10 +63,10 @@ class HEPPlotter:
 
         # output
         self.output_base = None
-        
+
         # show plot interactively (for debugging)
         self.show_plot = False
-        
+
         # inputs
         self.series_dict = None
         self.plot_type = "1d"  # "1d", "2d", "graph"
@@ -79,7 +79,7 @@ class HEPPlotter:
 
         # extra kwargs for plotting functions
         self.extra_kwargs = {}
-        
+
         # --- ATTRIBUTES THAT CAN BE SET WITH set_options ---
         self._configurable_options = {
             ## log scales
@@ -101,16 +101,18 @@ class HEPPlotter:
             "reference_to_den": True,
             "grid": True,
         }
-        
+
         # expose as attributes too (so they're accessible normally)
         for key, val in self._configurable_options.items():
             setattr(self, key, val)
-        
+
         # internal
         self._plot_chi_square = None
         self._ratio_hists = {}
         self._annotations = []
         self._lines = []
+
+        self._change_histogram_binning = False
 
     # ----------------------------
     # CONFIGURATION METHODS
@@ -202,7 +204,7 @@ class HEPPlotter:
         kwargs: passed directly to ax.text()
         """
         self._plot_chi_square = True
-        self._chi_square_add_prediction_uncertainty=pred_unc
+        self._chi_square_add_prediction_uncertainty = pred_unc
         self._chi_square_style = kwargs
         return self
 
@@ -251,39 +253,20 @@ class HEPPlotter:
     def _apply_chi_square(self, ax, hist_1d, ref_hist, index, style):
         """Compute and add chi-square text to the plot."""
 
-        # if bin is empty in one of the two histograms, set it to nan
-        # hist_1d = hist_1d.copy()
-        # ref_hist = ref_hist.copy()
-        # for i in range(len(hist_1d.values())):
-        #     if hist_1d.values()[i] == 0 or ref_hist.values()[i] == 0:
-        #         hist_1d.values()[i] = np.nan
-        #         ref_hist.values()[i] = np.nan
-
-        # # compute the chi square between the two histograms (divide by the error on data)
-        # chi2_value, pvalue = chisquare(
-        #     f_obs=hist_1d.values(),
-        #     f_exp=ref_hist.values(),
-        #     sum_check=False,
-        #     nan_policy="omit",
-        # )
-
-        # remove
+        num = (hist_1d.values() - ref_hist.values()) ** 2
+        den = ref_hist.variances() + (
+            hist_1d.variances() if self._chi_square_add_prediction_uncertainty else 0
+        )
 
         chi2_value = np.sum(
-            np.where(
-                (ref_hist.values() > 0) & (hist_1d.values() > 0),
-                (hist_1d.values() - ref_hist.values()) ** 2
-                / (
-                    ref_hist.variances()
-                    + (
-                        hist_1d.variances()
-                        if self._chi_square_add_prediction_uncertainty
-                        else 0
-                    )
-                ),
-                0,
+            np.divide(
+                num,
+                den,
+                out=np.zeros_like(num, dtype=float),
+                where=den > 0,
             )
         )
+
         ndof = len(hist_1d.values()) - 1
 
         chi2_norm = chi2_value / (ndof if ndof > 0 else 1)
@@ -378,10 +361,6 @@ class HEPPlotter:
         ratio_plot, ref_name = self._validate_inputs(self.series_dict)
         fig, ax, ax_ratio = self._create_figure(ratio_plot)
 
-        hist_1d_stack = []
-        kwargs_stack = {}
-        legend_name_stack = []
-
         ref_hist = self.series_dict[ref_name]["data"] if ref_name else None
 
         for index, (name, props) in enumerate(self.series_dict.items()):
@@ -416,14 +395,28 @@ class HEPPlotter:
 
             self._color_handler(histtype, style, kwargs)
 
+            # rebin for plotting if requested
+            bin_edges_plotting = style.get("bin_edges_plotting", None)
+            if bin_edges_plotting is not None:
+                hist_1d = self._set_plotting_binning(hist_1d, bin_edges_plotting)
+                # rebin also the reference histogram if not already done
+                if index == 0:
+                    ref_hist = self._set_plotting_binning(ref_hist, bin_edges_plotting)
+
             # draw histogram
             self._plot_histogram(
-                ax, legend_name, hist_1d, style.get("plot_errors", True), **kwargs
+                ax,
+                legend_name,
+                hist_1d,
+                style.get("plot_errors", True),
+                **kwargs,
             )
 
+            # if stack, sum the histograms
             if isinstance(hist_1d, list):
                 hist_1d = sum(hist_1d)
-            # keep the style of the last histogram in the list
+
+            # if stack, keep the style of the last histogram in the list
             for key in style:
                 if isinstance(style[key], list):
                     style[key] = style[key][-1]
@@ -479,7 +472,7 @@ class HEPPlotter:
         """Plot 2D histograms."""
         fig, ax, _ = self._create_figure()
         for name, props in self.series_dict.items():
-            if not isinstance(props["data"], hist.Hist) or props["data"].ndim != 2:
+            if not isinstance(props["data"], Hist) or props["data"].ndim != 2:
                 raise ValueError(
                     f"Expected 2D hist.Hist for {name}, got {type(props['data'])} with ndim={props['data'].ndim}"
                 )
@@ -532,7 +525,7 @@ class HEPPlotter:
                 if style.get("appear_in_legend", True)
                 else None
             )
-            if np.any(x_errors>0) or np.any(y_errors>0):
+            if np.any(x_errors > 0) or np.any(y_errors > 0):
                 # plot with error bars
                 ax.errorbar(
                     x=x_values,
@@ -568,16 +561,14 @@ class HEPPlotter:
         ref_name = None
         for name, props in series_dict.items():
             hist_1d = props["data"]
-            if not isinstance(hist_1d, hist.Hist) and not isinstance(
-                hist_1d[0], hist.Hist
-            ):
+            if not isinstance(hist_1d, Hist) and not isinstance(hist_1d[0], Hist):
                 raise ValueError(f"Expected hist.Hist for {name}, got {type(hist_1d)}")
             if props.get("style", {}).get("is_reference", False):
                 if ratio_plot:
                     raise ValueError("Multiple reference histograms found.")
                 ratio_plot = True
                 ref_name = name
-            if isinstance(hist_1d[0], hist.Hist):
+            if isinstance(hist_1d[0], Hist):
                 style = props.get("style", {})
                 # check that the lists of histograms have the same dimension
                 lenght_hists = len(hist_1d)
@@ -606,8 +597,61 @@ class HEPPlotter:
             fig, ax = plt.subplots(figsize=self.figsize)
             return fig, ax, None
 
+    def _check_bin_consistency(self, hist_1d, bin_edges_plotting):
+        """Check that the provided bin edges for plotting are consistent with the histogram."""
+        if bin_edges_plotting is not None:
+            if isinstance(hist_1d, list):
+                for i in range(len(hist_1d)):
+                    self._check_bin_consistency(hist_1d[i], bin_edges_plotting[i])
+
+                return
+
+            hist_bins = hist_1d.axes[0].edges
+            if not np.all(np.diff(bin_edges_plotting) > 0):
+                raise ValueError(
+                    "Provided bin_edges_plotting must be strictly increasing"
+                )
+            # check that the provided bin edges have the same length
+            if len(bin_edges_plotting) != len(hist_bins):
+                raise ValueError(
+                    f"Provided bin_edges_plotting {bin_edges_plotting} must have the same number of edges as histogram bins {hist_bins}"
+                )
+            self._change_histogram_binning = True
+
+    def _set_plotting_binning(self, hist_1d, bin_edges_plotting):
+        self._check_bin_consistency(hist_1d, bin_edges_plotting)
+        if not self._change_histogram_binning:
+            return hist_1d
+
+        # project histogram values into new bins (for plotting only)
+        if isinstance(hist_1d, list):
+            histplots = []
+            for i in range(len(hist_1d)):
+                histplots.append(
+                    self._set_plotting_binning(hist_1d[i], bin_edges_plotting[i])
+                )
+            return histplots
+
+        counts = hist_1d.values()
+
+        # replace only for plotting
+        histplot = Hist.new.Var(
+            bin_edges_plotting, name=hist_1d.axes[0].name, flow=False
+        ).Weight()
+        bin_edges_plotting_centers = (
+            bin_edges_plotting[1:] + bin_edges_plotting[:-1]
+        ) / 2
+        histplot.fill(bin_edges_plotting_centers, weight=counts)
+        # handle variances properly,
+        histplot.variances()[:] = hist_1d.variances()
+
+        return histplot
+
     def _plot_histogram(self, ax, name, hist_1d, plot_errors, **kwargs):
         """Plot a single 1D histogram on the given axes."""
+
+        # The errorbars are computed as sqrt(w2) taking
+        # the weights from hist.variances() without the w2 argument
         hep.histplot(
             hist_1d,
             w2method="sqrt" if plot_errors else None,
@@ -676,6 +720,9 @@ class HEPPlotter:
     def _set_legend(self, ax, pos):
         """Set the legend on the axes."""
         handles, labels = ax.get_legend_handles_labels()
+        if not handles:
+            return
+
         if len(handles) > 5 and self.split_legend:
             ax.legend(loc=pos, ncol=2, fontsize="small")
         else:
@@ -721,9 +768,7 @@ class HEPPlotter:
                     if not self.y_log
                     else ax.get_ylim()[1] ** (self.ylim_top_factor)
                 ),
-                bottom=(
-                    self.ylim_bottom_factor * ax.get_ylim()[0]
-                ),
+                bottom=(self.ylim_bottom_factor * ax.get_ylim()[0]),
             )
 
         if self.plot_type == "2d":
