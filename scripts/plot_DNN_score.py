@@ -272,12 +272,8 @@ def plot_single_var_from_columns(
             bin_edges_plotting = np.linspace(
                 bin_edges[0], bin_edges[-1], NUMBER_OF_BINS + 1
             )
-            bins_center_plotting = (
-                bin_edges_plotting[1:] + bin_edges_plotting[:-1]
-            ) / 2
         else:
-            bin_edges_plotting = bin_edges
-            bins_center_plotting = bins_center
+            bin_edges_plotting = None
 
         namesuffix = ""
         if "MC" in cat:
@@ -319,7 +315,6 @@ def plot_single_var_from_columns(
         histo = Hist.new.Var(bin_edges, name=var_plot_name, flow=False).Weight()
         histo.fill(col_den, weight=weights_den)
 
-
         if i == 0: 
             hist_1d_dict[cat_plot_name] = {
                 "data": histo,
@@ -327,6 +322,7 @@ def plot_single_var_from_columns(
                     "is_reference": (i == 0),
                     "histtype": "errorbar" if i == 0 else "step",
                     "color": color_list[i][0],
+                    "bin_edges_plotting": bin_edges_plotting,
                 },
             }
 
@@ -343,6 +339,7 @@ def plot_single_var_from_columns(
                         "facecolor": [],
                         "alpha": [],
                         "legend_name": [],
+                        "bin_edges_plotting": [],
                     },
                 }
             hist_1d_dict["Sig+Bkg"]["data"].append(histo)
@@ -352,7 +349,9 @@ def plot_single_var_from_columns(
                 0.5 if "DATA" in cat else 1
             )
             hist_1d_dict["Sig+Bkg"]["style"]["legend_name"].append(cat_plot_name)
-
+            hist_1d_dict["Sig+Bkg"]["style"]["bin_edges_plotting"].append(
+                bin_edges_plotting
+            )
 
     sob, sob_err, sob_list, sob_err_list, s, s_err, b, b_err = compute_sob(hist_1d_dict)
     sob_string = r"$s/\sqrt{{{{b}}}}$ = {:.2f} $\pm$ {:.2f}".format(sob, sob_err)
@@ -423,7 +422,7 @@ def plot_single_var_from_columns(
         p = p.add_chi_square()
 
     p.run()
-    
+
     # save the histogram
     # np.savez(
     #     os.path.join(dir_cat, f"hist_columns_{var_plot_name}_{savesuffix}.npz".replace("Run2", "_DHH")),
