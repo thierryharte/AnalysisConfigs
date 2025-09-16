@@ -1031,9 +1031,15 @@ class HH4bCommonProcessor(BaseProcessorABC):
                 else:
                     # if array is 2 dim take the last column
                     self.events["sig_bkg_dnn_score"] = sig_bkg_dnn_score[:, -1]
-                params_quantile_transformer = self.params["quantile_transformer"][self.events.metadata["year"]]
-                transformer = WeightedQuantileTransformer(n_quantiles=params_quantile_transformer["n_quantiles"], output_distribution=params_quantile_transformer["output_distribution"])
-                transformer.load(params_quantile_transformer["file_spanet"])
+                transformer = WeightedQuantileTransformer(n_quantiles=self.qt_n_quantiles, output_distribution=self.qt_distribution)
+                if "postEE" in self._year:
+                    transformer.load(self.qt_postEE)
+                elif "preEE" in self._year:
+                    transformer.load(self.qt_preEE)
+                elif "2023" in self._year:
+                    raise NotImplementedError("Quantile transformation for 2023 to be implemented")
+                else:
+                    raise ValueError("Unknown year")
                 self.events["sig_bkg_dnn_score_transformed"] = transformer.transform(self.events.sig_bkg_dnn_score)
             if self.run2:
                 sig_bkg_dnn_score = get_dnn_prediction(

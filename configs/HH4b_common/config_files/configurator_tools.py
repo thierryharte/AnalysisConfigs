@@ -989,8 +989,8 @@ variable_dict_bkg_morphing = {
     ),
 }
 
-def get_variables_dict_sig_bkg_score(bins_spanet, bins_run2):
-    return {
+def get_variables_dict_sig_bkg_score(bins, y=""):
+    score_histograms = {
     "sig_bkg_dnn_score": HistConf(
         [
             Axis(
@@ -1004,7 +1004,7 @@ def get_variables_dict_sig_bkg_score(bins_spanet, bins_run2):
         ],
         storage='weight'
     ),
-    "sig_bkg_dnn_scoreRun2" : HistConf(
+    "sig_bkg_dnn_scoreRun2": HistConf(
         [
             Axis(
                 coll="events",
@@ -1016,41 +1016,42 @@ def get_variables_dict_sig_bkg_score(bins_spanet, bins_run2):
             )
         ],
         storage='weight'
-    ),
-    "sig_bkg_dnn_score_transformed" : HistConf(
-        [
-            Axis(
-                coll="events",
-                field="sig_bkg_dnn_score_transformed",
-                bins=bins_spanet,
-                type="variable",
-                start=0,
-                stop=1,
-                label="Signal vs Background DNN score transformed",
+    )
+    }
+    if bins:
+        score_histograms[f"sig_bkg_dnn_score_transformed{y}"] = HistConf(
+            [
+                Axis(
+                    coll="events",
+                    field="sig_bkg_dnn_score",
+                    bins=bins,
+                    type="variable",
+                    start=0,
+                    stop=1,
+                    label=f"Signal vs Background DNN score transformed {y}",
+                )
+            ],
+            storage='weight'
             )
-        ],
-        storage='weight'
-    ),
-    "sig_bkg_dnn_score_transformedRun2" : HistConf(
-        [
-            Axis(
-                coll="events",
-                field="sig_bkg_dnn_score_transformedRun2",
-                bins=bins_run2,
-                type="variable",
-                start=0,
-                stop=1,
-                label=r"Signal vs Background DNN score D$_{HH}$-Method transformed",
+        score_histograms[f"sig_bkg_dnn_score_transformedRun2{y}"] = HistConf(
+                [
+                    Axis(
+                        coll="events",
+                        field="sig_bkg_dnn_scoreRun2",
+                        bins=bins,
+                        type="variable",
+                        start=0,
+                        stop=1,
+                        label=r"Signal vs Background DNN score D$_{HH}$-Method transformed " + y,
+                    )
+                ],
+                storage='weight'
             )
-        ],
-        storage='weight'
-    ),
-}
-
-
+    return score_histograms
 
 def get_variables_dict(
-    parameters,
+    year,
+    config_options_dict,
     JETS=False,
     CLASSIFICATION=False,
     RANDOM_PT=False,
@@ -1073,17 +1074,26 @@ def get_variables_dict(
     if BKG_MORPHING:
         variables_dict.update(variable_dict_bkg_morphing)
     if SCORE:
-        if "quantile_transformer" in parameters.keys():
-            params_qt = parameters["quantile_transformer"]['2022_postEE']
-            transformer = WeightedQuantileTransformer(n_quantiles=params_qt["n_quantiles"], output_distribution=params_qt["output_distribution"])
-            transformer.load(params_qt["file_spanet"])
-            bins_spanet = transformer.transform(np.linspace(0, 1, 20))
-            transformer.load(params_qt["file_run2"])
-            bins_run2 = transformer.transform(np.linspace(0, 1, 20))
-        else:
-            bins_spanet = np.linspace(0, 1, 20)
-            bins_run2 = np.linspace(0, 1, 20)
-            variables_dict.update(get_variables_dict_sig_bkg_score(bins_spanet,bins_run2))
+        has_qt = False
+        for y in year:
+            if "postEE" in y and config_options_dict["qt_postEE"]:
+                params_qt = config_options_dict["qt_postEE"]
+            elif "preEE" in y and config_options_dict["qt_preEE"]:
+                params_qt = config_options_dict["qt_preEE"]
+            else:
+                print(f"Did not find a valid quantile transformation for year {y}")
+                params_qt = None
+            if params_qt:
+                has_qt = True
+                transformer = WeightedQuantileTransformer(n_quantiles=config_options_dict["qt_n_quantiles"], output_distribution=config_options_dict["qt_distribution"])
+                transformer.load(params_qt)
+                bins = transformer.quantiles_
+                step = len(bins) // 19
+                bins_final = np.append(bins[::step], bins[-1])
+                variables_dict.update(get_variables_dict_sig_bkg_score(list(bins_final), y))
+            # bins_spanet_final = bins_spanet[::step]
+        if not has_qt:
+            variables_dict.update(get_variables_dict_sig_bkg_score(False))
     # Sort of lazy implementation. If neither SPANet nor RUN2 are active, no variables are saved.
     # If not Run2, kick out all variables with Run2 in name
     # If not SPANet, kick out all variables without Run2 in name
@@ -1220,7 +1230,7 @@ def define_categories(bkg_morphing_dnn=False, blind=False, spanet=False,  run2=F
     categories_dict = {}
     if not vr1:
         if spanet:
-            categories_dict |= define_single_category("4b_region")
+            # categories_dict |= define_single_category("4b_region")
             categories_dict |= define_single_category("4b_control_region")
             categories_dict |= define_single_category("2b_control_region_preW")
             categories_dict |= define_single_category("4b_signal_region" + "_blind") if blind else {}

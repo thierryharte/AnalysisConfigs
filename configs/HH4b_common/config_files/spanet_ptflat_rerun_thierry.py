@@ -30,7 +30,7 @@ config_options_dict = {
     "vbf_presel": False,
     "semi_tight_vbf": True,
     "dnn_variables": True,
-    "run2": True,
+    "run2": False,
     "vr1": False,
     "random_pt": False,
     "rand_type": 0.3,
@@ -48,4 +48,8 @@ config_options_dict = {
     "arctanh_delta_prob_pad_limit": 2.,
     "add_jet_spanet": False,
     "spanet_input_name_list": ["log_pt", "eta", "phi", "btag"],
+    "qt_n_quantiles": 1000000,
+    "qt_distribution": "uniform",
+    "qt_postEE": "/work/tharte/datasets/quantile_transformer/quantiles_regressed_2022_postEE.pkl",
+    "qt_preEE": None
 } | onnx_model_dict

@@ -1,7 +1,6 @@
 import os
 import cloudpickle
 import utils.quantile_transformer as quantile_transformer
-from utils.quantile_transformer import WeightedQuantileTransformer
 
 from configs.HH4b_common.config_files.__config_file__ import (
     config_options_dict,
@@ -56,7 +55,6 @@ parameters = defaults.merge_parameters_from_files(
     f"{localdir}/params/object_preselection.yaml",
     f"{localdir}/params/triggers.yaml",
     f"{localdir}/params/jets_calibration_withVariations.yaml",
-    f"{localdir}/../HH4b_common/params/quantile_transformer.yaml",
     update=True,
 )
 
@@ -69,7 +67,8 @@ if config_options_dict["save_chunk"]:
 variables_dict = {}
 # Define the variables to save
 variables_dict = get_variables_dict(
-    parameters,
+    year,
+    config_options_dict,
     CLASSIFICATION=False,
     VBF_VARIABLES=False,
     BKG_MORPHING=False,  # bool(onnx_model_dict["bkg_morphing_dnn"]),
@@ -77,6 +76,7 @@ variables_dict = get_variables_dict(
     RUN2=config_options_dict["run2"],
     SPANET=bool(config_options_dict["spanet"]),
 )
+# print(variables_dict)
 
 # Define the preselection to apply
 preselection = [
@@ -114,12 +114,12 @@ categories_dict = define_categories(
     vr1=config_options_dict["vr1"],
 )
 # AKA if no model is applied
-print(onnx_model_dict)
+# print(onnx_model_dict)
 if all([model == "" for model in onnx_model_dict.values()]):
     print("Didn't find any onnx model. Will choose region for SPANet training")
     categories_dict = define_single_category("inclusive_region")
 
-print("categories_dict", categories_dict)
+# print("categories_dict", categories_dict)
 
 # VBF SPECIFIC REGIONS
 # **{f"4b_semiTight_LeadingPt_region": [hh4b_4b_region, semiTight_leadingPt]},
@@ -168,7 +168,7 @@ if config_options_dict["dnn_variables"]:
                 "Padded_Arctanh_Delta_pairing_probabilities",
             ],
         }
-    print(total_input_variables)
+    # print(total_input_variables)
 
     column_list = create_DNN_columns_list(
         False, not config_options_dict["save_chunk"], total_input_variables, btag=False
@@ -248,7 +248,7 @@ for sample in sample_list:
                     else []
                 )
             )
-print("bysample_bycategory_column_dict", bysample_bycategory_column_dict)
+# print("bysample_bycategory_column_dict", bysample_bycategory_column_dict)
 
 # Define the weights to apply
 bysample_bycategory_weight_dict = {}
@@ -266,7 +266,7 @@ for sample in sample_list:
                         "bkg_morphing_dnn_weight"
                     ]
 
-print("bysample_bycategory_weight_dict", bysample_bycategory_weight_dict)
+# print("bysample_bycategory_weight_dict", bysample_bycategory_weight_dict)
 
 cfg = Configurator(
     parameters=parameters,
@@ -332,8 +332,8 @@ cfg = Configurator(
             "inclusive": [],
             "bycategory": {},
         },
-        # "bysample": bysample_bycategory_column_dict,
-        "bysample": {},
+        "bysample": bysample_bycategory_column_dict,
+        # "bysample": {},
     },
 )
 

@@ -20,7 +20,6 @@ def extract_quantile_transformer(cat_col):
     logger.setLevel(logging.DEBUG)
     spanet = True
     """Compute the transformation function to rebin the scores such that the 4b signal is constant in each bin."""
-    logger.info("Calculating ratios as weight from 2b-reweighted to 4b region")
     cat_dict = {}
     if args.run2:
         cat_dict[f"SR{args.region_suffix}Run2"] = [
