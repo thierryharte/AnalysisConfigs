@@ -1088,8 +1088,9 @@ def get_variables_dict(
                 transformer = WeightedQuantileTransformer(n_quantiles=config_options_dict["qt_n_quantiles"], output_distribution=config_options_dict["qt_distribution"])
                 transformer.load(params_qt)
                 bins = transformer.quantiles_
-                step = len(bins) // 19
-                bins_final = np.append(bins[::step], bins[-1])
+                steps = len(bins) // config_options_dict["num_bins"]
+                bins_final = np.append(bins[::steps], 1.0)
+                bins_final[0] = 0.0
                 variables_dict.update(get_variables_dict_sig_bkg_score(list(bins_final), y))
             # bins_spanet_final = bins_spanet[::step]
         if not has_qt:

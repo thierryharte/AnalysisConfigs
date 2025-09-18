@@ -42,7 +42,7 @@ config_options_dict = {
     "max_num_jets": 5,
     "which_bquark": "last",
     "fifth_jet": "pt",
-    "donotscale_sumgenweights": True,
+    "donotscale_sumgenweights": False,
     "pad_value": -999.0,
     "arctanh_delta_prob_bin_edge": 2.44,
     "arctanh_delta_prob_pad_limit": 2.,
