@@ -49,3 +49,6 @@ class WeightedQuantileTransformer(BaseEstimator, TransformerMixin):
         # Interpolate based on weighted quantiles
         transformed_X = np.interp(X, self.quantiles_, self.reference_quantiles_)
         return transformed_X
+
+    def get_quantiles(self):
+        return self.quantiles_

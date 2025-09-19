@@ -1,4 +1,5 @@
 import logging
+import matplotlib.pyplot as plt
 import os
 
 import numpy as np
@@ -17,7 +18,7 @@ logger = logging.getLogger()
 
 
 def extract_quantile_transformer(cat_col):
-    logger.setLevel(logging.DEBUG)
+    logger.setLevel(logging.INFO)
     spanet = True
     """Compute the transformation function to rebin the scores such that the 4b signal is constant in each bin."""
     cat_dict = {}
@@ -109,14 +110,34 @@ def extract_quantile_transformer(cat_col):
         for var in vars_to_plot_final:
             var_plot_name = var.replace("Run2", "")
             logger.debug(f"Variable: {var}")
-            for cat in cat_list:
-                logger.debug(f"Current category: {cat}")
-                kl = os.path.basename(inputfiles[0]).split("kl-")[-1].split("_")[0].replace("p", ".")
-                savesuffix = f"kl_{kl}"
-                if kl == "1.00" and "score" in var:
-                    transformer = WeightedQuantileTransformer(output_distribution="uniform")
-                    transformer.fit(col_dict[var][cat_mc], sample_weight=col_dict["weight"][cat_mc])
-                    transformer.save(os.path.join(dir_cat, f"qt_{var_plot_name}_{savesuffix}.pkl".replace("Run2", "_DHH")))
+            kl = os.path.basename(inputfiles[0]).split("kl-")[-1].split("_")[0].replace("p", ".")
+            savesuffix = f"kl_{kl}"
+            if kl == "1.00" and "score" in var:
+                transformer = WeightedQuantileTransformer(output_distribution="uniform", n_quantiles=21)  # 1000000)
+                transformer.fit(col_dict[var][cat_mc], sample_weight=col_dict["weight"][cat_mc])
+                transformer.save(os.path.join(dir_cat, f"qt_{var_plot_name}_{savesuffix}.pkl".replace("Run2", "_DHH")))
+                # For debugging to see, if transformation is fine.
+                transformer2 = WeightedQuantileTransformer(output_distribution="uniform", n_quantiles=0)  # 1000000)
+                transformer2.load(os.path.join(dir_cat, f"qt_{var_plot_name}_{savesuffix}.pkl".replace("Run2", "_DHH")))
+                print("Saving transformed plot")
+                col_den_transformed = transformer2.transform(col_dict[var][cat_mc])
+                bins = transformer2.get_quantiles()
+                print(bins)
+                bins_final = bins
+                bins_final[0] = 0.0
+                bins_final[-1] = 1.0
+                print(f"Current observable {var}, {cat_mc}")
+                print(f"bin edges: {bins_final}")
+                plt.hist(col_den_transformed, weights=col_dict["weight"][cat_mc], bins=20, label="transformed")
+                plt.savefig(f"./test_transforming_{var_plot_name}_{savesuffix}.png")
+                print("Printing transformed column")
+                hist, bins = np.histogram(col_den_transformed, weights=col_dict["weight"][cat_mc], bins=20)
+                print(hist)
+                print("Mean:", np.mean(hist), "Std:", np.std(hist), "Rel. Std:", np.std(hist)/np.mean(hist))
+                print("Printing normal column with transformed bins")
+                hist, bins = np.histogram(col_dict[var][cat_mc], weights=col_dict["weight"][cat_mc], bins=bins_final)
+                print(hist)
+                print("Mean:", np.mean(hist), "Std:", np.std(hist), "Rel. Std:", np.std(hist)/np.mean(hist))
         del col_dict
 
 

@@ -1085,13 +1085,12 @@ def get_variables_dict(
                 params_qt = None
             if params_qt:
                 has_qt = True
-                transformer = WeightedQuantileTransformer(n_quantiles=config_options_dict["qt_n_quantiles"], output_distribution=config_options_dict["qt_distribution"])
+                transformer = WeightedQuantileTransformer(n_quantiles=0, output_distribution="uniform")  # We read the quantiles and distribution anyway from the pickle file
                 transformer.load(params_qt)
                 bins = transformer.quantiles_
-                steps = len(bins) // config_options_dict["num_bins"]
-                bins_final = np.append(bins[::steps], 1.0)
-                bins_final[0] = 0.0
-                variables_dict.update(get_variables_dict_sig_bkg_score(list(bins_final), y))
+                bins[0] = 0.0
+                bins[-1] = 1.0
+                variables_dict.update(get_variables_dict_sig_bkg_score(list(bins), y))
             # bins_spanet_final = bins_spanet[::step]
         if not has_qt:
             variables_dict.update(get_variables_dict_sig_bkg_score(False))

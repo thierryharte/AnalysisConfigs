@@ -48,8 +48,6 @@ config_options_dict = {
     "arctanh_delta_prob_pad_limit": 2.,
     "add_jet_spanet": False,
     "spanet_input_name_list": ["log_pt", "eta", "phi", "btag"],
-    "qt_n_quantiles": 1000000,
-    "qt_distribution": "uniform",
-    "qt_postEE": "/work/tharte/datasets/quantile_transformer/quantiles_regressed_2022_postEE.pkl",
+    "qt_postEE": "/work/tharte/datasets/quantile_transformer/qt_events_sig_bkg_dnn_score_kl_1.00_postEE_21bins.pkl",
     "qt_preEE": None
 } | onnx_model_dict
