@@ -249,6 +249,8 @@ def plot_single_var_from_columns(
             np.linspace(0, 1, NUMBER_OF_BINS + 1),
             weights=weight_dict[mc_signal],
         )
+        bin_edges[0] = 0.0
+        bin_edges[-1] = 1.0
     print(f"bin_edges {bin_edges}")
 
     hist_1d_dict = {}
@@ -300,6 +302,9 @@ def plot_single_var_from_columns(
         # histogram of the denominator
         histo = Hist.new.Var(bin_edges, name=var_plot_name, flow=False).Weight()
         histo.fill(col_den, weight=weights_den)
+        print(cat_plot_name)
+        print(histo)
+        print(histo.values())
 
         if i == 0: 
             hist_1d_dict[cat_plot_name] = {
@@ -338,6 +343,7 @@ def plot_single_var_from_columns(
             hist_1d_dict["Sig+Bkg"]["style"]["bin_edges_plotting"].append(
                 bin_edges_plotting
             )
+    print(f"bin_edges {bin_edges}")
 
     sob, sob_err, sob_list, sob_err_list, s, s_err, b, b_err = compute_sob(hist_1d_dict)
     sob_string = r"$s/\sqrt{{{{b}}}}$ = {:.2f} $\pm$ {:.2f}".format(sob, sob_err)
