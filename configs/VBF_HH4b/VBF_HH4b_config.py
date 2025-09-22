@@ -1,4 +1,6 @@
 import os
+import cloudpickle
+import utils.quantile_transformer as quantile_transformer
 from collections import defaultdict
 
 from pocket_coffea.utils.configurator import Configurator
@@ -48,22 +50,26 @@ parameters = defaults.merge_parameters_from_files(
     default_parameters,
     f"{localdir}/params/object_preselection.yaml",
     f"{localdir}/params/triggers.yaml",
-    f"{localdir}/params/jets_calibration_withoutVariations.yaml",
+    # f"{localdir}/params/jets_calibration_withoutVariations.yaml",
     update=True,
 )
 
 
 if config_options_dict["save_chunk"]:
-    # workflow_options["dump_columns_as_arrays_per_chunk"] = "root://t3dcachedb03.psi.ch:1094//pnfs/psi.ch/cms/trivcat/store/user/tharte/HH4b/training_samples/GluGlutoHHto4B_spanet_loose_03_17"
-    pass
+    config_options_dict["dump_columns_as_arrays_per_chunk"] = config_options_dict["save_chunk"]
 
-## Define the variables to save
-# variables_dict = get_variables_dict(
-#     CLASSIFICATION=CLASSIFICATION,
-#     VBF_VARIABLES=False,
-#     BKG_MORPHING=True if onnx_model_dict["BKG_MORPHING_DNN"] else False,
-# )
-variables_dict = {}
+# Define the variables to save
+variables_dict = get_variables_dict(
+    year,
+    config_options_dict,
+    CLASSIFICATION=False,
+    VBF_VARIABLES=False,
+    BKG_MORPHING=False,  # bool(onnx_model_dict["bkg_morphing_dnn"]),
+    SCORE=bool(config_options_dict["sig_bkg_dnn"]),
+    RUN2=config_options_dict["run2"],
+    SPANET=bool(config_options_dict["spanet"]),
+)
+# variables_dict = {}
 
 ## Define the preselection to apply
 preselection = (
@@ -295,3 +301,4 @@ cfg = Configurator(
         "bysample": bysample_bycategory_column_dict,
     },
 )
+cloudpickle.register_pickle_by_value(quantile_transformer)
