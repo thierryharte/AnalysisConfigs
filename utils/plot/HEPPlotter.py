@@ -525,7 +525,7 @@ class HEPPlotter:
                 if style.get("appear_in_legend", True)
                 else None
             )
-            if np.any(x_errors > 0) or np.any(y_errors > 0):
+            if np.any(np.array(x_errors) > 0) or np.any(np.array(y_errors) > 0):
                 # plot with error bars
                 ax.errorbar(
                     x=x_values,
