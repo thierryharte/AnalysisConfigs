@@ -30,6 +30,10 @@ This will install the `configs` package in editable mode.
 ```python
 run_pocket_coffea <config_name> <config_file> <run_options> <output_dir> <--test>
 ```
+E.g.
+```python
+run_pocket_coffea spanet_ptflat_rerun_matteo_transform VBF_HH4b_config.py params/t3_run_options_spanet_predict_10Gb.yaml /work/mmalucch/out_hh4b/out_transformed_DNN_score
+```
 
 ## Run ggF HH4b analysis
 
