@@ -63,7 +63,6 @@ if config_options_dict["save_chunk"]:
     config_options_dict["dump_columns_as_arrays_per_chunk"] = config_options_dict["save_chunk"]
 
 
-config_options_dict["num_bins"] = 20
 # score transform still in testing. So far hardcoded to be 2022_postEE...
 variables_dict = {}
 # Define the variables to save

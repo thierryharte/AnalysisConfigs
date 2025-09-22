@@ -1031,15 +1031,15 @@ class HH4bCommonProcessor(BaseProcessorABC):
                 else:
                     # if array is 2 dim take the last column
                     self.events["sig_bkg_dnn_score"] = sig_bkg_dnn_score[:, -1]
-                transformer = WeightedQuantileTransformer(n_quantiles=self.qt_n_quantiles, output_distribution=self.qt_distribution)
-                if "postEE" in self._year:
+                transformer = WeightedQuantileTransformer(n_quantiles=0, output_distribution="uniform")
+                if "postEE" in self._year and self.qt_postEE:
                     transformer.load(self.qt_postEE)
-                elif "preEE" in self._year:
+                elif "preEE" in self._year and self.qt_preEE:
                     transformer.load(self.qt_preEE)
                 elif "2023" in self._year:
                     raise NotImplementedError("Quantile transformation for 2023 to be implemented")
                 else:
-                    raise ValueError("Unknown year")
+                    raise ValueError("Unknown year or quantile transformer not provided")
                 self.events["sig_bkg_dnn_score_transformed"] = transformer.transform(self.events.sig_bkg_dnn_score)
             if self.run2:
                 sig_bkg_dnn_score = get_dnn_prediction(
@@ -1058,7 +1058,7 @@ class HH4bCommonProcessor(BaseProcessorABC):
                     # if array is 2 dim take the last column
                     self.events["sig_bkg_dnn_scoreRun2"] = sig_bkg_dnn_score[:, -1]
                 params_quantile_transformer = self.params["quantile_transformer"][self.events.metadata["year"]]
-                transformer = WeightedQuantileTransformer(n_quantiles=params_quantile_transformer["n_quantiles"], output_distribution=params_quantile_transformer["output_distribution"])
+                transformer = WeightedQuantileTransformer(n_quantiles=0, output_distribution="uniform")
                 transformer.load(params_quantile_transformer["file_run2"])
                 self.events["sig_bkg_dnn_score_transformedRun2"] = transformer.transform(self.events.sig_bkg_dnn_scoreRun2)
                 del model_session_SIG_BKG_DNN
