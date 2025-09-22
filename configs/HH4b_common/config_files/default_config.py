@@ -3,17 +3,15 @@ from configs.HH4b_common.dnn_input_variables import (
     sig_bkg_dnn_input_variables,
 )
 
-from configs.HH4b_common.config_files.default_config import default_onnx_model_dict as onnx_model_dict
-
-from configs.HH4b_common.config_files.default_config import default_config_options_dict as config_options_dict
-
-
-onnx_model_dict |= {
-    "spanet": "/work/tharte/datasets/onnx_spanet_models_for_pairing_and_mass_sculpting_studies/hh4b_5jets_e300_s100_ptvary_wide_loose_btag.onnx",  # spanet pt vary 0.3, 1.7
+default_onnx_model_dict = {
+    "spanet": "",
+    "vbf_ggf_dnn": "",
+    "bkg_morphing_dnn": "",
+    "sig_bkg_dnn": "",
+    "bkg_morphing_spread_dnn": "",
 }
 
-
-config_options_dict |= {
+default_config_options_dict = {
     "higgs_parton_matching": False,
     "vbf_parton_matching": False,
     "tight_cuts": False,
@@ -21,12 +19,12 @@ config_options_dict |= {
     "save_chunk": False,
     "vbf_presel": False,
     "semi_tight_vbf": True,
-    "dnn_variables": False,
+    "dnn_variables": True,
     "run2": False,
     "vr1": False,
     "random_pt": False,
     "rand_type": 0.3,
-    "blind": True if onnx_model_dict["sig_bkg_dnn"] else False,
+    "blind": False,
     "sig_bkg_dnn_input_variables": sig_bkg_dnn_input_variables,
     "bkg_morphing_dnn_input_variables": bkg_morphing_dnn_input_variables,
     "parton_jet_min_dR": 0.4,
@@ -39,4 +37,6 @@ config_options_dict |= {
     "arctanh_delta_prob_pad_limit": 2.,
     "add_jet_spanet": False,
     "spanet_input_name_list": ["log_pt", "eta", "phi", "btag"],
-} | onnx_model_dict
+    "qt_postEE": None,
+    "qt_preEE": None
+}| default_onnx_model_dict
