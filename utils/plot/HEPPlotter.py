@@ -4,7 +4,6 @@ from hist import Hist
 import matplotlib.ticker as mtick
 from scipy.stats.distributions import chi2
 
-from scipy.stats import chisquare
 import numpy as np
 import mplhep as hep
 
