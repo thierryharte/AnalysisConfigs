@@ -23,7 +23,6 @@ def add_fields(collection, fields=None, four_vec="PtEtaPhiMLorentzVector"):
                 fields.append(field)
 
     if four_vec == "PtEtaPhiMLorentzVector":
-        # fields=["pt", "eta", "phi", "mass"]
         fields_dict = {field: getattr(collection, field) for field in fields}
         # remove fields with 2d
         # fields_dict = {k: v for k, v in fields_dict.items() if v.ndim == 1}
@@ -32,7 +31,6 @@ def add_fields(collection, fields=None, four_vec="PtEtaPhiMLorentzVector"):
             with_name="PtEtaPhiMLorentzVector",
         )
     elif four_vec == "Momentum4D":
-        # fields=["pt", "eta", "phi", "mass"]
         fields_dict = {field: getattr(collection, field) for field in fields}
         # remove fields with 2d
         # fields_dict = {k: v for k, v in fields_dict.items() if v.ndim == 1}
