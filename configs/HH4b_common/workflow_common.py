@@ -108,8 +108,10 @@ class HH4bCommonProcessor(BaseProcessorABC):
         self.events["JetGood"] = self.events.JetGood[
             ak.argsort(self.events.JetGood.btagPNetB, axis=1, ascending=False)
         ]
+        self.events["JetGood"] = self.generate_btag_workingpoints()
         # keep only the first 4 jets for the Higgs candidates reconstruction
         self.events["JetGoodHiggs"] = self.events.JetGood[:, :4]
+
 
         # Trying to reshuffle jets 4 and above by pt instead of b-tag score
         if self.fifth_jet == "pt":
@@ -130,6 +132,17 @@ class HH4bCommonProcessor(BaseProcessorABC):
     #         self._preselections = self._preselections_temp[self._sample]
     #     super().apply_preselection(self, variation)
     #     self._preselections = self._preselections_temp
+
+    def generate_btag_workingpoints(self):
+        # L, M, T, XT, XXT
+        # Right now hardcoded particleNet postEE
+        wps = self.params["btagging"]["working_point"][self._year]["btagging_WP"]["btagPNetB"]
+        btag_wp = -1 * ak.ones_like(self.events.JetGood.btagPNetB, dtype=np.int32)
+        for i, thr in enumerate(sorted(wps.values())):
+            btag_wp = ak.where(self.events.JetGood.btagPNetB > thr, i, btag_wp)
+        return ak.with_field(self.events.JetGood, btag_wp, "btagPNetB_wp")
+
+
 
     def get_jet_higgs_provenance(self, which_bquark):  # -> ak.Array:
         # Select b-quarks at Gen level, coming from H->bb decay
