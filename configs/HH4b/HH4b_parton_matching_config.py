@@ -24,6 +24,7 @@ from workflow import HH4bbQuarkMatchingProcessor
 import configs.HH4b_common.custom_cuts_common as cuts
 from configs.HH4b_common.config_files.configurator_tools import (
     SPANET_TRAINING_DEFAULT_COLUMNS,
+    SPANET_TRAINING_DEFAULT_COLUMNS_BTWP,
     create_DNN_columns_list,
     define_categories,
     define_single_category,
@@ -54,6 +55,7 @@ parameters = defaults.merge_parameters_from_files(
     default_parameters,
     f"{localdir}/params/object_preselection.yaml",
     f"{localdir}/params/triggers.yaml",
+    f"{localdir}/../HH4b_common/params/btagging_multipleWP.yaml",
     f"{localdir}/params/jets_calibration_withVariations.yaml",
     update=True,
 )
@@ -95,7 +97,8 @@ sample_list = [
     "DATA_JetMET_JMENano_F_skimmed",
     "DATA_JetMET_JMENano_G_skimmed",
     # "GluGlutoHHto4B_spanet_skimmed",
-    "GluGlutoHHto4B_spanet_skimmed_SM",
+    # "GluGlutoHHto4B_spanet_skimmed_SM",
+    # "GluGlutoHHto4B_spanet_skimmed",
     # "GluGlutoHHto4B",
     # "DATA_JetMET_JMENano_2023_Cv1_skimmed",
     # "DATA_JetMET_JMENano_2023_Cv2_skimmed",
@@ -117,7 +120,7 @@ categories_dict = define_categories(
 # print(onnx_model_dict)
 if all([model == "" for model in onnx_model_dict.values()]):
     print("Didn't find any onnx model. Will choose region for SPANet training")
-    categories_dict = define_single_category("inclusive_region")
+    categories_dict = define_single_category("4b_region")
 
 # print("categories_dict", categories_dict)
 
@@ -177,7 +180,11 @@ if config_options_dict["dnn_variables"]:
         True, not config_options_dict["save_chunk"], total_input_variables, btag=False
     )
 elif all([model == "" for model in onnx_model_dict.values()]):
-    column_list = get_columns_list(SPANET_TRAINING_DEFAULT_COLUMNS, not config_options_dict["save_chunk"])
+    if "wp" in config_options_dict["spanet_input_name_list"][-1]:
+        print("Taking btag Working Points")
+        column_list = get_columns_list(SPANET_TRAINING_DEFAULT_COLUMNS_BTWP, not config_options_dict["save_chunk"])
+    else:
+        column_list = get_columns_list(SPANET_TRAINING_DEFAULT_COLUMNS, not config_options_dict["save_chunk"])
     if config_options_dict["random_pt"]:
         column_list += get_columns_list({"events": ["random_pt_weights"]})
 else:
@@ -313,16 +320,16 @@ cfg = Configurator(
     variations={
         "weights": {
             "common": {
-                "inclusive": ["genWeight", "lumi", "XS", "pileup"],
-                # "inclusive": [],
+                # "inclusive": ["genWeight", "lumi", "XS", "pileup"],
+                "inclusive": [],
                 "bycategory": {},
             },
             "bysample": {},
         },
         "shape": {
             "common": {
-                "inclusive": ["jet_calibration"],
-                # "inclusive": [],
+                # "inclusive": ["jet_calibration"],
+                "inclusive": [],
                 },
             }
     },
