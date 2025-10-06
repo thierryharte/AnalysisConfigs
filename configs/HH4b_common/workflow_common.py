@@ -108,7 +108,8 @@ class HH4bCommonProcessor(BaseProcessorABC):
         self.events["JetGood"] = self.events.JetGood[
             ak.argsort(self.events.JetGood.btagPNetB, axis=1, ascending=False)
         ]
-        self.events["JetGood"] = self.generate_btag_workingpoints()
+        self.events["JetGood"] = self.generate_btag_workingpoints(self.events["JetGood"], 5)
+        self.events["JetGood"] = self.generate_btag_workingpoints(self.events["JetGood"], 3)
         # keep only the first 4 jets for the Higgs candidates reconstruction
         self.events["JetGoodHiggs"] = self.events.JetGood[:, :4]
 
@@ -133,15 +134,16 @@ class HH4bCommonProcessor(BaseProcessorABC):
     #     super().apply_preselection(self, variation)
     #     self._preselections = self._preselections_temp
 
-    def generate_btag_workingpoints(self):
+    def generate_btag_workingpoints(self, jets,  num_wp):
         # L, M, T, XT, XXT
         # Right now hardcoded particleNet postEE
         wps = self.params["btagging"]["working_point"][self._year]["btagging_WP"]["btagPNetB"]
-        btag_wp = -1 * ak.ones_like(self.events.JetGood.btagPNetB, dtype=np.int32)
+        btag_wp = ak.zeros_like(jets.btagPNetB, dtype=np.int32)
         for i, thr in enumerate(sorted(wps.values())):
-            btag_wp = ak.where(self.events.JetGood.btagPNetB > thr, i, btag_wp)
-        return ak.with_field(self.events.JetGood, btag_wp, "btagPNetB_wp")
-
+            if i >= num_wp:
+                break
+            btag_wp = ak.where(jets.btagPNetB > thr, i+1, btag_wp)
+        return ak.with_field(jets, btag_wp, f"btagPNetB_{num_wp}wp")
 
 
     def get_jet_higgs_provenance(self, which_bquark):  # -> ak.Array:

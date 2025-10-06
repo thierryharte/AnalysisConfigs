@@ -12,6 +12,7 @@ from pocket_coffea.parameters.cuts import passthrough
 from pocket_coffea.lib.columns_manager import ColOut
 from pocket_coffea.parameters import defaults
 from pocket_coffea.lib.weights.common.common import common_weights
+from pocket_coffea.lib.calibrators.common import default_calibrators_sequence
 
 from configs.VBF_HH4b.workflow import VBFHH4bProcessor
 from configs.VBF_HH4b.custom_cuts import vbf_hh4b_presel, vbf_hh4b_presel_tight
@@ -50,6 +51,8 @@ parameters = defaults.merge_parameters_from_files(
     default_parameters,
     f"{localdir}/params/object_preselection.yaml",
     f"{localdir}/params/triggers.yaml",
+    f"{localdir}/../HH4b_common/params/btagging_multipleWP.yaml",
+    f"{localdir}/params/jets_calibration_Calibrator.yaml",
     # f"{localdir}/params/jets_calibration_withoutVariations.yaml",
     update=True,
 )
@@ -94,7 +97,7 @@ preselection = (
 sample_list = [
     # "DATA_JetMET_JMENano_C_skimmed",
     # "DATA_JetMET_JMENano_D_skimmed",
-    # "DATA_JetMET_JMENano_E_skimmed",
+    "DATA_JetMET_JMENano_E_skimmed",
     "DATA_JetMET_JMENano_F_skimmed",
     "DATA_JetMET_JMENano_G_skimmed",
 ] + (
@@ -122,7 +125,7 @@ categories_dict = define_categories(
 if BASELINE:
     categories_dict = {"baseline": [passthrough]}
 
-print("categories_dict", categories_dict)
+# print("categories_dict", categories_dict)
 
 ### VBF SPECIFIC REGIONS ###
 # **{f"4b_semiTight_LeadingPt_region": [hh4b_4b_region, semiTight_leadingPt]},
@@ -175,7 +178,7 @@ else:
     total_input_variables |= DEFAULT_JET_COLUMNS_DICT
 if BASELINE:
     total_input_variables |= DEFAULT_JET_COLUMNS_DICT
-print(total_input_variables)
+# print(total_input_variables)
 
 column_list = create_DNN_columns_list(
     False, not config_options_dict["save_chunk"], total_input_variables, btag=False
@@ -184,7 +187,7 @@ column_listRun2 = create_DNN_columns_list(
     True, not config_options_dict["save_chunk"], total_input_variables, btag=False
 )
 
-print(column_list)
+# print(column_list)
 
 # Add special columns
 if config_options_dict["sig_bkg_dnn"] and config_options_dict["spanet"]:
@@ -223,7 +226,7 @@ for sample in sample_list:
                     else []
                 )
             )
-print("bysample_bycategory_column_dict", bysample_bycategory_column_dict)
+# print("bysample_bycategory_column_dict", bysample_bycategory_column_dict)
 
 ## Define the weights to apply
 bysample_bycategory_weight_dict = {}
@@ -241,7 +244,7 @@ for sample in sample_list:
                         "bkg_morphing_dnn_weight"
                     ]
 
-print("bysample_bycategory_weight_dict", bysample_bycategory_weight_dict)
+# print("bysample_bycategory_weight_dict", bysample_bycategory_weight_dict)
 
 cfg = Configurator(
     parameters=parameters,
@@ -283,6 +286,7 @@ cfg = Configurator(
         },
         "bysample": bysample_bycategory_weight_dict,
     },
+    calibrators=default_calibrators_sequence,
     variations={
         "weights": {
             "common": {
