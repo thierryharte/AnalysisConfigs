@@ -1,6 +1,6 @@
 # HH4b analysis
 
-> [!IMPORTANT] 
+> [!IMPORTANT]
 > Work in Progress
 
 This folder contains the configuration files and customization code for the HH4b analysis.
@@ -22,29 +22,29 @@ On `tier-3`, run the following commands to produce the input files for SPANet tr
 
 #### Run pocket-coffea to produce coffea files
 
-> [!TIP] 
+> [!TIP]
 > @Tier-3/AnalysisConfigs
 
 ```bash
 cd AnalysisConfigs/configs/HH4b_common
 # SPANet training with normal pT spectrum
-run_pocket_coffea no_model <config> <t3_run_options> <output_dir>
+run_pocket_coffea no_model <config_file> <t3_run_options> <output_dir>
 # SPANet training with flat pT spectrum
-run_pocket_coffea pt_vary <config> <t3_run_options> <output_dir>
+run_pocket_coffea pt_vary <config_file> <t3_run_options> <output_dir>
 
 # e.g.
 run_pocket_coffea no_model HH4b_parton_matching_config.py params/t3_run_options.yaml ../../../sample_spanet/loose_MC_postEE_btagWP
 ```
 
-> [!NOTE] 
+> [!NOTE]
 > To run a test on a small number of files, add the `--test` flag at the **end** of the command.
 
 #### Convert coffea files to h5 files
 
-> [!TIP] 
+> [!TIP]
 > @Tier-3/HH4b_SPANet
 
-> [!NOTE] 
+> [!NOTE]
 > Additional information can be found in the [README](https://github.com/matteomalucchi/HH4b_SPANet/README.md) file of the HH4b_SPANet repository.
 
 ```bash
@@ -59,7 +59,7 @@ python3 /work/tharte/HH4b_SPANet/utils/dataset/parquet_to_h5.py -i ./*.parquet -
 
 #### Copy h5 files to `lxplus`
 
-> [!TIP] 
+> [!TIP]
 > @Tier-3
 
 ```bash
@@ -71,7 +71,7 @@ scp -r loose_MC_postEE_btagWP tharte@lxplus.cern.ch:/eos/user/t/tharte/Analysis_
 
 ### Train and evaluate SPANet model
 
-> [!TIP] 
+> [!TIP]
 > @lxplus/HH4b_SPANet
 
 > [!NOTE]
@@ -109,7 +109,7 @@ python3 ~/public/Software/HH4b_SPANet/jobs/submit_jobs_seed.py -c ~/public/Softw
 
 #### Compute SPANet predictions
 
-> [!TIP] 
+> [!TIP]
 > @lxplus/HH4b_SPANet
 
 > [!NOTE]
@@ -129,7 +129,7 @@ python -m spanet.predict ./spanet_output/out_spanet_outputs/out_hh4b_5jets_ptreg
 
 #### Plot pairing efficiency and mass sculpting
 
-> [!TIP] 
+> [!TIP]
 > @lxplus/HH4b_SPANet
 
 > [!NOTE]
@@ -161,7 +161,7 @@ python3 ~/public/Software/HH4b_SPANet/utils/performance/efficiency_studies.py -p
 
 #### Convert SPANet model to ONNX
 
-> [!TIP] 
+> [!TIP]
 > @lxplus/HH4b_SPANet
 
 > [!NOTE]
@@ -178,7 +178,7 @@ python -m spanet.export out_spanet_outputs/out_hh4b_5jets_ptvary_loose_300_btag_
 
 #### Copy ONNX model to `tier-3`
 
-> [!TIP] 
+> [!TIP]
 > @lxplus
 
 Finally, copy the model to `tier-3` to use it in PocketCoffea:
@@ -189,7 +189,7 @@ scp <model.onnx> <user>@t3ui07.psi.ch:<dir>
 
 ### Apply SPANet model to data for background morphing
 
-> [!TIP] 
+> [!TIP]
 > @Tier-3/AnalysisConfigs
 
 Create a config in [`AnalysisConfigs/configs/HH4b_common/config_files`](./config_files/) and set the `"spanet"` entry of the `onnx_model_dict` to the path of the ONNX model you copied to `tier-3`.
@@ -197,12 +197,12 @@ Create a config in [`AnalysisConfigs/configs/HH4b_common/config_files`](./config
 Then run PocketCoffea with that config to produce coffea files with SPANet predictions on data files to be used for background morphing using the following command:
 
 ```bash
-run_pocket_coffea <config_dict_file> <config> <t3_run_options> <output_dir>
+run_pocket_coffea <config_name> <config_file> <t3_run_options> <output_dir>
 ```
 
 ### Train DNN model for background morphing
 
-> [!TIP] 
+> [!TIP]
 > @Tier-3/ML_pytorch
 
 > [!NOTE]
@@ -214,11 +214,16 @@ Then run the training using the following command:
 
 ```bash
 sbatch run_20_trainings_in_4_parallel.sh <config_file> <output_folder>
+
+# when this has finished, you can merge the results with:
+cd <output_folder>
+ml_onnx -i best_models -o best_models -ar -v bkg_morphing_dnn_DeltaProb_input_variables
+
 ```
 
 ### Apply background morphing DNN to data and produce MC signal files
 
-> [!TIP] 
+> [!TIP]
 > @Tier-3/AnalysisConfigs
 
 Update the config created before  in [`AnalysisConfigs/configs/HH4b_common/config_files`](./config_files/) and set the `"bkg_morphing_dnn"` entry of the `onnx_model_dict` to the path of the ONNX model you produced in the previous step.
@@ -226,12 +231,12 @@ Update the config created before  in [`AnalysisConfigs/configs/HH4b_common/confi
 Then run PocketCoffea with that config to produce coffea files with the background prediction and signal samples using the following command:
 
 ```bash
-run_pocket_coffea <config_dict_file> <config> <t3_run_options> <output_dir>
+run_pocket_coffea <config_name> <config_file> <t3_run_options> <output_dir>
 ```
 
 #### Plot morphed 2b vs 4b
 
-> [!TIP] 
+> [!TIP]
 > @Tier-3/AnalysisConfigs
 
 To compare the morphed 2b data with the 4b data in CR and SR, run the following command:
@@ -242,7 +247,7 @@ sbatch -p short --account=t3 --time=00:05:00 --mem 25gb --cpus-per-task=8 --wrap
 
 ### Train DNN for signal / background classification
 
-> [!TIP] 
+> [!TIP]
 > @Tier-3/ML_pytorch
 
 > [!NOTE]
@@ -258,7 +263,7 @@ sbatch run_sig_bkg_classifier.sh <config_file> <output_folder>
 
 ### Apply DNN to data and MC signal files
 
-> [!TIP] 
+> [!TIP]
 > @Tier-3/AnalysisConfigs
 
 Update the config created before  in [`AnalysisConfigs/configs/HH4b_common/config_files`](./config_files/) and set the `"sig_bkg_dnn"` entry of the `onnx_model_dict` to the path of the ONNX model you produced in the previous step.
@@ -266,12 +271,12 @@ Update the config created before  in [`AnalysisConfigs/configs/HH4b_common/confi
 Then run PocketCoffea with that config to produce coffea files with the background prediction and signal samples using the following command:
 
 ```bash
-run_pocket_coffea <config_dict_file> <config> <t3_run_options> <output_dir>
+run_pocket_coffea <config_name> <config_file> <t3_run_options> <output_dir>
 ```
 
 #### Plot DNN score
 
-> [!TIP] 
+> [!TIP]
 > @Tier-3/AnalysisConfigs
 
 ```bash
