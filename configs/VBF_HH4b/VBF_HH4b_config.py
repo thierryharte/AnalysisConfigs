@@ -52,8 +52,7 @@ parameters = defaults.merge_parameters_from_files(
     f"{localdir}/params/object_preselection.yaml",
     f"{localdir}/params/triggers.yaml",
     f"{localdir}/../HH4b_common/params/btagging_multipleWP.yaml",
-    f"{localdir}/params/jets_calibration_Calibrator.yaml",
-    # f"{localdir}/params/jets_calibration_withoutVariations.yaml",
+    f"{localdir}/params/jets_calibration_Calibrator_withoutVariations.yaml",
     update=True,
 )
 
@@ -95,14 +94,17 @@ preselection = (
 
 ## Define the samples to process
 sample_list = [
+    ## 2022 preEE
     # "DATA_JetMET_JMENano_C_skimmed",
     # "DATA_JetMET_JMENano_D_skimmed",
-    "DATA_JetMET_JMENano_E_skimmed",
-    "DATA_JetMET_JMENano_F_skimmed",
-    "DATA_JetMET_JMENano_G_skimmed",
+    
+    ## 2022 postEE
+    # "DATA_JetMET_JMENano_E_skimmed",
+    # "DATA_JetMET_JMENano_F_skimmed",
+    # "DATA_JetMET_JMENano_G_skimmed",
 ] + (
     [
-        # "GluGlutoHHto4B_spanet_skimmed",
+        "GluGlutoHHto4B_spanet_skimmed",
         # "GluGlutoHHto4B",
         # "VBF_HHto4B",
     ]

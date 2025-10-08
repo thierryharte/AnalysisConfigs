@@ -97,9 +97,6 @@ def VBFtight_cuts(events, params, **args):
     mask_jj_mass = ak.fill_none(mask_jj_mass, False)
 
     mask = mask_opposite_eta & mask_jj_mass
-    # print(f"Cut in njet_vbf = {params['njet_vbf']} : {mask_efficiency(mask_at_least_two_vbf, False)}")
-    # print(f"Cut in opposite eta : {mask_efficiency(mask_opposite_eta, False)}")
-    # print(f"Cut in m_jj = {params['mjj']} : {mask_efficiency(mask_jj_mass, False)}", "\n")
 
     return ak.where(ak.is_none(mask), False, mask)
 

@@ -124,9 +124,9 @@ def generate_dictionaries(VBFtight_params, no_cuts_params):
 
 # Generate the array of dictionaries
 ab = generate_dictionaries(VBFtight_params, no_cuts_params)
-print(len(ab))
-for i in range(0, len(ab)):
-    print(list(no_cuts_params.keys())[i], ab[i], "\n")
+# print(len(ab))
+# for i in range(0, len(ab)):
+#     print(list(no_cuts_params.keys())[i], ab[i], "\n")
 
 qvg_regions = {}
 for i in range(5, 10):
