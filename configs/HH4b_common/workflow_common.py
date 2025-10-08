@@ -48,6 +48,8 @@ year_dict = {
     "2023_postBPix": 3,
 }
 
+OLD_WP_DEF = True
+
 
 class HH4bCommonProcessor(BaseProcessorABC):
     def __init__(self, cfg) -> None:
@@ -96,8 +98,9 @@ class HH4bCommonProcessor(BaseProcessorABC):
         self.events["JetGood"] = self.events.Jet
 
         self.events["Electron"] = ak.with_field(
-                self.events.Electron,
-                self.events.Electron.eta + self.events.Electron.deltaEtaSC, "etaSC"
+            self.events.Electron,
+            self.events.Electron.eta + self.events.Electron.deltaEtaSC,
+            "etaSC",
         )
 
         self.events["ElectronGood"] = lepton_selection(
@@ -108,11 +111,14 @@ class HH4bCommonProcessor(BaseProcessorABC):
         self.events["JetGood"] = self.events.JetGood[
             ak.argsort(self.events.JetGood.btagPNetB, axis=1, ascending=False)
         ]
-        self.events["JetGood"] = self.generate_btag_workingpoints(self.events["JetGood"], 5)
-        self.events["JetGood"] = self.generate_btag_workingpoints(self.events["JetGood"], 3)
+        self.events["JetGood"] = self.generate_btag_workingpoints(
+            self.events["JetGood"], 5
+        )
+        self.events["JetGood"] = self.generate_btag_workingpoints(
+            self.events["JetGood"], 3
+        )
         # keep only the first 4 jets for the Higgs candidates reconstruction
         self.events["JetGoodHiggs"] = self.events.JetGood[:, :4]
-
 
         # Trying to reshuffle jets 4 and above by pt instead of b-tag score
         if self.fifth_jet == "pt":
@@ -134,17 +140,24 @@ class HH4bCommonProcessor(BaseProcessorABC):
     #     super().apply_preselection(self, variation)
     #     self._preselections = self._preselections_temp
 
-    def generate_btag_workingpoints(self, jets,  num_wp):
+    def generate_btag_workingpoints(self, jets, num_wp):
         # L, M, T, XT, XXT
         # Right now hardcoded particleNet postEE
-        wps = self.params["btagging"]["working_point"][self._year]["btagging_WP"]["btagPNetB"]
-        btag_wp = ak.zeros_like(jets.btagPNetB, dtype=np.int32)
+        wps = self.params["btagging"]["working_point"][self._year]["btagging_WP"][
+            "btagPNetB"
+        ]
+        btag_wp = ak.zeros_like(jets.btagPNetB, dtype=np.int32) - (
+            1 if OLD_WP_DEF else 0  
+        )
         for i, thr in enumerate(sorted(wps.values())):
             if i >= num_wp:
                 break
-            btag_wp = ak.where(jets.btagPNetB > thr, i+1, btag_wp)
+            btag_wp = ak.where(
+                jets.btagPNetB > thr, i + 1 - (1 if OLD_WP_DEF else 0), btag_wp
+            )  # NOTE: the -1 is to use the old configuration
+        
+        # raise ValueError("WARNING: change the definition")
         return ak.with_field(jets, btag_wp, f"btagPNetB_{num_wp}wp")
-
 
     def get_jet_higgs_provenance(self, which_bquark):  # -> ak.Array:
         # Select b-quarks at Gen level, coming from H->bb decay
@@ -532,7 +545,9 @@ class HH4bCommonProcessor(BaseProcessorABC):
             else:
                 self.events["JetNotFromHiggs"] = self.events["JetNotFromHiggs"][
                     ak.argsort(
-                        self.events["JetNotFromHiggs"].btagPNetB, axis=1, ascending=False
+                        self.events["JetNotFromHiggs"].btagPNetB,
+                        axis=1,
+                        ascending=False,
                     )
                 ]
 
@@ -784,12 +799,6 @@ class HH4bCommonProcessor(BaseProcessorABC):
                 get_model_session(self.spanet, "spanet")
             )
 
-            try:
-                spanet_input_name_list = self.spanet_input_name_list
-            except AttributeError:
-                print("Warning: Spanet input parameters not found. Will take default ones")
-                spanet_input_name_list = ["log_pt", "eta", "phi", "btag"]
-
             # compute the pairing information using the SPANET model
             pairing_outputs = get_pairing_information(
                 model_session_spanet,
@@ -797,7 +806,7 @@ class HH4bCommonProcessor(BaseProcessorABC):
                 output_name_spanet,
                 self.events,
                 self.max_num_jets,
-                spanet_input_name_list,
+                self.spanet_input_name_list,
             )
             # Not needed anymore
             del model_session_spanet
@@ -1046,16 +1055,24 @@ class HH4bCommonProcessor(BaseProcessorABC):
                 else:
                     # if array is 2 dim take the last column
                     self.events["sig_bkg_dnn_score"] = sig_bkg_dnn_score[:, -1]
-                transformer = WeightedQuantileTransformer(n_quantiles=0, output_distribution="uniform")
+                transformer = WeightedQuantileTransformer(
+                    n_quantiles=0, output_distribution="uniform"
+                )
                 if "postEE" in self._year and self.qt_postEE:
                     transformer.load(self.qt_postEE)
                 elif "preEE" in self._year and self.qt_preEE:
                     transformer.load(self.qt_preEE)
                 elif "2023" in self._year:
-                    raise NotImplementedError("Quantile transformation for 2023 to be implemented")
+                    raise NotImplementedError(
+                        "Quantile transformation for 2023 to be implemented"
+                    )
                 else:
-                    raise ValueError("Unknown year or quantile transformer not provided")
-                self.events["sig_bkg_dnn_score_transformed"] = transformer.transform(self.events.sig_bkg_dnn_score)
+                    raise ValueError(
+                        "Unknown year or quantile transformer not provided"
+                    )
+                self.events["sig_bkg_dnn_score_transformed"] = transformer.transform(
+                    self.events.sig_bkg_dnn_score
+                )
             if self.run2:
                 sig_bkg_dnn_score = get_dnn_prediction(
                     model_session_SIG_BKG_DNN,
@@ -1072,10 +1089,16 @@ class HH4bCommonProcessor(BaseProcessorABC):
                 else:
                     # if array is 2 dim take the last column
                     self.events["sig_bkg_dnn_scoreRun2"] = sig_bkg_dnn_score[:, -1]
-                params_quantile_transformer = self.params["quantile_transformer"][self.events.metadata["year"]]
-                transformer = WeightedQuantileTransformer(n_quantiles=0, output_distribution="uniform")
+                params_quantile_transformer = self.params["quantile_transformer"][
+                    self.events.metadata["year"]
+                ]
+                transformer = WeightedQuantileTransformer(
+                    n_quantiles=0, output_distribution="uniform"
+                )
                 transformer.load(params_quantile_transformer["file_run2"])
-                self.events["sig_bkg_dnn_score_transformedRun2"] = transformer.transform(self.events.sig_bkg_dnn_scoreRun2)
+                self.events["sig_bkg_dnn_score_transformedRun2"] = (
+                    transformer.transform(self.events.sig_bkg_dnn_scoreRun2)
+                )
                 del model_session_SIG_BKG_DNN
                 del input_name_SIG_BKG_DNN
                 del output_name_SIG_BKG_DNN
