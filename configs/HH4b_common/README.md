@@ -11,7 +11,7 @@ The full analysis workflow is composed by multiple steps, which are spread in di
 
 - Configurations for [Pocket Coffea](https://github.com/matteomalucchi/PocketCoffea)
   - <https://github.com/matteomalucchi/AnalysisConfigs>
-- Configurations for [SPANet](https://github.com/matteomalucchi/SPANet>)
+- Configurations for [SPANet](https://github.com/matteomalucchi/SPANet)
   - <https://github.com/matteomalucchi/HH4b_SPANet>
 - DNN training
   - <https://github.com/matteomalucchi/ML_pytorch>
@@ -45,7 +45,7 @@ run_pocket_coffea no_model HH4b_parton_matching_config.py params/t3_run_options.
 > @Tier-3/HH4b_SPANet
 
 > [!NOTE]
-> Additional information can be found in the [README](https://github.com/matteomalucchi/HH4b_SPANet/README.md) file of the HH4b_SPANet repository.
+> Additional information can be found in the [README](https://github.com/matteomalucchi/HH4b_SPANet/blob/main/README.md) file of the HH4b_SPANet repository.
 
 ```bash
 cd HH4b_SPANet/utils/dataset
@@ -75,7 +75,7 @@ scp -r loose_MC_postEE_btagWP tharte@lxplus.cern.ch:/eos/user/t/tharte/Analysis_
 > @lxplus/HH4b_SPANet
 
 > [!NOTE]
-> Additional information can be found in the [README](https://github.com/matteomalucchi/HH4b_SPANet/README.md) file of the HH4b_SPANet repository.
+> Additional information can be found in the [README](https://github.com/matteomalucchi/HH4b_SPANet/blob/main/README.md) file of the HH4b_SPANet repository.
 
 Edit the option_file accordingly to the training you want to perform.
 
@@ -113,7 +113,7 @@ python3 ~/public/Software/HH4b_SPANet/jobs/submit_jobs_seed.py -c ~/public/Softw
 > @lxplus/HH4b_SPANet
 
 > [!NOTE]
-> Additional information can be found in the [README](https://github.com/matteomalucchi/HH4b_SPANet/README.md) file of the HH4b_SPANet repository.
+> Additional information can be found in the [README](https://github.com/matteomalucchi/HH4b_SPANet/blob/main/README.md) file of the HH4b_SPANet repository.
 
 Once the model is trained, compute the predictions on the input h5 files using the following command on `lxplus`:
 
@@ -133,9 +133,9 @@ python -m spanet.predict ./spanet_output/out_spanet_outputs/out_hh4b_5jets_ptreg
 > @lxplus/HH4b_SPANet
 
 > [!NOTE]
-> Additional information can be found in the [README](https://github.com/matteomalucchi/HH4b_SPANet/README.md) file of the HH4b_SPANet repository.
+> Additional information can be found in the [README](https://github.com/matteomalucchi/HH4b_SPANet/blob/main/README.md) file of the HH4b_SPANet repository.
 
-Next step is to fill in an entry in the efficiency script [efficiency_configurations](.py./utils/performance/efficiency_configurations.py):
+Next step is to fill in an entry in the efficiency script `HH4b_SPANet/utils/performance/efficiency_configurations.py`:
 
 ```python
 #TODO
@@ -165,7 +165,7 @@ python3 ~/public/Software/HH4b_SPANet/utils/performance/efficiency_studies.py -p
 > @lxplus/HH4b_SPANet
 
 > [!NOTE]
-> Additional information can be found in the [README](https://github.com/matteomalucchi/HH4b_SPANet/README.md) file of the HH4b_SPANet repository.
+> Additional information can be found in the [README](https://github.com/matteomalucchi/HH4b_SPANet/blob/main/README.md) file of the HH4b_SPANet repository.
 
 Converting the file to `onnx` to use it in PocketCoffea (You need again the SPANet environment from before for the prediction):
 
@@ -206,7 +206,7 @@ run_pocket_coffea <config_name> <config_file> <t3_run_options> <output_dir>
 > @Tier-3/ML_pytorch
 
 > [!NOTE]
-> Additional information can be found in the [README](https://github.com/matteomalucchi/ML_pytorch/README.md) file of the ML_pytorch repository.
+> Additional information can be found in the [README](https://github.com/matteomalucchi/ML_pytorch/blob/main/README.md) file of the ML_pytorch repository.
 
 Create a config in `ML_pytorch/configs/bkg_reweighting/` and set the `data_dirs` entry to the path of the coffea files you produced in the previous step.
 
@@ -220,6 +220,8 @@ cd <output_folder>
 ml_onnx -i best_models -o best_models -ar -v bkg_morphing_dnn_DeltaProb_input_variables
 
 ```
+
+The training will produce the ONNX model to be used in PocketCoffea for background morphing, as well as plots with the training history, the ROC curve and an overtraining check.
 
 ### Apply background morphing DNN to data and produce MC signal files
 
@@ -251,7 +253,7 @@ sbatch -p short --account=t3 --time=00:05:00 --mem 25gb --cpus-per-task=8 --wrap
 > @Tier-3/ML_pytorch
 
 > [!NOTE]
-> Additional information can be found in the [README](https://github.com/matteomalucchi/ML_pytorch/README.md) file of the ML_pytorch repository.
+> Additional information can be found in the [README](https://github.com/matteomalucchi/ML_pytorch/blob/main/README.md) file of the ML_pytorch repository.
 
 Create a config in `ML_pytorch/configs/ggF_bkg_classifier/` and set the `data_dirs` entry to the path of the coffea files you produced in the previous step.
 
