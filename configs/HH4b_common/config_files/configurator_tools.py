@@ -989,7 +989,7 @@ variable_dict_bkg_morphing = {
     ),
 }
 
-def get_variables_dict_sig_bkg_score(bins, y=""):
+def get_variables_dict_sig_bkg_score(transformed_bins, y=""):
     score_histograms = {
     "sig_bkg_dnn_score": HistConf(
         [
@@ -1018,13 +1018,13 @@ def get_variables_dict_sig_bkg_score(bins, y=""):
         storage='weight'
     )
     }
-    if bins:
+    if transformed_bins:
         score_histograms[f"sig_bkg_dnn_score_transformed{y}"] = HistConf(
             [
                 Axis(
                     coll="events",
                     field="sig_bkg_dnn_score",
-                    bins=bins,
+                    bins=transformed_bins,
                     type="variable",
                     start=0,
                     stop=1,
@@ -1038,7 +1038,7 @@ def get_variables_dict_sig_bkg_score(bins, y=""):
                     Axis(
                         coll="events",
                         field="sig_bkg_dnn_scoreRun2",
-                        bins=bins,
+                        bins=transformed_bins,
                         type="variable",
                         start=0,
                         stop=1,
@@ -1083,14 +1083,15 @@ def get_variables_dict(
             else:
                 print(f"Did not find a valid quantile transformation for year {y}")
                 params_qt = None
+                
             if params_qt:
                 has_qt = True
                 transformer = WeightedQuantileTransformer(n_quantiles=0, output_distribution="uniform")  # We read the quantiles and distribution anyway from the pickle file
                 transformer.load(params_qt)
-                bins = transformer.quantiles_
-                bins[0] = 0.0
-                bins[-1] = 1.0
-                variables_dict.update(get_variables_dict_sig_bkg_score(list(bins), y))
+                transformed_bins = transformer.quantiles_
+                transformed_bins[0] = 0.0
+                transformed_bins[-1] = 1.0
+                variables_dict.update(get_variables_dict_sig_bkg_score(list(transformed_bins), y))
             # bins_spanet_final = bins_spanet[::step]
         if not has_qt:
             variables_dict.update(get_variables_dict_sig_bkg_score(False))
