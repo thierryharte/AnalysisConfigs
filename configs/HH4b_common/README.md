@@ -244,7 +244,7 @@ run_pocket_coffea <config_name> <config_file> <t3_run_options> <output_dir>
 To compare the morphed 2b data with the 4b data in CR and SR, run the following command:
 
 ```bash
-sbatch -p short --account=t3 --time=00:05:00 --mem 25gb --cpus-per-task=8 --wrap="python AnalysisConfigs/scripts/plot_2bMorphedvs4b.py -i <input_directory> -o <output_directory> <--novars>"
+sbatch -p short --account=t3 --time=00:05:00 --mem 25gb --cpus-per-task=8 --wrap="python AnalysisConfigs/scripts/plot_2bMorphedvs4b.py -i <input_directory> -o <output_directory> <--novars> <-r2>"
 ```
 
 ### Train DNN for signal / background classification
@@ -282,7 +282,7 @@ run_pocket_coffea <config_name> <config_file> <t3_run_options> <output_dir>
 > @Tier-3/AnalysisConfigs
 
 ```bash
-sbatch -p short --account=t3 --time=00:05:00 --mem 25gb --cpus-per-task=8 --wrap="python AnalysisConfigs/scripts/plot_DNN_score.py -i <input_directory> -o <output_directory> <--novars>"
+sbatch -p short --account=t3 --time=00:05:00 --mem 25gb --cpus-per-task=8 --wrap="python AnalysisConfigs/scripts/plot_DNN_score.py -i <input_directory> -im <input_signal_file> -o <output_directory> <--novars>  <-r2>"
 ```
 
 ### Datacard production
