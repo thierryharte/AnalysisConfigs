@@ -244,7 +244,7 @@ run_pocket_coffea <config_name> <config_file> <t3_run_options> <output_dir>
 To compare the morphed 2b data with the 4b data in CR and SR, run the following command:
 
 ```bash
-sbatch -p short --account=t3 --time=00:05:00 --mem 25gb --cpus-per-task=8 --wrap="python AnalysisConfigs/scripts/plot_2bMorphedvs4b.py -i <input_directory> -o <output_directory>"
+sbatch -p short --account=t3 --time=00:05:00 --mem 25gb --cpus-per-task=8 --wrap="python AnalysisConfigs/scripts/plot_2bMorphedvs4b.py -i <input_directory> -o <output_directory> <--novars>"
 ```
 
 ### Train DNN for signal / background classification
@@ -282,7 +282,43 @@ run_pocket_coffea <config_name> <config_file> <t3_run_options> <output_dir>
 > @Tier-3/AnalysisConfigs
 
 ```bash
-sbatch -p short --account=t3 --time=00:05:00 --mem 25gb --cpus-per-task=8 --wrap="python AnalysisConfigs/scripts/plot_DNN_score.py -i <input_directory> -o <output_directory>"
+sbatch -p short --account=t3 --time=00:05:00 --mem 25gb --cpus-per-task=8 --wrap="python AnalysisConfigs/scripts/plot_DNN_score.py -i <input_directory> -o <output_directory> <--novars>"
+```
+
+### Datacard production
+
+This section describes how to produce the datacards for the final statistical analysis.
+
+> [!IMPORTANT]
+> Work in Progress
+
+#### Quantile transformer to obtain constant signal binning
+
+> [!TIP]
+> @Tier-3/AnalysisConfigs
+
+Produce the quantile transformer to be used in the datacard production with the following command:
+
+```bash
+#TODO
+python scripts/extract_quantile_transformer.py -i <input_signal_file> <--novars>
+```
+
+Set the `qt_postEE`/`qt_preEE` entry in the config created before  in [`AnalysisConfigs/configs/HH4b_common/config_files`](./config_files/) to the path of the quantile transformer you produced in the previous step.
+
+Then run PocketCoffea with that config to produce coffea files using the following command:
+
+```bash
+run_pocket_coffea <config_name> <config_file> <t3_run_options> <output_dir>
+```
+
+#### Produce datacards
+
+> [!TIP]
+> @Tier-3/AnalysisConfigs
+
+```
+#TODO
 ```
 
 ## Example commands
