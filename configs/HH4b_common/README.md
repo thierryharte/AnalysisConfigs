@@ -36,8 +36,8 @@ run_pocket_coffea pt_vary <config_file> <t3_run_options> <output_dir>
 run_pocket_coffea no_model HH4b_parton_matching_config.py params/t3_run_options.yaml ../../../sample_spanet/loose_MC_postEE_btagWP
 ```
 
-> [!IMPORTANT]
-> To indicate the used config_file, the ending `.py` is to be left out. Currently, it crashes, if the ending is included (e.g. `no_model.py`).
+> [!NOTE]
+> It does not matter, if the config file (e.g. `no_model`) is passed with or without the `.py` ending. The script handles this automatically.
 
 > [!NOTE]
 > To run a test on a small number of files, add the `--test` flag at the **end** of the command.
