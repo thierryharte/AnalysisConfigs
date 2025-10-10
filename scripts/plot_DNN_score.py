@@ -4,7 +4,6 @@ import numpy as np
 import awkward as ak
 from hist import Hist
 from multiprocessing import Pool
-import matplotlib.pyplot as plt
 
 import configs.HH4b_common.dnn_input_variables as dnn_input_variables
 from utils.inference_session_onnx import get_model_session
