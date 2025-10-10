@@ -7,7 +7,7 @@ cleanup() {
 # Usage: ./your_script.sh config_options config_template run_options output [--test]
 
 trap 'cleanup; kill -- "$pid"; exit 1' SIGINT SIGTERM
-config_options=$1
+config_options=${1%.py}
 config_template=$2
 run_options=$3
 output=$4
