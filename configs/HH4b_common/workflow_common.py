@@ -48,8 +48,6 @@ year_dict = {
     "2023_postBPix": 3,
 }
 
-OLD_WP_DEF = False
-
 
 class HH4bCommonProcessor(BaseProcessorABC):
     def __init__(self, cfg) -> None:
@@ -141,13 +139,13 @@ class HH4bCommonProcessor(BaseProcessorABC):
             "btagPNetB"
         ]
         btag_wp = ak.zeros_like(jets.btagPNetB, dtype=np.int32) - (
-            1 if OLD_WP_DEF else 0  
+            1 if self.old_wp_def else 0
         )
         for i, thr in enumerate(sorted(wps.values())):
             if i >= num_wp:
                 break
             btag_wp = ak.where(
-                jets.btagPNetB > thr, i + 1 - (1 if OLD_WP_DEF else 0), btag_wp
+                jets.btagPNetB > thr, i + 1 - (1 if self.old_wp_def else 0), btag_wp
             )  # NOTE: the -1 is to use the old configuration
 
         # raise ValueError("WARNING: change the definition")
@@ -1085,7 +1083,7 @@ class HH4bCommonProcessor(BaseProcessorABC):
                 else:
                     # if array is 2 dim take the last column
                     self.events["sig_bkg_dnn_score"] = sig_bkg_dnn_score[:, -1]
-                
+
             if self.run2:
                 sig_bkg_dnn_score = get_dnn_prediction(
                     model_session_SIG_BKG_DNN,
@@ -1102,7 +1100,7 @@ class HH4bCommonProcessor(BaseProcessorABC):
                 else:
                     # if array is 2 dim take the last column
                     self.events["sig_bkg_dnn_scoreRun2"] = sig_bkg_dnn_score[:, -1]
-                    
+
                 del model_session_SIG_BKG_DNN
                 del input_name_SIG_BKG_DNN
                 del output_name_SIG_BKG_DNN
