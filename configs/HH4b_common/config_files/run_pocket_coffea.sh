@@ -11,7 +11,7 @@ config_options=${1%.py}
 config_template=$2
 run_options=$3
 output=$4
-testing=$5  # Optional flag: --test
+
 
 # Find the directory this script is in
 SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &> /dev/null && pwd)
@@ -53,29 +53,35 @@ fi
 
 echo "Using executor: $EXECUTOR"
 # Run the command
-if [[ "$testing" == "--test" ]]; then
+if [[ " $@ " =~ "--test" ]]; then
     echo "pocket-coffea run --cfg ${new_config_template} --test --custom-run-options ${run_options} -o ${output} --process-separately"
-    pocket-coffea run \
-		--cfg "$new_config_template" \
-        --test \
-        --custom-run-options "$run_options" \
-        -o "$output" \
-        --process-separately &
-		pid=$!
+	if [[ ! " $@ " =~ "--debug" ]]; then
+		pocket-coffea run \
+			--cfg "$new_config_template" \
+			--test \
+			--custom-run-options "$run_options" \
+			-o "$output" \
+			--process-separately &
+			pid=$!
+	fi
 else
     echo "pocket-coffea run --cfg ${new_config_template} ${EXECUTOR:+-e $EXECUTOR} --custom-run-options ${run_options} -o ${output} ${EXECUTOR_CUSTOM_SETUP} --process-separately"
-    pocket-coffea run \
-        --cfg "$new_config_template" \
-        ${EXECUTOR:+-e $EXECUTOR} \
-        --custom-run-options "$run_options" \
-        -o "$output" \
-        ${EXECUTOR_CUSTOM_SETUP} \
-        --process-separately &
-		pid=$!
-		echo $pid
+	if [[ ! " $@ " =~ "--debug" ]]; then
+		pocket-coffea run \
+			--cfg "$new_config_template" \
+			${EXECUTOR:+-e $EXECUTOR} \
+			--custom-run-options "$run_options" \
+			-o "$output" \
+			${EXECUTOR_CUSTOM_SETUP} \
+			--process-separately &
+			pid=$!
+			echo $pid
+	fi
 fi
-wait $pid
-status=$?
+if [[ ! " $@ " =~ "--debug" ]]; then
+	wait $pid
+	status=$?
 
-cleanup
-exit $status
+	cleanup
+	exit $status
+fi
