@@ -48,8 +48,6 @@ year_dict = {
     "2023_postBPix": 3,
 }
 
-OLD_WP_DEF = True
-
 
 class HH4bCommonProcessor(BaseProcessorABC):
     def __init__(self, cfg) -> None:
@@ -111,12 +109,6 @@ class HH4bCommonProcessor(BaseProcessorABC):
         self.events["JetGood"] = self.events.JetGood[
             ak.argsort(self.events.JetGood.btagPNetB, axis=1, ascending=False)
         ]
-        self.events["JetGood"] = self.generate_btag_workingpoints(
-            self.events["JetGood"], 5
-        )
-        self.events["JetGood"] = self.generate_btag_workingpoints(
-            self.events["JetGood"], 3
-        )
         # keep only the first 4 jets for the Higgs candidates reconstruction
         self.events["JetGoodHiggs"] = self.events.JetGood[:, :4]
 
@@ -147,17 +139,44 @@ class HH4bCommonProcessor(BaseProcessorABC):
             "btagPNetB"
         ]
         btag_wp = ak.zeros_like(jets.btagPNetB, dtype=np.int32) - (
-            1 if OLD_WP_DEF else 0  
+            1 if self.old_wp_def else 0
         )
         for i, thr in enumerate(sorted(wps.values())):
             if i >= num_wp:
                 break
             btag_wp = ak.where(
-                jets.btagPNetB > thr, i + 1 - (1 if OLD_WP_DEF else 0), btag_wp
+                jets.btagPNetB > thr, i + 1 - (1 if self.old_wp_def else 0), btag_wp
             )  # NOTE: the -1 is to use the old configuration
-        
+
         # raise ValueError("WARNING: change the definition")
         return ak.with_field(jets, btag_wp, f"btagPNetB_{num_wp}wp")
+
+    def generate_btag_delta_workingpoints(self, jets, num_wp):
+        wp_array = jets[f"btagPNetB_{num_wp}wp"]
+        num_jets = ak.num(wp_array)
+        deltaWP = ak.where(num_jets <= 4,
+                   ak.concatenate([
+                       (wp_array[:, 0] - wp_array[:, 1])[..., None],
+                       (wp_array[:, 1] - wp_array[:, 0])[..., None],
+                       (wp_array[:, 2] - wp_array[:, 3])[..., None],
+                       (wp_array[:, 3] - wp_array[:, 2])[..., None],
+                       wp_array[:, 4:]
+                   ], axis=1),
+                   ak.concatenate([
+                       (wp_array[:, 0] - wp_array[:, 1])[..., None],
+                       (wp_array[:, 1] - wp_array[:, 0])[..., None],
+                       (wp_array[:, 2] - wp_array[:, 3])[..., None],
+                       (wp_array[:, 3] - wp_array[:, 2])[..., None],
+                       (ak.pad_none(wp_array, 5)[:, 4] - wp_array[:, 3])[..., None],
+                       # (wp_array[:, 4] - wp_array[:, 3])[..., None]
+                       wp_array[:, 5:]
+                   ], axis=1)
+        )
+        return ak.with_field(jets, deltaWP, f"btagPNetB_delta{num_wp}wp")
+
+
+
+
 
     def get_jet_higgs_provenance(self, which_bquark):  # -> ak.Array:
         # Select b-quarks at Gen level, coming from H->bb decay
@@ -790,6 +809,15 @@ class HH4bCommonProcessor(BaseProcessorABC):
         return matched_jet_higgs_idx_not_none
 
     def process_extra_after_presel(self, variation):  # -> ak.Array:
+        self.events["JetGood"] = self.generate_btag_workingpoints(
+            self.events["JetGood"], 5
+        )
+        self.events["JetGood"] = self.generate_btag_workingpoints(
+            self.events["JetGood"], 3
+        )
+        self.events["JetGood"] = self.generate_btag_delta_workingpoints(
+            self.events["JetGood"], 5
+        )
         if self._isMC and not self.spanet:
             matched_jet_higgs_idx_not_none = self.get_true_pairing_and_compare()
 
@@ -1055,7 +1083,7 @@ class HH4bCommonProcessor(BaseProcessorABC):
                 else:
                     # if array is 2 dim take the last column
                     self.events["sig_bkg_dnn_score"] = sig_bkg_dnn_score[:, -1]
-                
+
             if self.run2:
                 sig_bkg_dnn_score = get_dnn_prediction(
                     model_session_SIG_BKG_DNN,
@@ -1072,7 +1100,7 @@ class HH4bCommonProcessor(BaseProcessorABC):
                 else:
                     # if array is 2 dim take the last column
                     self.events["sig_bkg_dnn_scoreRun2"] = sig_bkg_dnn_score[:, -1]
-                    
+
                 del model_session_SIG_BKG_DNN
                 del input_name_SIG_BKG_DNN
                 del output_name_SIG_BKG_DNN
