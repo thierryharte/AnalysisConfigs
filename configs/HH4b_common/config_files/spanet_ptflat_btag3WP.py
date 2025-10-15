@@ -38,6 +38,6 @@ config_options_dict |= {
     "arctanh_delta_prob_bin_edge": 2.44,
     "arctanh_delta_prob_pad_limit": 2.0,
     "add_jet_spanet": True,
-    "spanet_input_name_list": ["log_pt", "eta", "phi", "btagPNetB_5wp"],
+    "spanet_input_name_list": ["log_pt", "eta", "phi", "btagPNetB_3wp"],
     "old_wp_def": False,
 } | onnx_model_dict
