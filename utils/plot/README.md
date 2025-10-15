@@ -9,11 +9,9 @@ Supports:
 * ✅ 2D histograms (heatmaps)
 * ✅ Graphs with error bars (e.g. efficiency or response curves)
 
-
-## 🧾 Note
-
-📘 This documentation and example set were generated with the assistance of ChatGPT (GPT-5) for improved readability and completeness.
-
+> [!WARNING] 
+> ### 🧾 Disclaimer
+> 📘 This documentation and example set were generated with the assistance of ChatGPT (GPT-5), so there may be errors and inconsistencies w.r.t. the actual `HEPPlotter` class  
 
 ---
 
