@@ -7,12 +7,11 @@ cleanup() {
 # Usage: ./your_script.sh config_options config_template run_options output [--test]
 
 trap 'cleanup; kill -- "$pid"; exit 1' SIGINT SIGTERM
-config_options=$1
+config_options=${1%.py}
 config_template=$2
 run_options=$3
 output=$4
-testing=$5  # Optional flag: --test
-debug_mode=$6  # Optional flag: --debug
+
 
 # Find the directory this script is in
 SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &> /dev/null && pwd)
@@ -54,35 +53,35 @@ fi
 
 echo "Using executor: $EXECUTOR"
 # Run the command
-if [[ "$testing" == "--test" ]]; then
+if [[ " $@ " =~ "--test" ]]; then
     echo "pocket-coffea run --cfg ${new_config_template} --test --custom-run-options ${run_options} -o ${output} --process-separately"
-    if [[ "${debug_mode:-}" != "--debug" ]]; then
-        pocket-coffea run \
-	    	--cfg "$new_config_template" \
-            --test \
-            --custom-run-options "$run_options" \
-            -o "$output" \
-            --process-separately &
-	    	pid=$!
-    fi
+	if [[ ! " $@ " =~ "--debug" ]]; then
+		pocket-coffea run \
+			--cfg "$new_config_template" \
+			--test \
+			--custom-run-options "$run_options" \
+			-o "$output" \
+			--process-separately &
+			pid=$!
+	fi
 else
     echo "pocket-coffea run --cfg ${new_config_template} ${EXECUTOR:+-e $EXECUTOR} --custom-run-options ${run_options} -o ${output} ${EXECUTOR_CUSTOM_SETUP} --process-separately"
-    if [[ "${debug_mode:-}" != "--debug" ]]; then
-        pocket-coffea run \
-            --cfg "$new_config_template" \
-            ${EXECUTOR:+-e $EXECUTOR} \
-            --custom-run-options "$run_options" \
-            -o "$output" \
-            ${EXECUTOR_CUSTOM_SETUP} \
-            --process-separately &
-	    	pid=$!
-	    	echo $pid
-    fi
+	if [[ ! " $@ " =~ "--debug" ]]; then
+		pocket-coffea run \
+			--cfg "$new_config_template" \
+			${EXECUTOR:+-e $EXECUTOR} \
+			--custom-run-options "$run_options" \
+			-o "$output" \
+			${EXECUTOR_CUSTOM_SETUP} \
+			--process-separately &
+			pid=$!
+			echo $pid
+	fi
 fi
-if [[ "${debug_mode:-}" != "--debug" ]]; then
-    wait $pid
-    status=$?
+if [[ ! " $@ " =~ "--debug" ]]; then
+	wait $pid
+	status=$?
 
-    cleanup
-    exit $status
+	cleanup
+	exit $status
 fi

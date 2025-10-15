@@ -52,7 +52,7 @@ parameters = defaults.merge_parameters_from_files(
     f"{localdir}/params/object_preselection.yaml",
     f"{localdir}/params/triggers.yaml",
     f"{localdir}/../HH4b_common/params/btagging_multipleWP.yaml",
-    f"{localdir}/params/jets_calibration_Calibrator_withoutVariations.yaml",
+    f"{localdir}/../HH4b_common/params/jets_calibration_Calibrator_withoutVariations.yaml",
     update=True,
 )
 
