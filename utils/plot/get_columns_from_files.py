@@ -49,9 +49,57 @@ def get_columns_from_files(inputfiles, sel_var="nominal", filter_lambda=None, de
                             if debug: logger.debug(f"variation {variation}")
                             if variation not in cat_col[category]:
                                 cat_col[category][variation] = {}
-                            cat_col[category][variation] = fill_category(accumulator["columns"][sample][dataset][category], accumulator["sum_genweights"], dataset, filter_lambda, variation, debug)
+                            # cat_col[category][variation] = np.concatenate((cat_col[category][variation], fill_category(accumulator["columns"][sample][dataset][category], accumulator["sum_genweights"], dataset, filter_lambda, variation, debug)))
+                            for i, column in enumerate(list(accumulator["columns"][sample][dataset][category][variation].keys())):
+                                # filter with lamda function
+                                if filter_lambda is not None:
+                                    if not filter_lambda(column):
+                                        if debug: logger.debug(f"Skipping column {column} due to filter")
+                                        continue
+                                column_array = accumulator["columns"][sample][dataset][category][variation][column].value
+
+                                if column == "weight" and dataset in accumulator["sum_genweights"]:
+                                    column_array = column_array / accumulator["sum_genweights"][dataset]
+
+                                if column not in cat_col[category][variation]:
+                                    cat_col[category][variation][column] = column_array
+                                else:
+                                    logger.debug("concatenating")
+                                    cat_col[category][variation][column] = np.concatenate(
+                                        (cat_col[category][variation][column], column_array)
+                                    )
+                                if i == 0:
+                                    if debug: logger.debug(
+                                        f"column {column}",
+                                        column_array.shape,
+                                        cat_col[category][variation][column].shape,
+                                    )
                     elif str(sel_var) in variations:
-                        cat_col[category] = fill_category(accumulator["columns"][sample][dataset][category], accumulator["sum_genweights"], dataset, filter_lambda, sel_var, debug)
+                        # cat_col[category] = np.concatenate((cat_col[category], fill_category(accumulator["columns"][sample][dataset][category], accumulator["sum_genweights"], dataset, filter_lambda, sel_var, debug)))
+                            for i, column in enumerate(list(accumulator["columns"][sample][dataset][category][sel_var].keys())):
+                                # filter with lamda function
+                                if filter_lambda is not None:
+                                    if not filter_lambda(column):
+                                        if debug: logger.debug(f"Skipping column {column} due to filter")
+                                        continue
+                                column_array = accumulator["columns"][sample][dataset][category][str(sel_var)][column].value
+
+                                if column == "weight" and dataset in accumulator["sum_genweights"]:
+                                    column_array = column_array / accumulator["sum_genweights"][dataset]
+
+                                if column not in cat_col[category]:
+                                    cat_col[category][column] = column_array
+                                else:
+                                    logger.debug("concatenating")
+                                    cat_col[category][column] = np.concatenate(
+                                        (cat_col[category][column], column_array)
+                                    )
+                                if i == 0:
+                                    if debug: logger.debug(
+                                        f"column {column}",
+                                        column_array.shape,
+                                        cat_col[category][column].shape,
+                                    )
                     else:
                         raise ValueError(f"Variation {sel_var} not found in variations {variations}")
     return cat_col, total_datasets_list
@@ -215,6 +263,10 @@ def get_columns_from_files_novars(inputfiles, filter_lambda=None, debug=False):
         accumulator = load(inputfile)
         samples = list(accumulator["columns"].keys())
         if debug: print(f"inputfile {inputfile}")
+        if accumulator["columns"] == {}:
+            logger.info("Empty columns, trying to read from parquet files")
+            return get_columns_from_parquet(inputfiles, sel_var, filter_lambda, debug)
+            # return get_columns_from_parquet(inputfiles, filter_lambda, debug)
         for sample in samples:
             if debug: print(f"sample {sample}")
             datasets = list(accumulator["columns"][sample].keys())
