@@ -345,7 +345,7 @@ def plot_single_var_from_columns(
     print(f"bin_edges {bin_edges}")
 
     sob, sob_err, sob_list, sob_err_list, s, s_err, b, b_err = compute_sob(hist_1d_dict)
-    sob_string = r"$s/\sqrt{{{{b}}}}$ = {:.2f} $\pm$ {:.2f}".format(sob, sob_err)
+    sob_string = r"$s/\sqrt{{{{b}}}}$ = {:.3f} $\pm$ {:.3f}".format(sob, sob_err)
 
     for plot_var, plot_var_err, axis_name, plot_name in zip(
         [sob_list, s, b],
