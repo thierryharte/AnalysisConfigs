@@ -10,8 +10,9 @@ def define_spanet_inputs(events, max_num_jets, spanet_input_name_list):
 
     input_dict = {}
     
-    for variable_name in ["eta", "phi", "btag", "btagPNetB_5wp","btagPNetB_3wp"]:
-        if variable_name in spanet_input_name_list:
+    # for variable_name in ["eta", "phi", "btag", "btagPNetB_5wp","btagPNetB_3wp", "btagPNetB_delta5wp", "btagPNetB_delta3wp"]:
+    for variable_name in spanet_input_name_list: 
+        if variable_name not in ["log_pt", "btag12_ratioSubLead", "btag_ratioAll"]:
             input_dict[variable_name] = np.array(
                 ak.to_numpy(
                     ak.fill_none(
