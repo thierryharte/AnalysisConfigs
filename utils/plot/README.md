@@ -35,9 +35,10 @@ import numpy as np
 # Example: make two 1D histograms
 data = Hist.new.Reg(20, 0, 100, name="pt").Weight()
 mc = Hist.new.Reg(20, 0, 100, name="pt").Weight()
+weights = np.random.uniform(0.5, 1.5, 1200)
 
 data.fill(np.random.normal(50, 10, 1000))
-mc.fill(np.random.normal(48, 12, 1200))
+mc.fill(np.random.normal(48, 12, 1200), weight=weights)
 
 # Define styles
 series_dict = {
@@ -83,6 +84,7 @@ from hep_plotter import HEPPlotter
 np.random.seed(0)
 true_qT = np.random.exponential(scale=50, size=10_000)
 response = np.random.normal(1.0, 0.1, size=10_000)
+weights = np.random.uniform(0.5, 1.5, size=10_000)
 
 # Create a hist.Hist object
 hist2d = (
@@ -91,7 +93,7 @@ hist2d = (
     .Reg(40, 0.5, 1.5, name="response", label="u$_\parallel$/q$_T$")
     .Weight()
 )
-hist2d.fill(true_qT, response)
+hist2d.fill(true_qT, response, weight=weights)
 
 # Define input dictionary for the HEPPlotter
 series_dict = {
