@@ -1,8 +1,9 @@
 import logging
 import matplotlib.pyplot as plt
 import os
-
 import numpy as np
+from hist import Hist
+
 
 import configs.HH4b_common.dnn_input_variables as dnn_input_variables
 from utils.get_DNN_input_list import get_DNN_input_list
@@ -17,7 +18,7 @@ logging.basicConfig(format='%(asctime)s,%(msecs)03d %(name)s %(levelname)s %(mes
 logger = logging.getLogger()
 
 
-def extract_quantile_transformer(cat_col):
+def extract_quantile_transformer(cat_col, outputdir):
     logger.setLevel(logging.INFO)
     """Compute the transformation function to rebin the scores such that the 4b signal is constant in each bin."""
     cat_name = f"SR{args.region_suffix}{'Run2' if args.run2 else ''}"
@@ -130,8 +131,14 @@ def extract_quantile_transformer(cat_col):
             bins_final[-1] = 1.0
             logger.info(f"Current observable {var}, {cat_mc}")
             logger.info(f"bin edges: {bins_final}")
+            
+            # Check that the signal distribution is flat
+            histo = Hist.new.Var(bins_final, name=var_plot_name, flow=False).Weight()
+            histo.fill(col_dict[var][cat_mc], weight=col_dict["weight"][cat_mc])
+            print(histo)
             plt.hist(col_den_transformed, weights=col_dict["weight"][cat_mc], bins=20, label="transformed")
             plt.savefig(os.path.join(dir_cat, f"check_tranformation_{var_plot_name}_{savesuffix}.png"))
+
             logger.debug("Printing transformed column")
             hist, bins = np.histogram(col_den_transformed, weights=col_dict["weight"][cat_mc], bins=20)
             logger.debug(hist)
@@ -190,5 +197,5 @@ if __name__ == "__main__":
     for key, value in cat_col_mc.items():
         logger.info(f"{key}: {value.keys()}")
 
-    # === Actual plotting command. [datastuff, mcstuff] ===
-    extract_quantile_transformer(cat_col_mc)
+    # === Actual plotting command. ===
+    extract_quantile_transformer(cat_col_mc,outputdir)

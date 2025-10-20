@@ -11,7 +11,7 @@ from configs.HH4b_common.config_files.default_config import default_config_optio
 onnx_model_dict |= {
     "spanet": "/work/tharte/datasets/onnx_spanet_models_for_pairing_and_mass_sculpting_studies/spanet_hh4b_5jets_ptvary_loose_300_btag_5wp_diff_s100.onnx",  # spanet pt vary 0.3, 1.7, btag 5 WP
     "bkg_morphing_dnn": "/work/mmalucch/out_ML_pytorch/hh4b_bkg_morphing/DNN_AN_1e-3_e20drop75_minDelta1em5_SPANet_btag5deltaWP_postEE_ArctanhDeltaProb/best_models/average_model_from_onnx.onnx",  # btag_5WP, arctanh PD, only 2022_postEE, 20 k-folds, early stopping, 1e-5 minDelta, spanet pt vary
-    # "sig_bkg_dnn": "/work/mmalucch/out_ML_pytorch/SvB_DNN_AN_1e-3_e20drop75_minDelta1em5_SPANet_btag5WP_postEE_ArctanhDeltaProb/run100/state_dict/model_best_epoch_5.onnx",
+    "sig_bkg_dnn": "/work/mmalucch/out_ML_pytorch/hh4b_sig_bkg_classifier/DNN_AN_1e-3_e20drop75_minDelta1em5_SPANet_btag5deltaWP_postEE_ArctanhDeltaProb/run100/state_dict/model_best_epoch_11.onnx",
 }
 
 
@@ -41,4 +41,5 @@ config_options_dict |= {
     "arctanh_delta_prob_pad_limit": 2.0,
     "add_jet_spanet": True,
     "spanet_input_name_list": ["log_pt", "eta", "phi", "btagPNetB_delta5wp"],
+    "qt_postEE": "/work/mmalucch/out_hh4b/SigBkg/out_MC_DATA_spanet_ptflat_btag5deltaWP_ArctanhDeltaProb_BkgMorphing_SvB/quantile_transformer/SRSpanet_qt/qt_events_sig_bkg_dnn_score_kl_1.00.pkl",
 } | onnx_model_dict
