@@ -194,10 +194,8 @@ else:
 # Add special columns
 if config_options_dict["sig_bkg_dnn"] and config_options_dict["spanet"]:
     column_list += get_columns_list({"events": ["sig_bkg_dnn_score"]})
-    column_list += get_columns_list({"events": ["sig_bkg_dnn_score_transformed"]})
 if config_options_dict["sig_bkg_dnn"] and config_options_dict["run2"]:
     column_listRun2 += get_columns_list({"events": ["sig_bkg_dnn_scoreRun2"]})
-    column_listRun2 += get_columns_list({"events": ["sig_bkg_dnn_score_transformedRun2"]})
 if config_options_dict["spanet"] and not any(
     ["DATA" in sample for sample in sample_list]
 ):
