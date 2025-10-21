@@ -1075,11 +1075,16 @@ def get_variables_dict(
         variables_dict.update(variable_dict_bkg_morphing)
     if SCORE:
         has_qt = False
+        
+        assert isinstance(year, list), "Year must be a list of the years to be considered."
+        
         for y in year:
             if "postEE" in y and config_options_dict["qt_postEE"]:
                 params_qt = config_options_dict["qt_postEE"]
+                print(f"Using postEE quantile transformation for year {y}")
             elif "preEE" in y and config_options_dict["qt_preEE"]:
                 params_qt = config_options_dict["qt_preEE"]
+                print(f"Using preEE quantile transformation for year {y}")
             else:
                 print(f"Did not find a valid quantile transformation for year {y}")
                 params_qt = None

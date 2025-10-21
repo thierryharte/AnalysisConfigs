@@ -46,7 +46,7 @@ default_parameters = defaults.get_default_parameters()
 defaults.register_configuration_dir("config_dir", localdir + "/params")
 
 # adding object preselection
-year = "2022_postEE"
+year = ["2022_postEE"]
 parameters = defaults.merge_parameters_from_files(
     default_parameters,
     f"{localdir}/params/object_preselection.yaml",
@@ -264,7 +264,7 @@ cfg = Configurator(
         "filter": {
             "samples": sample_list,
             "samples_exclude": [],
-            # "year": [year],
+            # "year": year,
         },
         "subsamples": {},
     },
