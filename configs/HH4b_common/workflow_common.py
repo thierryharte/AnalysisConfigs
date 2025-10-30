@@ -89,10 +89,9 @@ class HH4bCommonProcessor(BaseProcessorABC):
         self.events["Jet"] = ak.with_field(
             self.events.Jet, ak.local_index(self.events.Jet, axis=1), "index"
         )
-        self.events["Jet"] = jet_selection_nopu(
+        self.events["JetGood"] = jet_selection_nopu(
             self.events, "Jet", self.params, tight_cuts=self.tight_cuts
         )
-        self.events["JetGood"] = self.events.Jet
 
         self.events["Electron"] = ak.with_field(
             self.events.Electron,
