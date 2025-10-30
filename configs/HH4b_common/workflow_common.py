@@ -56,9 +56,6 @@ class HH4bCommonProcessor(BaseProcessorABC):
         for key, value in self.workflow_options.items():
             setattr(self, key, value)
 
-    def process_extra_after_skim(self):
-        self.events["Jet_noCalib"] = ak.copy(self.events["Jet"])
-
     def apply_object_preselection(self, variation):
         self.events["Jet"] = ak.with_field(
             self.events.Jet,
@@ -82,46 +79,11 @@ class HH4bCommonProcessor(BaseProcessorABC):
             ),
             "mass",
         )
-        self.events["Jet_noCalib"] = ak.with_field(
-            self.events.Jet_noCalib,
-            self.events.Jet_noCalib.pt * (1 - self.events.Jet_noCalib.rawFactor),
-            "pt_raw",
-        )
-        self.events["Jet_noCalib"] = ak.with_field(
-            self.events.Jet_noCalib,
-            self.events.Jet_noCalib.mass * (1 - self.events.Jet_noCalib.rawFactor),
-            "mass_raw",
-        )
-        self.events["Jet_noCalib"] = ak.with_field(
-            self.events.Jet_noCalib,
-            ak.where(
-                self.events.Jet_noCalib.PNetRegPtRawCorr > 0,
-                self.events.Jet_noCalib.pt_raw
-                * self.events.Jet_noCalib.PNetRegPtRawCorr
-                * self.events.Jet_noCalib.PNetRegPtRawCorrNeutrino,
-                self.events.Jet_noCalib.pt,
-            ),
-            "pt",
-        )
-        self.events["Jet_noCalib"] = ak.with_field(
-            self.events.Jet_noCalib,
-            ak.where(
-                self.events.Jet_noCalib.PNetRegPtRawCorr > 0,
-                self.events.Jet_noCalib.mass_raw
-                * self.events.Jet_noCalib.PNetRegPtRawCorr
-                * self.events.Jet_noCalib.PNetRegPtRawCorrNeutrino,
-                self.events.Jet_noCalib.mass,
-            ),
-            "mass",
-        )
 
         if self.add_jet_spanet:
             # reorder the jets by pt regressed
             self.events["Jet"] = self.events["Jet"][
                 ak.argsort(self.events["Jet"].pt, axis=1, ascending=False)
-            ]
-            self.events["Jet_noCalib"] = self.events["Jet_noCalib"][
-                ak.argsort(self.events["Jet_noCalib"].pt, axis=1, ascending=False)
             ]
 
         self.events["Jet"] = ak.with_field(
@@ -131,13 +93,6 @@ class HH4bCommonProcessor(BaseProcessorABC):
             self.events, "Jet", self.params, tight_cuts=self.tight_cuts
         )
         self.events["JetGood"] = self.events.Jet
-
-        self.params.object_preselection.update(
-            {"Jet_noCalib": self.params.object_preselection["Jet"]}
-        )
-        self.events["JetGood_noCalib"] = jet_selection_nopu(
-            self.events, "Jet_noCalib", self.params, tight_cuts=self.tight_cuts
-        )
 
         self.events["Electron"] = ak.with_field(
             self.events.Electron,
@@ -153,12 +108,9 @@ class HH4bCommonProcessor(BaseProcessorABC):
         self.events["JetGood"] = self.events.JetGood[
             ak.argsort(self.events.JetGood.btagPNetB, axis=1, ascending=False)
         ]
-        self.events["JetGood_noCalib"] = self.events.JetGood_noCalib[
-            ak.argsort(self.events.JetGood_noCalib.btagPNetB, axis=1, ascending=False)
-        ]
+        
         # keep only the first 4 jets for the Higgs candidates reconstruction
         self.events["JetGoodHiggs"] = self.events.JetGood[:, :4]
-        self.events["JetGood_noCalibHiggs"] = self.events.JetGood_noCalib[:, :4]
 
         # Trying to reshuffle jets 4 and above by pt instead of b-tag score
         if self.fifth_jet == "pt":
@@ -166,14 +118,6 @@ class HH4bCommonProcessor(BaseProcessorABC):
             jets5plus_pt = jets5plus[ak.argsort(jets5plus.pt, axis=1, ascending=False)]
             self.events["JetGood"] = ak.concatenate(
                 (self.events["JetGoodHiggs"], jets5plus_pt), axis=1
-            )
-
-            jets5plus_noCalib = self.events["JetGood_noCalib"][:, 4:]
-            jets5plus_noCalib_pt = jets5plus_noCalib[
-                ak.argsort(jets5plus_noCalib.pt, axis=1, ascending=False)
-            ]
-            self.events["JetGood_noCalib"] = ak.concatenate(
-                (self.events["JetGood_noCalibHiggs"], jets5plus_noCalib_pt), axis=1
             )
 
     # def apply_preselection(self, variation):
