@@ -89,11 +89,9 @@ class HH4bCommonProcessor(BaseProcessorABC):
         self.events["Jet"] = ak.with_field(
             self.events.Jet, ak.local_index(self.events.Jet, axis=1), "index"
         )
-        self.events["Jet"] = jet_selection_nopu(
+        self.events["JetGood"] = jet_selection_nopu(
             self.events, "Jet", self.params, tight_cuts=self.tight_cuts
         )
-
-        self.events["JetGood"] = self.events.Jet
 
         self.events["Electron"] = ak.with_field(
             self.events.Electron,
@@ -109,6 +107,7 @@ class HH4bCommonProcessor(BaseProcessorABC):
         self.events["JetGood"] = self.events.JetGood[
             ak.argsort(self.events.JetGood.btagPNetB, axis=1, ascending=False)
         ]
+
         # keep only the first 4 jets for the Higgs candidates reconstruction
         self.events["JetGoodHiggs"] = self.events.JetGood[:, :4]
 
@@ -154,29 +153,32 @@ class HH4bCommonProcessor(BaseProcessorABC):
     def generate_btag_delta_workingpoints(self, jets, num_wp):
         wp_array = jets[f"btagPNetB_{num_wp}wp"]
         num_jets = ak.num(wp_array)
-        deltaWP = ak.where(num_jets <= 4,
-                   ak.concatenate([
-                       (wp_array[:, 0] - wp_array[:, 1])[..., None],
-                       (wp_array[:, 1] - wp_array[:, 0])[..., None],
-                       (wp_array[:, 2] - wp_array[:, 3])[..., None],
-                       (wp_array[:, 3] - wp_array[:, 2])[..., None],
-                       wp_array[:, 4:]
-                   ], axis=1),
-                   ak.concatenate([
-                       (wp_array[:, 0] - wp_array[:, 1])[..., None],
-                       (wp_array[:, 1] - wp_array[:, 0])[..., None],
-                       (wp_array[:, 2] - wp_array[:, 3])[..., None],
-                       (wp_array[:, 3] - wp_array[:, 2])[..., None],
-                       (ak.pad_none(wp_array, 5)[:, 4] - wp_array[:, 3])[..., None],
-                       # (wp_array[:, 4] - wp_array[:, 3])[..., None]
-                       wp_array[:, 5:]
-                   ], axis=1)
+        deltaWP = ak.where(
+            num_jets <= 4,
+            ak.concatenate(
+                [
+                    (wp_array[:, 0] - wp_array[:, 1])[..., None],
+                    (wp_array[:, 1] - wp_array[:, 0])[..., None],
+                    (wp_array[:, 2] - wp_array[:, 3])[..., None],
+                    (wp_array[:, 3] - wp_array[:, 2])[..., None],
+                    wp_array[:, 4:],
+                ],
+                axis=1,
+            ),
+            ak.concatenate(
+                [
+                    (wp_array[:, 0] - wp_array[:, 1])[..., None],
+                    (wp_array[:, 1] - wp_array[:, 0])[..., None],
+                    (wp_array[:, 2] - wp_array[:, 3])[..., None],
+                    (wp_array[:, 3] - wp_array[:, 2])[..., None],
+                    (ak.pad_none(wp_array, 5)[:, 4] - wp_array[:, 3])[..., None],
+                    # (wp_array[:, 4] - wp_array[:, 3])[..., None]
+                    wp_array[:, 5:],
+                ],
+                axis=1,
+            ),
         )
         return ak.with_field(jets, deltaWP, f"btagPNetB_delta{num_wp}wp")
-
-
-
-
 
     def get_jet_higgs_provenance(self, which_bquark):  # -> ak.Array:
         # Select b-quarks at Gen level, coming from H->bb decay

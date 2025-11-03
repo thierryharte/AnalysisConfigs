@@ -36,7 +36,7 @@ class HEPPlotter:
 
     Methods
     -------
-    - set_plot_config(figsize=None, lumitext="(13.6 TeV)", formats=None)
+    - set_plot_config(figsize=None, lumitext="(13.6 TeV)", cmstext="Preliminary", formats=None)
     - set_output(output_base)
     - set_labels(xlabel, ylabel="Events", cbar_label="Events", ratio_label="Ratio")
     - set_data(series_dict, plot_type="1d")
@@ -58,6 +58,7 @@ class HEPPlotter:
         # plot config
         self.figsize = None
         self.lumitext = "(13.6 TeV)"
+        self.cmstext = "Preliminary"
         self.data_formats = ["png", "pdf", "svg"]
 
         # output
@@ -117,10 +118,13 @@ class HEPPlotter:
     # CONFIGURATION METHODS
     # ----------------------------
 
-    def set_plot_config(self, figsize=None, lumitext="(13.6 TeV)", formats=None):
+    def set_plot_config(
+        self, figsize=None, lumitext="(13.6 TeV)", cmstext="Preliminary", formats=None
+    ):
         """Set the plotting style and related options."""
         self.figsize = figsize
         self.lumitext = lumitext
+        self.cmstext = cmstext
         if formats:
             self.data_formats = formats
         return self
@@ -192,9 +196,37 @@ class HEPPlotter:
         self._ratio_hists = ratio_hists
         return self
 
-    def add_annotation(self, **kwargs):
-        """Annotation kwargs go directly to ax.text() with transform=ax.transAxes"""
-        self._annotations.append(kwargs)
+    def add_annotation(self, x, y, s, **kwargs):
+        """
+        Add a text annotation to the plot.
+
+        Parameters
+        ----------
+        x, y : float
+            Coordinates of the annotation. By default, interpreted as relative
+            (0–1) coordinates within the axes (like ax.transAxes).
+        s : str
+            Text to display.
+        coord_type : {"axes", "data", "figure"}, optional (in kwargs)
+            Coordinate system for annotation position.
+            - "axes": relative to plot area (default) -> ax.transAxes
+            - "data": use data coordinates (axis values) -> ax.transData
+            - "figure": relative to the whole figure -> ax.figure.transFigure
+        **kwargs : dict
+            Additional arguments passed directly to `ax.text()`,
+            e.g. color, fontsize, ha, va, coord_type, etc.
+        """
+        coord_type = kwargs.pop("coord_type", "axes")  # safely extract if present
+
+        self._annotations.append(
+            {
+                "x": x,
+                "y": y,
+                "s": s,
+                "coord_type": coord_type,
+                "kwargs": kwargs,
+            }
+        )
         return self
 
     def add_chi_square(self, pred_unc=False, **kwargs):
@@ -225,20 +257,31 @@ class HEPPlotter:
 
     def _save(self, fig):
         """Save the figure in all specified formats."""
-        for ext in self.data_formats:
-            fig.savefig(f"{self.output_base}.{ext}", bbox_inches="tight", dpi=300)
+        if self.output_base:
+            for ext in self.data_formats:
+                fig.savefig(f"{self.output_base}.{ext}", bbox_inches="tight", dpi=300)
 
     def _apply_cms_labels(self, ax):
         """Add CMS style labels to the plot."""
         hep.cms.lumitext(self.lumitext, ax=ax)
-        hep.cms.text("Preliminary", ax=ax)
+        hep.cms.text(self.cmstext, ax=ax)
 
     def _apply_annotations(self, ax):
-        """Apply all stored annotations to the axes."""
+        """Internal helper to draw all stored annotations on a given axis."""
         for ann in self._annotations:
+            coord_type = ann.get("coord_type", "axes")
+            transform = {
+                "axes": ax.transAxes,
+                "data": ax.transData,
+                "figure": ax.figure.transFigure,
+            }.get(coord_type, ax.transAxes)
+
             ax.text(
-                **ann,
-                transform=ax.transAxes,
+                ann["x"],
+                ann["y"],
+                ann["s"],
+                transform=transform,
+                **ann["kwargs"],
             )
 
     def _apply_lines(self, ax):
@@ -729,8 +772,6 @@ class HEPPlotter:
 
     def _finalize(self, fig, ax, ax_ratio=None):
         """Final adjustments and saving the figure."""
-        if self.legend:
-            self._set_legend(ax, self.legend_loc)
 
         if self.y_log:
             ax.set_yscale("log")
@@ -779,6 +820,10 @@ class HEPPlotter:
         self._apply_lines(ax)
 
         self._apply_cms_labels(ax)
+
+        if self.legend:
+            self._set_legend(ax, self.legend_loc)
+
         self._save(fig)
         if self.show_plot:
             plt.show()

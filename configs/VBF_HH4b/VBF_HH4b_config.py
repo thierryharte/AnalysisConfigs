@@ -46,7 +46,7 @@ default_parameters = defaults.get_default_parameters()
 defaults.register_configuration_dir("config_dir", localdir + "/params")
 
 # adding object preselection
-year = "2022_postEE"
+year = ["2022_postEE"]
 parameters = defaults.merge_parameters_from_files(
     default_parameters,
     f"{localdir}/params/object_preselection.yaml",
@@ -58,7 +58,9 @@ parameters = defaults.merge_parameters_from_files(
 
 
 if config_options_dict["save_chunk"]:
-    config_options_dict["dump_columns_as_arrays_per_chunk"] = config_options_dict["save_chunk"]
+    config_options_dict["dump_columns_as_arrays_per_chunk"] = config_options_dict[
+        "save_chunk"
+    ]
 
 # Define the variables to save
 variables_dict = get_variables_dict(
@@ -91,25 +93,40 @@ preselection = (
         )
     ]
 )
+sample_ggF_list = [
+    "GluGlutoHHto4B_spanet_kl-1p00_kt-1p00_c2-0p00_skimmed",
+    "GluGlutoHHto4B_spanet_kl-m2p00_kt-1p00_c2-0p00_skimmed",
+    "GluGlutoHHto4B_spanet_kl-m1p00_kt-1p00_c2-0p00_skimmed",
+    "GluGlutoHHto4B_spanet_kl-5p00_kt-1p00_c2-0p00_skimmed",
+    "GluGlutoHHto4B_spanet_kl-2p45_kt-1p00_c2-0p00_skimmed",
+    "GluGlutoHHto4B_spanet_kl-0p00_kt-0p00_c2-0p00_skimmed",
+    "GluGlutoHHto4B_spanet_kl-3p50_kt-1p00_c2-0p00_skimmed",
+    "GluGlutoHHto4B_spanet_kl-4p00_kt-1p00_c2-0p00_skimmed",
+    "GluGlutoHHto4B_spanet_kl-3p00_kt-1p00_c2-0p00_skimmed",
+    "GluGlutoHHto4B_spanet_kl-2p00_kt-1p00_c2-0p00_skimmed",
+    "GluGlutoHHto4B_spanet_kl-1p50_kt-1p00_c2-0p00_skimmed",
+    "GluGlutoHHto4B_spanet_kl-0p50_kt-1p00_c2-0p00_skimmed",
+]
 
 ## Define the samples to process
-sample_list = [
-    ## 2022 preEE
-    # "DATA_JetMET_JMENano_C_skimmed",
-    # "DATA_JetMET_JMENano_D_skimmed",
-    
-    ## 2022 postEE
-    "DATA_JetMET_JMENano_E_skimmed",
-    "DATA_JetMET_JMENano_F_skimmed",
-    "DATA_JetMET_JMENano_G_skimmed",
-] + (
+sample_list = (
     [
-        "GluGlutoHHto4B_spanet_skimmed",
-        # "GluGlutoHHto4B",
-        # "VBF_HHto4B",
+        ## 2022 preEE
+        # "DATA_JetMET_JMENano_C_skimmed",
+        # "DATA_JetMET_JMENano_D_skimmed",
+        ## 2022 postEE
+        "DATA_JetMET_JMENano_E_skimmed",
+        "DATA_JetMET_JMENano_F_skimmed",
+        "DATA_JetMET_JMENano_G_skimmed",
     ]
-    # if config_options_dict["sig_bkg_dnn"]
-    # else []
+    + sample_ggF_list
+    + (
+        [
+        #     "GluGlutoHHto4B_spanet_skimmed",
+        #     # "GluGlutoHHto4B",
+        #     # "VBF_HHto4B",
+        ]
+    )
 )
 
 
@@ -258,13 +275,14 @@ cfg = Configurator(
             # f"{localdir}/../HH4b_common/datasets/signal_ggF_HH4b_local_rucio.json",
             f"{localdir}/../HH4b_common/datasets/signal_ggF_HH4b_SM_local_rucio_redirector.json",
             f"{localdir}/../HH4b_common/datasets/GluGlutoHHto4B_spanet_skimmed.json",
+            f"{localdir}/../HH4b_common/datasets/GluGlutoHHto4B_spanet_skimmed_separateSamples.json",
             # f"{localdir}/../HH4b_common/datasets/signal_ggF_HH4b_test.json",
             f"{localdir}/../HH4b_common/datasets/DATA_JetMET_skimmed.json",
         ],
         "filter": {
             "samples": sample_list,
             "samples_exclude": [],
-            # "year": [year],
+            # "year": year,
         },
         "subsamples": {},
     },

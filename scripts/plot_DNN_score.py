@@ -25,7 +25,7 @@ if not args.output:
 
 NUMBER_OF_BINS = 20
 PAD_VALUE = -999
-BLIND_VALUE = 0.96
+BLINDED_SIGNAL_FRACTION = 0.2
 
 input_dir_data = os.path.dirname(args.input_data[0])
 
@@ -139,12 +139,20 @@ filter_lambda = (
 
 ## Collecting MC dataset
 cat_col_mc, total_datasets_list_mc = get_columns_from_files(
-    inputfiles_mc, sel_var="nominal", filter_lambda=filter_lambda, debug=False, novars=args.novars
+    inputfiles_mc,
+    sel_var="nominal",
+    filter_lambda=filter_lambda,
+    debug=False,
+    novars=args.novars,
 )
 
 ## Collecting DATA dataset
 cat_col_data, total_datasets_list_data = get_columns_from_files(
-    inputfiles_data, sel_var="nominal", filter_lambda=filter_lambda, debug=False, novars=args.novars
+    inputfiles_data,
+    sel_var="nominal",
+    filter_lambda=filter_lambda,
+    debug=False,
+    novars=args.novars,
 )
 
 
@@ -214,7 +222,7 @@ def plot_single_var_from_columns(
     lumi=5.79,
     era_string="22 E",
 ):
-    print(var)
+    print(f"\n\nPlotting variable {var} in {dir_cat}")
 
     var_plot_name = var.replace("Run2", "")
 
@@ -250,7 +258,6 @@ def plot_single_var_from_columns(
         )
         bin_edges[0] = 0.0
         bin_edges[-1] = 1.0
-    print(f"bin_edges {bin_edges}")
 
     hist_1d_dict = {}
 
@@ -289,23 +296,31 @@ def plot_single_var_from_columns(
 
         print(f"Found something to plot {cat} -> {cat_plot_name}")
 
-        # Mask the bins, where both edges are above BLIND_VALUE:
-        if "4b" in cat and "DATA" in cat:
-            mask_blind = col_den <= BLIND_VALUE
-        else:
-            mask_blind = np.ones(len(col_den), dtype=bool)
+        # Mask the blinded region
+        if "4b" in cat and "signal" in cat and "DATA" in cat:
+            # check if the blinded fraction can divide the bin edges
+            np.testing.assert_almost_equal(
+                (len(bin_edges) - 1) * BLINDED_SIGNAL_FRACTION % 1,
+                0,
+                decimal=3,
+                err_msg=f"BLINDED_SIGNAL_FRACTION {BLINDED_SIGNAL_FRACTION} cannot divide the bin edges of length {len(bin_edges)-1}",
+            )
 
-        col_den = ak.to_numpy(ak.mask(col_den, mask_blind), allow_missing=True)
-        weights_den = ak.to_numpy(ak.mask(weights_den, mask_blind), allow_missing=True)
-
+            blind_value = bin_edges[
+                int((len(bin_edges) - 1) * (1 - BLINDED_SIGNAL_FRACTION))
+            ]
+            mask_blind = col_den <= blind_value
+            
+            col_den=col_den[mask_blind]
+            weights_den=weights_den[mask_blind]
+            
         # histogram of the denominator
         histo = Hist.new.Var(bin_edges, name=var_plot_name, flow=False).Weight()
         histo.fill(col_den, weight=weights_den)
         print(cat_plot_name)
         print(histo)
-        print(histo.values())
 
-        if i == 0: 
+        if i == 0:
             hist_1d_dict[cat_plot_name] = {
                 "data": histo,
                 "style": {
@@ -345,7 +360,7 @@ def plot_single_var_from_columns(
     print(f"bin_edges {bin_edges}")
 
     sob, sob_err, sob_list, sob_err_list, s, s_err, b, b_err = compute_sob(hist_1d_dict)
-    sob_string = r"$s/\sqrt{{{{b}}}}$ = {:.2f} $\pm$ {:.2f}".format(sob, sob_err)
+    sob_string = r"$s/\sqrt{{{{b}}}}$ = {:.3f} $\pm$ {:.3f}".format(sob, sob_err)
 
     for plot_var, plot_var_err, axis_name, plot_name in zip(
         [sob_list, s, b],
@@ -425,6 +440,7 @@ def plot_single_var_from_columns(
     #     sob=sob_list,
     #     sob_err=sob_err_list,
     # )
+
 
 def main(cat_cols, lumi, era_string):
 

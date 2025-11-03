@@ -213,34 +213,34 @@ default_jets_calibration:
     AK4PFPuppi:
       JES_JER_Syst:
         2022_preEE:
-          - "${default_params_dir:}/jec/Summer22/Summer22_22Sep2023_V2_MC_L1FastJet_AK4PFPuppi.jec.txt.gz"
-          - "${default_params_dir:}/jec/Summer22/Summer22_22Sep2023_V2_MC_L2Relative_AK4PFPuppi.jec.txt.gz"
-          - "${default_params_dir:}/jec/Summer22/Summer22_22Sep2023_V2_MC_UncertaintySources_AK4PFPuppi.junc.txt.gz"
-          - "${default_params_dir:}/jec/Summer22/Summer22_22Sep2023_V2_MC_Uncertainty_AK4PFPuppi.junc.txt.gz"
+          # - "${default_params_dir:}/jec/Summer22/Summer22_22Sep2023_V2_MC_L1FastJet_AK4PFPuppi.jec.txt.gz"
+          # - "${default_params_dir:}/jec/Summer22/Summer22_22Sep2023_V2_MC_L2Relative_AK4PFPuppi.jec.txt.gz"
+          # - "${default_params_dir:}/jec/Summer22/Summer22_22Sep2023_V2_MC_UncertaintySources_AK4PFPuppi.junc.txt.gz"
+          # - "${default_params_dir:}/jec/Summer22/Summer22_22Sep2023_V2_MC_Uncertainty_AK4PFPuppi.junc.txt.gz"
           - "${default_params_dir:}/jec/Summer22/Summer22Run3_V1_MC_PtResolution_AK4PFPuppi.jr.txt.gz"
           - "${default_params_dir:}/jec/Summer22/Summer22Run3_V1_MC_SF_AK4PFPuppi.jersf.txt.gz"
 
         2022_postEE:
-          - "${default_params_dir:}/jec/Summer22EE/Summer22EE_22Sep2023_V2_MC_L1FastJet_AK4PFPuppi.jec.txt.gz"
-          - "${default_params_dir:}/jec/Summer22EE/Summer22EE_22Sep2023_V2_MC_L2Relative_AK4PFPuppi.jec.txt.gz"
-          - "${default_params_dir:}/jec/Summer22EE/Summer22EE_22Sep2023_V2_MC_UncertaintySources_AK4PFPuppi.junc.txt.gz"
-          - "${default_params_dir:}/jec/Summer22EE/Summer22EE_22Sep2023_V2_MC_Uncertainty_AK4PFPuppi.junc.txt.gz"
+          # - "${default_params_dir:}/jec/Summer22EE/Summer22EE_22Sep2023_V2_MC_L1FastJet_AK4PFPuppi.jec.txt.gz"
+          # - "${default_params_dir:}/jec/Summer22EE/Summer22EE_22Sep2023_V2_MC_L2Relative_AK4PFPuppi.jec.txt.gz"
+          # - "${default_params_dir:}/jec/Summer22EE/Summer22EE_22Sep2023_V2_MC_UncertaintySources_AK4PFPuppi.junc.txt.gz"
+          # - "${default_params_dir:}/jec/Summer22EE/Summer22EE_22Sep2023_V2_MC_Uncertainty_AK4PFPuppi.junc.txt.gz"
           - "${default_params_dir:}/jec/Summer22EE/Summer22EEPrompt22_JRV1_MC_PtResolution_AK4PFPuppi.jr.txt.gz"
           - "${default_params_dir:}/jec/Summer22EE/Summer22EEPrompt22_JRV1_MC_SF_AK4PFPuppi.jersf.txt.gz"
           
         2023_preBPix:
-          - "${default_params_dir:}/jec/Summer23/Summer23Prompt23_V1_MC_L1FastJet_AK4PFPuppi.jec.txt.gz"
-          - "${default_params_dir:}/jec/Summer23/Summer23Prompt23_V1_MC_L2Relative_AK4PFPuppi.jec.txt.gz"
-          - "${default_params_dir:}/jec/Summer23/Summer23Prompt23_V1_MC_UncertaintySources_AK4PFPuppi.junc.txt.gz"
-          - "${default_params_dir:}/jec/Summer23/Summer23Prompt23_V1_MC_Uncertainty_AK4PFPuppi.junc.txt.gz"
+          # - "${default_params_dir:}/jec/Summer23/Summer23Prompt23_V1_MC_L1FastJet_AK4PFPuppi.jec.txt.gz"
+          # - "${default_params_dir:}/jec/Summer23/Summer23Prompt23_V1_MC_L2Relative_AK4PFPuppi.jec.txt.gz"
+          # - "${default_params_dir:}/jec/Summer23/Summer23Prompt23_V1_MC_UncertaintySources_AK4PFPuppi.junc.txt.gz"
+          # - "${default_params_dir:}/jec/Summer23/Summer23Prompt23_V1_MC_Uncertainty_AK4PFPuppi.junc.txt.gz"
           - "${default_params_dir:}/jec/Summer23/Summer23Prompt23_JRV1_MC_PtResolution_AK4PFPuppi.jr.txt.gz"
           - "${default_params_dir:}/jec/Summer23/Summer23Prompt23_JRV1_MC_SF_AK4PFPuppi.jersf.txt.gz"
 
         2023_postBPix:
-          - "${default_params_dir:}/jec/Summer23BPix/Summer23BPixPrompt23_V1_MC_L1FastJet_AK4PFPuppi.jec.txt.gz"
-          - "${default_params_dir:}/jec/Summer23BPix/Summer23BPixPrompt23_V1_MC_L2Relative_AK4PFPuppi.jec.txt.gz"
-          - "${default_params_dir:}/jec/Summer23BPix/Summer23BPixPrompt23_V1_MC_UncertaintySources_AK4PFPuppi.junc.txt.gz"
-          - "${default_params_dir:}/jec/Summer23BPix/Summer23BPixPrompt23_V1_MC_Uncertainty_AK4PFPuppi.junc.txt.gz"
+          # - "${default_params_dir:}/jec/Summer23BPix/Summer23BPixPrompt23_V1_MC_L1FastJet_AK4PFPuppi.jec.txt.gz"
+          # - "${default_params_dir:}/jec/Summer23BPix/Summer23BPixPrompt23_V1_MC_L2Relative_AK4PFPuppi.jec.txt.gz"
+          # - "${default_params_dir:}/jec/Summer23BPix/Summer23BPixPrompt23_V1_MC_UncertaintySources_AK4PFPuppi.junc.txt.gz"
+          # - "${default_params_dir:}/jec/Summer23BPix/Summer23BPixPrompt23_V1_MC_Uncertainty_AK4PFPuppi.junc.txt.gz"
           - "${default_params_dir:}/jec/Summer23BPix/Summer23BPixPrompt23_JRV1_MC_PtResolution_AK4PFPuppi.jr.txt.gz"
           - "${default_params_dir:}/jec/Summer23BPix/Summer23BPixPrompt23_JRV1_MC_SF_AK4PFPuppi.jersf.txt.gz"
 
@@ -313,9 +313,6 @@ default_jets_calibration:
           # - "${default_params_dir:}/jec/Summer23BPix/Summer23BPixPrompt23_V1_MC_Uncertainty_AK4PFPuppi.junc.txt.gz"
           # - "${default_params_dir:}/jec/Summer23BPix/Summer23BPixPrompt23_JRV1_MC_PtResolution_AK4PFPuppi.jr.txt.gz"
           # - "${default_params_dir:}/jec/Summer23BPix/Summer23BPixPrompt23_JRV1_MC_SF_AK4PFPuppi.jersf.txt.gz"
-
-    AK4PFPuppiLowPtMuonSubtr: "${default_jets_calibration.factory_configuration_MC.AK4PFPuppi}" 
-    AK4PFPuppiMuonSubtr: "${default_jets_calibration.factory_configuration_MC.AK4PFPuppi}" 
 
   ########################## Data ########################################
   factory_configuration_Data:
@@ -447,11 +444,7 @@ default_jets_calibration:
             - "${default_params_dir:}/jec/AK4PFPNetPlusNeutrino/Summer23BPixPrompt23_RunD_V1_DATA_L2Relative_AK4PFPuppi.txt.gz"
             - "${default_params_dir:}/jec/Summer23BPix/Summer23BPixPrompt23_RunD_V1_DATA_L2L3Residual_AK4PFPuppi.txt.gz"
 
-    AK4PFPuppiLowPtMuonSubtr: "${default_jets_calibration.factory_configuration_Data.AK4PFPuppi}"
-    AK4PFPuppiMuonSubtr: "${default_jets_calibration.factory_configuration_Data.AK4PFPuppi}"
 
-  ########################## Variations ########################################
-  
   variations:
     full_variations: 
       2016_PreVFP: 
@@ -518,63 +511,227 @@ default_jets_calibration:
 
       2022_preEE:
         AK4PFPuppi: 
-          - JES_Absolute
-          - JES_Absolute_2022
+          - JES_AbsoluteStat
+          - JES_AbsoluteScale
+          - JES_AbsoluteSample
+          - JES_AbsoluteFlavMap
+          - JES_AbsoluteMPFBias
+          - JES_Fragmentation
+          - JES_SinglePionECAL
+          - JES_SinglePionHCAL
           - JES_FlavorQCD
-          - JES_BBEC1
-          - JES_EC2
-          - JES_EC2_2022
-          - JES_HF
-          - JES_HF_2022
-          - JES_BBEC1
-          - JES_BBEC1_2022
+          - JES_TimePtEta
+          - JES_RelativeJEREC1
+          - JES_RelativeJEREC2
+          - JES_RelativeJERHF
+          - JES_RelativePtBB
+          - JES_RelativePtEC1
+          - JES_RelativePtEC2
+          - JES_RelativePtHF
           - JES_RelativeBal
-          - JES_RelativeSample_2022
+          - JES_RelativeSample
+          - JES_RelativeFSR
+          - JES_RelativeStatFSR
+          - JES_RelativeStatEC
+          - JES_RelativeStatHF
+          - JES_PileUpDataMC
+          - JES_PileUpPtRef
+          - JES_PileUpPtBB
+          - JES_PileUpPtEC1
+          - JES_PileUpPtEC2
+          - JES_PileUpPtHF
+          - JES_PileUpMuZero
+          - JES_PileUpEnvelope
+          - JES_SubTotalPileUp
+          - JES_SubTotalRelative
+          - JES_SubTotalPt
+          - JES_SubTotalScale
+          - JES_SubTotalAbsolute
+          - JES_SubTotalMC
+          - JES_TotalNoFlavor
+          - JES_TotalNoTime
+          - JES_TotalNoFlavorNoTime
+          - JES_FlavorZJet
+          - JES_FlavorPhotonJet
+          - JES_FlavorPureGluon
+          - JES_FlavorPureQuark
+          - JES_FlavorPureCharm
+          - JES_FlavorPureBottom
+          - JES_CorrelationGroupMPFInSitu
+          - JES_CorrelationGroupIntercalibration
+          - jet_energy_uncertainty_CorrelationGroupbJES
+          - JES_CorrelationGroupbJES
+          - JES_CorrelationGroupFlavor
+          - JES_CorrelationGroupUncorrelated
+          - JES_jes
           - JER
       2022_postEE:
         AK4PFPuppi: 
-          - JES_Absolute
-          - JES_Absolute_2022
+          - JES_AbsoluteStat
+          - JES_AbsoluteScale
+          - JES_AbsoluteSample
+          - JES_AbsoluteFlavMap
+          - JES_AbsoluteMPFBias
+          - JES_Fragmentation
+          - JES_SinglePionECAL
+          - JES_SinglePionHCAL
           - JES_FlavorQCD
-          - JES_BBEC1
-          - JES_EC2
-          - JES_EC2_2022
-          - JES_HF
-          - JES_HF_2022
-          - JES_BBEC1
-          - JES_BBEC1_2022
+          - JES_TimePtEta
+          - JES_RelativeJEREC1
+          - JES_RelativeJEREC2
+          - JES_RelativeJERHF
+          - JES_RelativePtBB
+          - JES_RelativePtEC1
+          - JES_RelativePtEC2
+          - JES_RelativePtHF
           - JES_RelativeBal
-          - JES_RelativeSample_2022
+          - JES_RelativeSample
+          - JES_RelativeFSR
+          - JES_RelativeStatFSR
+          - JES_RelativeStatEC
+          - JES_RelativeStatHF
+          - JES_PileUpDataMC
+          - JES_PileUpPtRef
+          - JES_PileUpPtBB
+          - JES_PileUpPtEC1
+          - JES_PileUpPtEC2
+          - JES_PileUpPtHF
+          - JES_PileUpMuZero
+          - JES_PileUpEnvelope
+          - JES_SubTotalPileUp
+          - JES_SubTotalRelative
+          - JES_SubTotalPt
+          - JES_SubTotalScale
+          - JES_SubTotalAbsolute
+          - JES_SubTotalMC
+          - JES_TotalNoFlavor
+          - JES_TotalNoTime
+          - JES_TotalNoFlavorNoTime
+          - JES_FlavorZJet
+          - JES_FlavorPhotonJet
+          - JES_FlavorPureGluon
+          - JES_FlavorPureQuark
+          - JES_FlavorPureCharm
+          - JES_FlavorPureBottom
+          - JES_CorrelationGroupMPFInSitu
+          - JES_CorrelationGroupIntercalibration
+          - jet_energy_uncertainty_CorrelationGroupbJES
+          - JES_CorrelationGroupbJES
+          - JES_CorrelationGroupFlavor
+          - JES_CorrelationGroupUncorrelated
+          - JES_jes
           - JER
       2023_preBPix:
         AK4PFPuppi:      
-          - JES_Absolute
-          - JES_Absolute_2023
+          - JES_AbsoluteStat
+          - JES_AbsoluteScale
+          - JES_AbsoluteSample
+          - JES_AbsoluteFlavMap
+          - JES_AbsoluteMPFBias
+          - JES_Fragmentation
+          - JES_SinglePionECAL
+          - JES_SinglePionHCAL
           - JES_FlavorQCD
-          - JES_BBEC1
-          - JES_EC2
-          - JES_EC2_2023
-          - JES_HF
-          - JES_HF_2023
-          - JES_BBEC1
-          - JES_BBEC1_2023
+          - JES_TimePtEta
+          - JES_RelativeJEREC1
+          - JES_RelativeJEREC2
+          - JES_RelativeJERHF
+          - JES_RelativePtBB
+          - JES_RelativePtEC1
+          - JES_RelativePtEC2
+          - JES_RelativePtHF
           - JES_RelativeBal
-          - JES_RelativeSample_2023
+          - JES_RelativeSample
+          - JES_RelativeFSR
+          - JES_RelativeStatFSR
+          - JES_RelativeStatEC
+          - JES_RelativeStatHF
+          - JES_PileUpDataMC
+          - JES_PileUpPtRef
+          - JES_PileUpPtBB
+          - JES_PileUpPtEC1
+          - JES_PileUpPtEC2
+          - JES_PileUpPtHF
+          - JES_PileUpMuZero
+          - JES_PileUpEnvelope
+          - JES_SubTotalPileUp
+          - JES_SubTotalRelative
+          - JES_SubTotalPt
+          - JES_SubTotalScale
+          - JES_SubTotalAbsolute
+          - JES_SubTotalMC
+          - JES_TotalNoFlavor
+          - JES_TotalNoTime
+          - JES_TotalNoFlavorNoTime
+          - JES_FlavorZJet
+          - JES_FlavorPhotonJet
+          - JES_FlavorPureGluon
+          - JES_FlavorPureQuark
+          - JES_FlavorPureCharm
+          - JES_FlavorPureBottom
+          - JES_CorrelationGroupMPFInSitu
+          - JES_CorrelationGroupIntercalibration
+          - jet_energy_uncertainty_CorrelationGroupbJES
+          - JES_CorrelationGroupbJES
+          - JES_CorrelationGroupFlavor
+          - JES_CorrelationGroupUncorrelated
+          - JES_jes
           - JER
       2023_postBPix:
         AK4PFPuppi:      
-          - JES_Absolute
-          - JES_Absolute_2023
+          - JES_AbsoluteStat
+          - JES_AbsoluteScale
+          - JES_AbsoluteSample
+          - JES_AbsoluteFlavMap
+          - JES_AbsoluteMPFBias
+          - JES_Fragmentation
+          - JES_SinglePionECAL
+          - JES_SinglePionHCAL
           - JES_FlavorQCD
-          - JES_BBEC1
-          - JES_EC2
-          - JES_EC2_2023
-          - JES_HF
-          - JES_HF_2023
-          - JES_BBEC1
-          - JES_BBEC1_2023
+          - JES_TimePtEta
+          - JES_RelativeJEREC1
+          - JES_RelativeJEREC2
+          - JES_RelativeJERHF
+          - JES_RelativePtBB
+          - JES_RelativePtEC1
+          - JES_RelativePtEC2
+          - JES_RelativePtHF
           - JES_RelativeBal
-          - JES_RelativeSample_2023
+          - JES_RelativeSample
+          - JES_RelativeFSR
+          - JES_RelativeStatFSR
+          - JES_RelativeStatEC
+          - JES_RelativeStatHF
+          - JES_PileUpDataMC
+          - JES_PileUpPtRef
+          - JES_PileUpPtBB
+          - JES_PileUpPtEC1
+          - JES_PileUpPtEC2
+          - JES_PileUpPtHF
+          - JES_PileUpMuZero
+          - JES_PileUpEnvelope
+          - JES_SubTotalPileUp
+          - JES_SubTotalRelative
+          - JES_SubTotalPt
+          - JES_SubTotalScale
+          - JES_SubTotalAbsolute
+          - JES_SubTotalMC
+          - JES_TotalNoFlavor
+          - JES_TotalNoTime
+          - JES_TotalNoFlavorNoTime
+          - JES_FlavorZJet
+          - JES_FlavorPhotonJet
+          - JES_FlavorPureGluon
+          - JES_FlavorPureQuark
+          - JES_FlavorPureCharm
+          - JES_FlavorPureBottom
+          - JES_CorrelationGroupMPFInSitu
+          - JES_CorrelationGroupIntercalibration
+          - jet_energy_uncertainty_CorrelationGroupbJES
+          - JES_CorrelationGroupbJES
+          - JES_CorrelationGroupFlavor
+          - JES_CorrelationGroupUncorrelated
+          - JES_jes
           - JER
       
     total_variation: 
@@ -624,15 +781,11 @@ jets_calibration:
       AK4PFPuppi: "${default_jets_calibration.factory_configuration_MC.AK4PFPuppi.JES_JER_Syst}" 
       AK4PFPuppiPNetRegression: "${default_jets_calibration.factory_configuration_MC.AK4PFPuppiPNetRegression.JES_JER_Syst}" 
       AK4PFPuppiPNetRegressionPlusNeutrino: "${default_jets_calibration.factory_configuration_MC.AK4PFPuppiPNetRegressionPlusNeutrino.JES_JER_Syst}" 
-      AK4PFPuppiLowPtMuonSubtr: "${default_jets_calibration.factory_configuration_MC.AK4PFPuppi.JES_JER_Syst}"
-      AK4PFPuppiMuonSubtr: "${default_jets_calibration.factory_configuration_MC.AK4PFPuppi.JES_JER_Syst}"
       AK8PFPuppi: "${default_jets_calibration.factory_configuration_MC.AK8PFPuppi.JES_JER_Syst}"
     Data:
       AK4PFPuppi: "${default_jets_calibration.factory_configuration_Data.AK4PFPuppi.JES}" 
       AK4PFPuppiPNetRegression: "${default_jets_calibration.factory_configuration_Data.AK4PFPuppiPNetRegression.JES}" 
       AK4PFPuppiPNetRegressionPlusNeutrino: "${default_jets_calibration.factory_configuration_Data.AK4PFPuppiPNetRegressionPlusNeutrino.JES}" 
-      AK4PFPuppiLowPtMuonSubtr: "${default_jets_calibration.factory_configuration_Data.AK4PFPuppi.JES}"
-      AK4PFPuppiMuonSubtr: "${default_jets_calibration.factory_configuration_Data.AK4PFPuppi.JES}"
     
   collection:  # this is needed to know which collection is corrected with which jet factory
     2016_PreVFP:
@@ -647,52 +800,27 @@ jets_calibration:
     "2018":
       AK4PFchs: "Jet"
       AK8PFPuppi: "FatJet"
-
     2022_preEE:
-      AK4PFPuppi: "JetGoodJEC"
-      AK4PFPuppiPNetRegression: "JetPNetMuonSubtr"
-      AK4PFPuppiPNetRegressionPlusNeutrino: "JetPNetPlusNeutrinoMuonSubtr"
-      AK4PFPuppiLowPtMuonSubtr: "JetLowPtMuonSubtr"
-      AK4PFPuppiMuonSubtr: "JetMuonSubtr"
-      
+      AK4PFPuppi: "Jet"
+      AK4PFPuppiPNetRegression: "JetPNet"
+      AK4PFPuppiPNetRegressionPlusNeutrino: "JetPNetPlusNeutrino"
+      #AK8PFPuppi: "FatJet"
     2022_postEE:
-      AK4PFPuppi: "JetGoodJEC"
-      AK4PFPuppiPNetRegression: "JetPNetMuonSubtr"
-      AK4PFPuppiPNetRegressionPlusNeutrino: "JetPNetPlusNeutrinoMuonSubtr"
-      AK4PFPuppiLowPtMuonSubtr: "JetLowPtMuonSubtr"
-      AK4PFPuppiMuonSubtr: "JetMuonSubtr"
-
+      AK4PFPuppi: "Jet"
+      AK4PFPuppiPNetRegression: "JetPNet"
+      AK4PFPuppiPNetRegressionPlusNeutrino: "JetPNetPlusNeutrino"
+      #AK8PFPuppi: "FatJet"
     2023_preBPix:
-      AK4PFPuppi: "JetGoodJEC"
-      AK4PFPuppiPNetRegression: "JetPNetMuonSubtr"
-      AK4PFPuppiPNetRegressionPlusNeutrino: "JetPNetPlusNeutrinoMuonSubtr"
-      AK4PFPuppiLowPtMuonSubtr: "JetLowPtMuonSubtr"
-      AK4PFPuppiMuonSubtr: "JetMuonSubtr"
-      
+      AK4PFPuppi: "Jet"
+      AK4PFPuppiPNetRegression: "JetPNet"
+      AK4PFPuppiPNetRegressionPlusNeutrino: "JetPNetPlusNeutrino"
+      #AK8PFPuppi: "FatJet"
     2023_postBPix:
-      AK4PFPuppi: "JetGoodJEC"
-      AK4PFPuppiPNetRegression: "JetPNetMuonSubtr"
-      AK4PFPuppiPNetRegressionPlusNeutrino: "JetPNetPlusNeutrinoMuonSubtr"
-      AK4PFPuppiLowPtMuonSubtr: "JetLowPtMuonSubtr"
-      AK4PFPuppiMuonSubtr: "JetMuonSubtr"
-
-  # collection_name_alias:
-  #   2022_preEE:
-  #     AK4PFPuppiLowPtMuonSubtr : "AK4PFPuppi"
-  #     AK4PFPuppiMuonSubtr : "AK4PFPuppi"
-      
-  #   2022_postEE:
-  #     AK4PFPuppiLowPtMuonSubtr : "AK4PFPuppi"
-  #     AK4PFPuppiMuonSubtr : "AK4PFPuppi"
-
-  #   2023_preBPix:
-  #     AK4PFPuppiLowPtMuonSubtr : "AK4PFPuppi"
-  #     AK4PFPuppiMuonSubtr : "AK4PFPuppi"
-      
-  #   2023_postBPix:
-  #     AK4PFPuppiLowPtMuonSubtr : "AK4PFPuppi"
-  #     AK4PFPuppiMuonSubtr : "AK4PFPuppi"
-
+      AK4PFPuppi: "Jet"
+      AK4PFPuppiPNetRegression: "JetPNet"
+      AK4PFPuppiPNetRegressionPlusNeutrino: "JetPNetPlusNeutrino"
+      #AK8PFPuppi: "FatJet"
+    
   jec_name_map_MC: "${default_jets_calibration.jec_name_map_MC}"
   jec_name_map_Data: "${default_jets_calibration.jec_name_map_Data}"
   
@@ -711,28 +839,20 @@ jets_calibration:
       AK8PFPuppi: True
     2022_preEE: 
       AK4PFPuppi: True
-      AK4PFPuppiPNetRegression: True
-      AK4PFPuppiPNetRegressionPlusNeutrino: True
-      AK4PFPuppiLowPtMuonSubtr: True
-      AK4PFPuppiMuonSubtr: True
+      AK4PFPuppiPNetRegression: False
+      AK4PFPuppiPNetRegressionPlusNeutrino: False
     2022_postEE: 
       AK4PFPuppi: True
-      AK4PFPuppiPNetRegression: True
-      AK4PFPuppiPNetRegressionPlusNeutrino: True
-      AK4PFPuppiLowPtMuonSubtr: True
-      AK4PFPuppiMuonSubtr: True
+      AK4PFPuppiPNetRegression: False
+      AK4PFPuppiPNetRegressionPlusNeutrino: False
     2023_preBPix: 
       AK4PFPuppi: True
       AK4PFPuppiPNetRegression: True
       AK4PFPuppiPNetRegressionPlusNeutrino: True
-      AK4PFPuppiLowPtMuonSubtr: True
-      AK4PFPuppiMuonSubtr: True
     2023_postBPix: 
       AK4PFPuppi: True
       AK4PFPuppiPNetRegression: True
       AK4PFPuppiPNetRegressionPlusNeutrino: True
-      AK4PFPuppiLowPtMuonSubtr: True
-      AK4PFPuppiMuonSubtr: True
 
   apply_jec_Data:  # this is needed to know which collection is corrected with which jet factory
     2016_PreVFP: 
@@ -751,26 +871,18 @@ jets_calibration:
       AK4PFPuppi: True
       AK4PFPuppiPNetRegression: True
       AK4PFPuppiPNetRegressionPlusNeutrino: True
-      AK4PFPuppiLowPtMuonSubtr: True
-      AK4PFPuppiMuonSubtr: True
     2022_postEE: 
       AK4PFPuppi: True
       AK4PFPuppiPNetRegression: True
       AK4PFPuppiPNetRegressionPlusNeutrino: True
-      AK4PFPuppiLowPtMuonSubtr: True
-      AK4PFPuppiMuonSubtr: True
     2023_preBPix: 
       AK4PFPuppi: True
       AK4PFPuppiPNetRegression: True
       AK4PFPuppiPNetRegressionPlusNeutrino: True
-      AK4PFPuppiLowPtMuonSubtr: True
-      AK4PFPuppiMuonSubtr: True
     2023_postBPix: 
       AK4PFPuppi: True
       AK4PFPuppiPNetRegression: True
       AK4PFPuppiPNetRegressionPlusNeutrino: True
-      AK4PFPuppiLowPtMuonSubtr: True
-      AK4PFPuppiMuonSubtr: True
 
   #  Default configuration for pt Regression  **before** JEC
   apply_pt_regr_MC:
@@ -790,26 +902,18 @@ jets_calibration:
       AK4PFPuppi: False
       AK4PFPuppiPNetRegression: True
       AK4PFPuppiPNetRegressionPlusNeutrino: True
-      AK4PFPuppiLowPtMuonSubtr: False
-      AK4PFPuppiMuonSubtr: False
     2022_postEE: 
       AK4PFPuppi: False
       AK4PFPuppiPNetRegression: True
       AK4PFPuppiPNetRegressionPlusNeutrino: True
-      AK4PFPuppiLowPtMuonSubtr: False
-      AK4PFPuppiMuonSubtr: False
     2023_preBPix: 
       AK4PFPuppi: False
       AK4PFPuppiPNetRegression: True
       AK4PFPuppiPNetRegressionPlusNeutrino: True
-      AK4PFPuppiLowPtMuonSubtr: False
-      AK4PFPuppiMuonSubtr: False
     2023_postBPix: 
       AK4PFPuppi: False
       AK4PFPuppiPNetRegression: True
       AK4PFPuppiPNetRegressionPlusNeutrino: True
-      AK4PFPuppiLowPtMuonSubtr: False
-      AK4PFPuppiMuonSubtr: False
 
   apply_pt_regr_Data:
     2016_PreVFP: 
@@ -828,59 +932,51 @@ jets_calibration:
       AK4PFPuppi: False
       AK4PFPuppiPNetRegression: True
       AK4PFPuppiPNetRegressionPlusNeutrino: True
-      AK4PFPuppiLowPtMuonSubtr: False
-      AK4PFPuppiMuonSubtr: False
     2022_postEE: 
       AK4PFPuppi: False
       AK4PFPuppiPNetRegression: True
       AK4PFPuppiPNetRegressionPlusNeutrino: True
-      AK4PFPuppiLowPtMuonSubtr: False
-      AK4PFPuppiMuonSubtr: False
     2023_preBPix: 
       AK4PFPuppi: False
       AK4PFPuppiPNetRegression: True
       AK4PFPuppiPNetRegressionPlusNeutrino: True
-      AK4PFPuppiLowPtMuonSubtr: False
-      AK4PFPuppiMuonSubtr: False
     2023_postBPix: 
       AK4PFPuppi: False
       AK4PFPuppiPNetRegression: True
       AK4PFPuppiPNetRegressionPlusNeutrino: True
-      AK4PFPuppiLowPtMuonSubtr: False
-      AK4PFPuppiMuonSubtr: False
 
 
   rescale_MET_config:
     20216_PreVFP:
-      apply: False
+      apply: True
       MET_collection: "MET"
       Jet_collection: "Jet"
     2016_PostVFP:
-      apply: False
+      apply: True
       MET_collection: "MET"
       Jet_collection: "Jet"
     "2017":
-      apply: False
+      apply: True
       MET_collection: "MET"
       Jet_collection: "Jet"
     "2018": 
-      apply: False
+      apply: True
       MET_collection: "MET"
       Jet_collection: "Jet"
     2022_preEE:   
-      apply: False
+      apply: True
       MET_collection: "PuppiMET"
       Jet_collection: "Jet"
     2022_postEE:
-      apply: False
+      apply: True
       MET_collection: "PuppiMET"
       Jet_collection: "Jet"
     2023_preBPix:
-      apply: False
+      apply: True
       MET_collection: "PuppiMET"
       Jet_collection: "Jet"
     2023_postBPix:
-      apply: False
+      apply: True
       MET_collection: "PuppiMET"
       Jet_collection: "Jet"
   
@@ -889,60 +985,3 @@ jets_calibration:
   # the key default_jets_calibration.variations.full_variations contains the full setup of JET variations.
   # setup `jets_calibration.variations == "${default_jets_calibration.variations.full_variations}"` to use all variations
   variations: "${default_jets_calibration.variations.total_variation}"
-
-MET_calibration:
-  collection:
-    2016_PreVFP: 
-      MET: "Jet"
-    2016_PostVFP:
-      MET: "Jet"
-    "2017":
-      MET: "Jet"
-    "2018":
-      MET: "Jet"
-    2022_preEE:
-      PuppiMET: "Jet"
-    2022_postEE:
-      PuppiMET: "Jet"
-    2023_preBPix:
-      PuppiMET: "Jet"
-    2023_postBPix:
-      PuppiMET: "Jet"
-
-  apply_type1_correction:
-    2016_PreVFP: 
-      MET: False
-    2016_PostVFP:
-      MET: False
-    "2017":
-      MET: False
-    "2018":
-      MET: False
-    2022_preEE:
-      PuppiMET: True
-    2022_postEE:
-      PuppiMET: True
-    2023_preBPix:
-      PuppiMET: True
-    2023_postBPix:
-      PuppiMET: True
-  
-  add_low_pt_jets:
-    2016_PreVFP: 
-      MET: False
-    2016_PostVFP:
-      MET: False
-    "2017":
-      MET: False
-    "2018":
-      MET: False
-    2022_preEE:
-      PuppiMET: True
-    2022_postEE:
-      PuppiMET: True
-    2023_preBPix:
-      PuppiMET: True
-    2023_postBPix:
-      PuppiMET: True
-
-

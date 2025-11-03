@@ -1,6 +1,6 @@
 from configs.HH4b_common.dnn_input_variables import (
-    bkg_morphing_dnn_input_variables,
-    sig_bkg_dnn_input_variables,
+    bkg_morphing_dnn_ArctanhDeltaProb_input_variables,
+    sig_bkg_dnn_ArctanhDeltaProb_input_variables,
 )
 
 from configs.HH4b_common.config_files.default_config import default_onnx_model_dict as onnx_model_dict
@@ -9,9 +9,9 @@ from configs.HH4b_common.config_files.default_config import default_config_optio
 
 
 onnx_model_dict |= {
-    "spanet": "/work/tharte/datasets/onnx_spanet_models_for_pairing_and_mass_sculpting_studies/spanet_hh4b_5jets_ptvary_loose_300_btag_5wp_diff_inclusive_s100.onnx",  # spanet pt vary 0.3, 1.7, btag 5 WP
-    "bkg_morphing_dnn": "/work/tharte/datasets/ML_pytorch/out/bkg_reweighting/DNN_AN_1e-3_e20drop75_minDelta1em5_SPANet_btag5deltaWP_inclusive_postEE/best_models/ratio/average_model_from_onnx.onnx",
-    "sig_bkg_dnn": "/work/tharte/datasets/ML_pytorch/out/sig_bkg_classifier/DNN_AN_1e-3_e20drop75_minDelta1em5_SPANet_btag5deltaWP_inclusive_postEE/run100/state_dict/model_best_epoch_24.onnx",
+    "spanet": "/work/tharte/datasets/onnx_spanet_models_for_pairing_and_mass_sculpting_studies/spanet_hh4b_5jets_ptvary_loose_300_btag_5wp_diff_inclusive_s100.onnx",  
+    "bkg_morphing_dnn": "/work/mmalucch/out_ML_pytorch/hh4b_bkg_morphing/DNN_AN_1e-3_e20drop75_minDelta1em5_SPANet_btag5deltaWP_inclusive_postEE_ArctanhDeltaProb/best_models/average_model_from_onnx.onnx",  
+    "sig_bkg_dnn": "/work/mmalucch/out_ML_pytorch/hh4b_sig_bkg_classifier/DNN_AN_1e-3_e20drop75_minDelta1em5_SPANet_btag5deltaWP_inclusive_postEE_ArctanhDeltaProb/run100/state_dict/model_best_epoch_7.onnx",
 }
 
 
@@ -29,8 +29,8 @@ config_options_dict |= {
     "random_pt": False,
     "rand_type": 0.3,
     "blind": False,
-    "bkg_morphing_dnn_input_variables": bkg_morphing_dnn_input_variables,
-    "sig_bkg_dnn_input_variables": sig_bkg_dnn_input_variables,
+    "bkg_morphing_dnn_input_variables": bkg_morphing_dnn_ArctanhDeltaProb_input_variables,
+    "sig_bkg_dnn_input_variables": sig_bkg_dnn_ArctanhDeltaProb_input_variables,
     "parton_jet_min_dR": 0.4,
     "max_num_jets": 5,
     "which_bquark": "last",
@@ -41,5 +41,4 @@ config_options_dict |= {
     "arctanh_delta_prob_pad_limit": 2.0,
     "add_jet_spanet": True,
     "spanet_input_name_list": ["log_pt", "eta", "phi", "btagPNetB_delta5wp"],
-    "qt_postEE": "/work/tharte/datasets/samples_models_with_bkg_reweight/spanet_ptflat_btag5deltaWP_inclusive/quantile_transformer/SRSpanet_qt/qt_events_sig_bkg_dnn_score_kl_1.00.pkl",
 } | onnx_model_dict

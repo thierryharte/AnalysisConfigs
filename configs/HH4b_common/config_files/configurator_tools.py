@@ -989,34 +989,35 @@ variable_dict_bkg_morphing = {
     ),
 }
 
+
 def get_variables_dict_sig_bkg_score(transformed_bins, y=""):
     score_histograms = {
-    "sig_bkg_dnn_score": HistConf(
-        [
-            Axis(
-                coll="events",
-                field="sig_bkg_dnn_score",
-                bins=20,
-                start=0,
-                stop=1,
-                label="Signal vs Background DNN score",
-            )
-        ],
-        storage='weight'
-    ),
-    "sig_bkg_dnn_scoreRun2": HistConf(
-        [
-            Axis(
-                coll="events",
-                field="sig_bkg_dnn_scoreRun2",
-                bins=20,
-                start=0,
-                stop=1,
-                label=r"Signal vs Background DNN score D$_{HH}$-Method",
-            )
-        ],
-        storage='weight'
-    )
+        "sig_bkg_dnn_score": HistConf(
+            [
+                Axis(
+                    coll="events",
+                    field="sig_bkg_dnn_score",
+                    bins=20,
+                    start=0,
+                    stop=1,
+                    label="Signal vs Background DNN score",
+                )
+            ],
+            storage="weight",
+        ),
+        "sig_bkg_dnn_scoreRun2": HistConf(
+            [
+                Axis(
+                    coll="events",
+                    field="sig_bkg_dnn_scoreRun2",
+                    bins=20,
+                    start=0,
+                    stop=1,
+                    label=r"Signal vs Background DNN score D$_{HH}$-Method",
+                )
+            ],
+            storage="weight",
+        ),
     }
     if transformed_bins:
         score_histograms[f"sig_bkg_dnn_score_transformed{y}"] = HistConf(
@@ -1031,23 +1032,25 @@ def get_variables_dict_sig_bkg_score(transformed_bins, y=""):
                     label=f"Signal vs Background DNN score transformed {y}",
                 )
             ],
-            storage='weight'
-            )
+            storage="weight",
+        )
         score_histograms[f"sig_bkg_dnn_score_transformedRun2{y}"] = HistConf(
-                [
-                    Axis(
-                        coll="events",
-                        field="sig_bkg_dnn_scoreRun2",
-                        bins=transformed_bins,
-                        type="variable",
-                        start=0,
-                        stop=1,
-                        label=r"Signal vs Background DNN score D$_{HH}$-Method transformed " + y,
-                    )
-                ],
-                storage='weight'
-            )
+            [
+                Axis(
+                    coll="events",
+                    field="sig_bkg_dnn_scoreRun2",
+                    bins=transformed_bins,
+                    type="variable",
+                    start=0,
+                    stop=1,
+                    label=r"Signal vs Background DNN score D$_{HH}$-Method transformed "
+                    + y,
+                )
+            ],
+            storage="weight",
+        )
     return score_histograms
+
 
 def get_variables_dict(
     year,
@@ -1075,23 +1078,34 @@ def get_variables_dict(
         variables_dict.update(variable_dict_bkg_morphing)
     if SCORE:
         has_qt = False
+
+        assert isinstance(
+            year, list
+        ), "Year must be a list of the years to be considered."
+
         for y in year:
             if "postEE" in y and config_options_dict["qt_postEE"]:
                 params_qt = config_options_dict["qt_postEE"]
+                print(f"Using postEE quantile transformation for year {y}")
             elif "preEE" in y and config_options_dict["qt_preEE"]:
                 params_qt = config_options_dict["qt_preEE"]
+                print(f"Using preEE quantile transformation for year {y}")
             else:
                 print(f"Did not find a valid quantile transformation for year {y}")
                 params_qt = None
-                
+
             if params_qt:
                 has_qt = True
-                transformer = WeightedQuantileTransformer(n_quantiles=0, output_distribution="uniform")  # We read the quantiles and distribution anyway from the pickle file
+                transformer = WeightedQuantileTransformer(
+                    n_quantiles=0, output_distribution="uniform"
+                )  # We read the quantiles and distribution anyway from the pickle file
                 transformer.load(params_qt)
                 transformed_bins = transformer.quantiles_
                 transformed_bins[0] = 0.0
                 transformed_bins[-1] = 1.0
-                variables_dict.update(get_variables_dict_sig_bkg_score(list(transformed_bins), y))
+                variables_dict.update(
+                    get_variables_dict_sig_bkg_score(list(transformed_bins), y)
+                )
             # bins_spanet_final = bins_spanet[::step]
         if not has_qt:
             variables_dict.update(get_variables_dict_sig_bkg_score(False))
@@ -1105,7 +1119,14 @@ def get_variables_dict(
     return variables_dict
 
 
-SPANET_TRAINING_DEFAULT_COLUMN_PARAMS = ["provenance", "pt", "eta", "phi", "mass", "btagPNetB"]
+SPANET_TRAINING_DEFAULT_COLUMN_PARAMS = [
+    "provenance",
+    "pt",
+    "eta",
+    "phi",
+    "mass",
+    "btagPNetB",
+]
 SPANET_TRAINING_DEFAULT_COLUMNS = {
     "JetGoodMatched": SPANET_TRAINING_DEFAULT_COLUMN_PARAMS,
     "JetGoodHiggsMatched": SPANET_TRAINING_DEFAULT_COLUMN_PARAMS,
@@ -1113,7 +1134,15 @@ SPANET_TRAINING_DEFAULT_COLUMNS = {
     "JetGoodHiggs": SPANET_TRAINING_DEFAULT_COLUMN_PARAMS,
 }
 
-SPANET_TRAINING_DEFAULT_COLUMN_PARAMS_BTWP = ["provenance", "pt", "eta", "phi", "mass", "btagPNetB", "btagPNetB_wp"]
+SPANET_TRAINING_DEFAULT_COLUMN_PARAMS_BTWP = [
+    "provenance",
+    "pt",
+    "eta",
+    "phi",
+    "mass",
+    "btagPNetB",
+    "btagPNetB_wp",
+]
 SPANET_TRAINING_DEFAULT_COLUMNS_BTWP = {
     "JetGoodMatched": SPANET_TRAINING_DEFAULT_COLUMN_PARAMS_BTWP,
     "JetGoodHiggsMatched": SPANET_TRAINING_DEFAULT_COLUMN_PARAMS_BTWP,
@@ -1121,12 +1150,20 @@ SPANET_TRAINING_DEFAULT_COLUMNS_BTWP = {
     "JetGoodHiggs": SPANET_TRAINING_DEFAULT_COLUMN_PARAMS_BTWP,
 }
 
-DEFAULT_JET_COLUMN_PARAMS = ["pt", "eta", "phi", "mass", "btagPNetB_wp", "btagPNetB"]
+DEFAULT_JET_COLUMN_PARAMS = [
+    "pt",
+    "eta",
+    "phi",
+    "mass",
+    "btagPNetB_5wp",
+    "btagPNetB_3wp",
+    "btagPNetB",
+]
 DEFAULT_JET_COLUMNS = {
     "JetGood": DEFAULT_JET_COLUMN_PARAMS,
 }
 
-DEFAULT_JET_COLUMNS_DICT={
+DEFAULT_JET_COLUMNS_DICT = {
     f"JetGood_{x}": ["JetGood", x] for x in DEFAULT_JET_COLUMN_PARAMS
 }
 
@@ -1181,18 +1218,17 @@ def create_DNN_columns_list(run2, flatten, columns_dict, btag=False):
     return column_list
 
 
-
 def define_single_category(category_name):
     """
     Define a single category for the analysis.
     """
-    cut_list=[]
+    cut_list = []
     # number of b jets
     if "4b" in category_name:
         cut_list.append(cuts.hh4b_4b_region)
     if "2b" in category_name:
         cut_list.append(cuts.hh4b_2b_region)
-        
+
     # mass cuts
     if "VR1" not in category_name:
         if "control" in category_name:
@@ -1223,16 +1259,16 @@ def define_single_category(category_name):
             cut_list.append(cuts.blinded)
         else:
             cut_list.append(cuts.blindedRun2)
-    
-    if len(cut_list)<1: # aka if no cut applied
+
+    if len(cut_list) < 1:  # aka if no cut applied
         cut_list.append(passthrough)
-    category_item = {
-        category_name: cut_list
-    }
+    category_item = {category_name: cut_list}
     return category_item
 
 
-def define_categories(bkg_morphing_dnn=False, blind=False, spanet=False,  run2=False, vr1=False):
+def define_categories(
+    bkg_morphing_dnn=False, blind=False, spanet=False, run2=False, vr1=False
+):
     """
     Define the categories for the analysis.
     """
@@ -1242,26 +1278,50 @@ def define_categories(bkg_morphing_dnn=False, blind=False, spanet=False,  run2=F
             # categories_dict |= define_single_category("4b_region")
             categories_dict |= define_single_category("4b_control_region")
             categories_dict |= define_single_category("2b_control_region_preW")
-            categories_dict |= define_single_category("4b_signal_region" + "_blind") if blind else {}
+            categories_dict |= (
+                define_single_category("4b_signal_region" + "_blind") if blind else {}
+            )
             categories_dict |= define_single_category("4b_signal_region")
-            categories_dict |= define_single_category("2b_signal_region_preW" + "_blind") if blind else {}
+            categories_dict |= (
+                define_single_category("2b_signal_region_preW" + "_blind")
+                if blind
+                else {}
+            )
             categories_dict |= define_single_category("2b_signal_region_preW")
             if bkg_morphing_dnn:
                 categories_dict |= define_single_category("2b_control_region_postW")
-                categories_dict |= define_single_category("2b_signal_region_postW" + "_blind") if blind else {}
+                categories_dict |= (
+                    define_single_category("2b_signal_region_postW" + "_blind")
+                    if blind
+                    else {}
+                )
                 categories_dict |= define_single_category("2b_signal_region_postW")
         if run2:
             categories_dict |= define_single_category("4b_regionRun2")
             categories_dict |= define_single_category("4b_control_regionRun2")
             categories_dict |= define_single_category("2b_control_region_preWRun2")
-            categories_dict |= define_single_category("4b_signal_region" + "_blind"+"Run2") if blind else {}
+            categories_dict |= (
+                define_single_category("4b_signal_region" + "_blind" + "Run2")
+                if blind
+                else {}
+            )
             categories_dict |= define_single_category("4b_signal_region" + "Run2")
-            categories_dict |= define_single_category("2b_signal_region_preW" + "_blind" + "Run2") if blind else {}
+            categories_dict |= (
+                define_single_category("2b_signal_region_preW" + "_blind" + "Run2")
+                if blind
+                else {}
+            )
             categories_dict |= define_single_category("2b_signal_region_preW" + "Run2")
             if bkg_morphing_dnn:
                 categories_dict |= define_single_category("2b_control_region_postWRun2")
-                categories_dict |= define_single_category("2b_signal_region_postW" + "_blind" + "Run2") if blind else {}
-                categories_dict |= define_single_category("2b_signal_region_postW" + "Run2")
+                categories_dict |= (
+                    define_single_category("2b_signal_region_postW" + "_blind" + "Run2")
+                    if blind
+                    else {}
+                )
+                categories_dict |= define_single_category(
+                    "2b_signal_region_postW" + "Run2"
+                )
     else:
         if spanet:
             categories_dict |= define_single_category("4b_VR1_control_region")
@@ -1277,8 +1337,12 @@ def define_categories(bkg_morphing_dnn=False, blind=False, spanet=False,  run2=F
             categories_dict |= define_single_category("4b_VR1_signal_regionRun2")
             categories_dict |= define_single_category("2b_VR1_signal_region_preWRun2")
             if bkg_morphing_dnn:
-                categories_dict |= define_single_category("2b_VR1_control_region_postWRun2")
-                categories_dict |= define_single_category("2b_VR1_signal_region_postWRun2")
+                categories_dict |= define_single_category(
+                    "2b_VR1_control_region_postWRun2"
+                )
+                categories_dict |= define_single_category(
+                    "2b_VR1_signal_region_postWRun2"
+                )
 
     if not spanet and not run2:
         # add the 2b control region post W for the old DNN

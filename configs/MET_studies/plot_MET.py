@@ -1,4 +1,5 @@
 import logging
+
 logger = logging.getLogger("matplotlib")
 logger.setLevel(logging.WARNING)  # suppress INFO
 logger.propagate = False
@@ -12,6 +13,7 @@ from hist import Hist
 
 
 from utils.plot.get_columns_from_files import get_columns_from_files
+from utils.plot.weighted_quantile import weighted_quantile
 from plot_config import (
     total_var_dict,
     response_var_name_dict,
@@ -54,6 +56,9 @@ parser.add_argument(
 parser.add_argument("-o", "--output", type=str, help="Output directory", default="")
 
 args = parser.parse_args()
+
+
+YEAR = "2022_preEE"
 
 
 outputdir = args.output if args.output else "plots_MET"
@@ -155,7 +160,11 @@ def compute_u_info(u_i, weights_i, distribution_name, all_responses):
     all_responses[f"{distribution_name}_mean"]["data"]["y"][1].append(err_mean_u_i)
 
     all_responses[f"{distribution_name}_quantile_resolution"]["data"]["y"][0].append(
-        (np.quantile(u_i, 0.84) - np.quantile(u_i, 0.16)) / 2.0,
+        (
+            weighted_quantile(u_i, 0.84, weights_i)
+            - weighted_quantile(u_i, 0.16, weights_i)
+        )
+        / 2.0,
     )
     # TODO: compute error on quantile resolution
     all_responses[f"{distribution_name}_quantile_resolution"]["data"]["y"][1].append(0)
@@ -263,7 +272,13 @@ def create_reponses_info(qT_arr, u_dict, weights):
             weights_i = weights[np.where(inds == i)[0]]
             # check if the bin is empty and put nan
             if sum(weights_i) < 1e-6:
-                for var in ["R", "u_perp", "u_perp_scaled", "u_paral", "u_paral_scaled"]:
+                for var in [
+                    "R",
+                    "u_perp",
+                    "u_perp_scaled",
+                    "u_paral",
+                    "u_paral_scaled",
+                ]:
                     for metric in ["mean", "quantile_resolution", "stddev_resolution"]:
                         all_responses[met_type][f"{var}_{metric}"]["data"]["y"][
                             0
@@ -443,7 +458,7 @@ def plot_reponses(reponses_dict, cat):
 
         p = (
             HEPPlotter()
-            # .set_plot_config(figsize=(13, 13))
+            .set_plot_config(lumitext=f"{YEAR} (13.6 TeV)")
             .set_options(split_legend=False, set_ylim=False)
             .set_output(f"{response_dir}/{cat}_{var_name}")
             .set_labels(r"Z q$_{\mathrm{T}}$ [GeV]", y_label)
@@ -496,7 +511,7 @@ def plot_2d_response_histograms(hists_dict, cat):
 
             p = (
                 HEPPlotter()
-                # .set_plot_config(figsize=(13, 13))
+                .set_plot_config(lumitext=f"{YEAR} (13.6 TeV)")
                 .set_options(legend=False, cbar_log=True)
                 .set_output(f"{histograms_2d_dir}/2d_histo_{cat}_{var_name}_{met_type}")
                 .set_labels(r"Z q$_{\mathrm{T}}$ [GeV]", ylabel)
@@ -557,7 +572,7 @@ def plot_1d_response_histograms(hists_dict, cat):
                 HEPPlotter()
                 .set_plot_config(
                     figsize=(14, 13),
-                    lumitext=f"{qT_bins[i]} < q$_{{\\mathrm{{T}}}}$ (GeV) < {qT_bins[i+1]}       (13.6 TeV)",
+                    lumitext=f"{qT_bins[i]} < q$_{{\\mathrm{{T}}}}$ (GeV) < {qT_bins[i+1]}      {YEAR} (13.6 TeV)",
                 )
                 .set_output(output_name)
                 .set_labels(var_label, "Events")
@@ -599,7 +614,7 @@ def plot_histo_met(plotting_info_list):
     for info in plotting_info_list:
         p = (
             HEPPlotter()
-            .set_plot_config(figsize=(14, 13))
+            .set_plot_config(figsize=(14, 13), lumitext=f"{YEAR} (13.6 TeV)")
             .set_output(info["output_base"])
             .set_labels(info["xlabel"], info["ylabel"], ratio_label=info["ratio_label"])
             .set_options(y_log=info["y_log"], set_ylim=True)

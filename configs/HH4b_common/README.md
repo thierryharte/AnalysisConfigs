@@ -23,7 +23,7 @@ On `tier-3`, run the following commands to produce the input files for SPANet tr
 #### Run pocket-coffea to produce coffea files
 
 > [!TIP]
-> @Tier-3/AnalysisConfigs
+> @Tier-3/AnalysisConfigs &rarr;  [README](https://github.com/matteomalucchi/AnalysisConfigs/blob/main/README.md)
 
 ```bash
 cd AnalysisConfigs/configs/HH4b_common
@@ -285,6 +285,7 @@ run_pocket_coffea <config_name> <config_file> <t3_run_options> <output_dir>
 > [!TIP]
 > @Tier-3/AnalysisConfigs
 
+
 ```bash
 sbatch -p short --account=t3 --time=00:05:00 --mem 25gb --cpus-per-task=8 --wrap="python AnalysisConfigs/scripts/plot_DNN_score.py -i <input_directory> -im <input_signal_file> -o <output_directory> <--novars>  <-r2>"
 ```
@@ -308,7 +309,7 @@ The first option is to train the DNN model for signal / background classificatio
 python </path/to/script>/extract_quantile_transformer.py -i </path/to/coffeafiles>/output_GluGlutoHHto4B_spanet_kl-1p00_kt-1p00_c2-0p00_2022_postEE.coffea \
 	--onnx-model </path/to/model/modelname>.onnx \
 	--input-variables <sig_bkg_input_variable_list_name> <--novars>
-	-o <output_directory (default is ./quantile_transformer>
+	-o <output_directory (default is ./quantile_transformer)****>
 ```
 
 The second option is to use the score variables that are already in the `.coffea` files. In this case, the last PocketCoffea command has to be rerun after defining the bins to get the variables for the datacards.
