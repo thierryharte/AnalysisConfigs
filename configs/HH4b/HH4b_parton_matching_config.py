@@ -9,7 +9,14 @@ from configs.HH4b_common.config_files.__config_file__ import (
 from pocket_coffea.lib.calibrators.common import default_calibrators_sequence
 from pocket_coffea.lib.cut_functions import (
     get_HLTsel,
+    goldenJson,
+    eventFlags,
 )
+from configs.HH4b_common.custom_cuts_common import (
+    JetVetoMap,
+    nPVgood,
+)
+
 from pocket_coffea.lib.weights.common.common import common_weights
 
 # from pocket_coffea.parameters.cuts import passthrough
@@ -194,10 +201,8 @@ else:
 # Add special columns
 if config_options_dict["sig_bkg_dnn"] and config_options_dict["spanet"]:
     column_list += get_columns_list({"events": ["sig_bkg_dnn_score"]})
-    column_list += get_columns_list({"events": ["sig_bkg_dnn_score_transformed"]})
 if config_options_dict["sig_bkg_dnn"] and config_options_dict["run2"]:
     column_listRun2 += get_columns_list({"events": ["sig_bkg_dnn_scoreRun2"]})
-    column_listRun2 += get_columns_list({"events": ["sig_bkg_dnn_score_transformedRun2"]})
 if config_options_dict["spanet"] and not any(
     ["DATA" in sample for sample in sample_list]
 ):
@@ -301,7 +306,11 @@ cfg = Configurator(
     workflow=HH4bbQuarkMatchingProcessor,
     workflow_options=config_options_dict,
     skim=[
+        eventFlags,
+        goldenJson,
+        nPVgood,
         get_HLTsel(primaryDatasets=["JetMET"]),
+        JetVetoMap,
     ],
     preselections=preselection,
     categories=categories_dict,
