@@ -358,7 +358,7 @@ We need to compute the b-tag efficiencies within the phase-space where we perfor
 
 ```bash
 cd AnalysisConfig/configs/HH4b_btagging
-pocket-coffea run --cfg config_eff_HH4b.py -e dask@T3_CH_PSI --custom-run-options <run_option_file> -o <outputfolder>
+pocket-coffea run --cfg config_compute_befficiency_HH4b.py -e dask@T3_CH_PSI --custom-run-options <run_option_file> -o <outputfolder>
 ```
 
 Using the output from that, we can then run the scrip `produceBtagEff.py`. This file needs an input file of type `output_all.coffea`. It still needs some improvement. But the core works:
@@ -385,6 +385,11 @@ This part is still subject to changes and might be still bugged.
 # Still inside HH4b_btagging
 run_pocket_coffea no_model HH4b_parton_matching_config_btagWPsf.py ../HH4b/params/t3_run_options.yaml ../../../samples_no_model_input_for_spanet/no_model_sf_btag_comparison
 ```
+
+The output from that will save histograms of different kinematic variables. This could be expanded, but should show the differences well enough.
+There will be two regions saved. One is called `inclusive`, which only contains standard variations and weights and No b-tag sf. Then there is a `inclusive_btag_sf`. This contains also the b-tag sf. The histograms from both regions can be compared and should more or less fit. All histograms should have the same summed up values within each region if considering over-/underflow bins.
+
+> **TODO.** Write file for comparison of both regions (Notebook Matteo)
 
 ## Example commands
 
