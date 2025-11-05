@@ -28,13 +28,14 @@ for model in onnx_model_dict.keys():
 
 # Loading default parameters
 default_parameters = defaults.get_default_parameters()
-defaults.register_configuration_dir("config_dir", localdir + "/params")
+defaults.register_configuration_dir("config_dir", localdir)
 
 
 parameters = defaults.merge_parameters_from_files(
     default_parameters,
     f"{localdir}/../HH4b_common/params/object_preselection.yaml",
     f"{localdir}/../HH4b_common/params/triggers.yaml",
+    f"{localdir}/../HH4b_common/params/variations.yaml",
     f"{localdir}/../HH4b_common/params/btagging_multipleWP.yaml",
     f"{localdir}/../HH4b_common/params/jets_calibration_Calibrator_withoutVariations.yaml",
     # f"{localdir}/../HH4b_common/params/jets_calibration_Calibrator_withVariations.yaml",

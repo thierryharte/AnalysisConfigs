@@ -87,7 +87,7 @@ variables_dict = get_variables_dict(
 # Define the preselection to apply
 preselection = [
     (
-        cuts.hh4b_presel
+        cuts.hh4b_presel_nobtag
         if config_options_dict["tight_cuts"] is False
         else cuts.hh4b_presel_tight
     )
@@ -126,14 +126,7 @@ sample_list = [
     # "DATA_ParkingHH_2023_Dv2",
 ] + sample_ggF_list
 
-# Define the categories to save
-categories_dict = define_categories(
-    bkg_morphing_dnn=config_options_dict["bkg_morphing_dnn"],
-    blind=config_options_dict["blind"],
-    spanet=config_options_dict["spanet"],
-    run2=config_options_dict["run2"],
-    vr1=config_options_dict["vr1"],
-)
+categories_dict = {}
 # AKA if no model is applied
 # print(onnx_model_dict)
 if all([model == "" for model in onnx_model_dict.values()]):
@@ -141,64 +134,13 @@ if all([model == "" for model in onnx_model_dict.values()]):
     categories_dict = define_single_category("inclusive")
     categories_dict |= define_single_category("inclusive_sf_btag")
 
-# print("categories_dict", categories_dict)
-
-# VBF SPECIFIC REGIONS
-# **{f"4b_semiTight_LeadingPt_region": [hh4b_inclusive, semiTight_leadingPt]},
-# **{f"4b_semiTight_LeadingMjj_region": [hh4b_inclusive, semiTight_leadingMjj]},
-# **{f"4b_semiTight_LeadingMjj_region": [hh4b_inclusive, semiTight_leadingMjj]}
-# **{"4b_VBFtight_region": [hh4b_inclusive, vbf_wrapper()]},
-#
-# **{
-#     f"4b_VBFtight_{list(ab[0].keys())[i]}_region": [
-#         hh4b_inclusive,
-#         vbf_wrapper(ab[i]),
-#     ]
-#     for i in range(0, 6)
-# },
-#
-# **{"4b_VBF_generalSelection_region": [hh4b_inclusive, VBF_generalSelection_region]},
-# **{"4b_VBF_region": [hh4b_inclusive, VBF_region]},
-# **{f"4b_VBF_0{i}qvg_region": [hh4b_inclusive, VBF_region, qvg_regions[f"qvg_0{i}_region"]] for i in range(5, 10)},
-# **{f"4b_VBF_0{i}qvg_generalSelection_region": [hh4b_inclusive, VBF_generalSelection_region, qvg_regions[f"qvg_0{i}_region"]] for i in range(5, 10)},
-
 # Define the columns to save
 total_input_variables = {}
 column_list = []
 column_listRun2 = []
 
 assert not (config_options_dict["random_pt"] and config_options_dict["run2"])
-if config_options_dict["dnn_variables"]:
-    total_input_variables = (
-        sig_bkg_dnn_input_variables
-        | bkg_morphing_dnn_input_variables
-        | {"year": ["events", "year"]}
-    )
-    if config_options_dict["spanet"]:
-        total_input_variables |= {
-            "Delta_pairing_probabilities": ["events", "Delta_pairing_probabilities"],
-            "Arctanh_Delta_pairing_probabilities": [
-                "events",
-                "Arctanh_Delta_pairing_probabilities",
-            ],
-            "Binned_Arctanh_Delta_pairing_probabilities": [
-                "events",
-                "Binned_Arctanh_Delta_pairing_probabilities",
-            ],
-            "Padded_Arctanh_Delta_pairing_probabilities": [
-                "events",
-                "Padded_Arctanh_Delta_pairing_probabilities",
-            ],
-        }
-    # print(total_input_variables)
-
-    column_list = create_DNN_columns_list(
-        False, not config_options_dict["save_chunk"], total_input_variables, btag=False
-    )
-    column_listRun2 = create_DNN_columns_list(
-        True, not config_options_dict["save_chunk"], total_input_variables, btag=False
-    )
-elif all([model == "" for model in onnx_model_dict.values()]):
+if all([model == "" for model in onnx_model_dict.values()]):
     if "wp" in config_options_dict["spanet_input_name_list"][-1]:
         print("Taking btag Working Points")
         column_list = get_columns_list(SPANET_TRAINING_DEFAULT_COLUMNS_BTWP, not config_options_dict["save_chunk"])
@@ -206,39 +148,6 @@ elif all([model == "" for model in onnx_model_dict.values()]):
         column_list = get_columns_list(SPANET_TRAINING_DEFAULT_COLUMNS, not config_options_dict["save_chunk"])
     if config_options_dict["random_pt"]:
         column_list += get_columns_list({"events": ["random_pt_weights"]})
-else:
-    column_list = get_columns_list(flatten=not config_options_dict["save_chunk"])
-    column_listRun2 = get_columns_list(flatten=not config_options_dict["save_chunk"])
-
-# Add special columns
-if config_options_dict["sig_bkg_dnn"] and config_options_dict["spanet"]:
-    column_list += get_columns_list({"events": ["sig_bkg_dnn_score"]})
-if config_options_dict["sig_bkg_dnn"] and config_options_dict["run2"]:
-    column_listRun2 += get_columns_list({"events": ["sig_bkg_dnn_scoreRun2"]})
-if config_options_dict["spanet"] and not any(
-    ["DATA" in sample for sample in sample_list]
-):
-    column_list += get_columns_list(
-        {
-            "events": [
-                "correct_prediction",
-                "correct_prediction_fully_matched",
-                "mask_fully_matched",
-            ]
-        }
-    )
-if config_options_dict["run2"] and not any(
-    ["DATA" in sample for sample in sample_list]
-):
-    column_listRun2 += get_columns_list(
-        {
-            "events": [
-                "correct_predictionRun2",
-                "correct_prediction_fully_matchedRun2",
-                "mask_fully_matched",
-            ]
-        }
-    )
 
 
 bysample_bycategory_column_dict = {}

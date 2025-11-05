@@ -69,11 +69,6 @@ btagging:
     '2022_postEE':
       btagging_algorithm: btagPNetB
       btagging_WP:
-        L: 0.0897
-        M: 0.451
-        T: 0.8604
-        XT: 0.9234
-        XXT: 0.9893
         btagDeepFlavB:
           L: 0.0614
           M: 0.3196

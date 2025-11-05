@@ -86,7 +86,7 @@ def get_sf_btag_fixed_multiple_wp(params, Jets, year, sample, return_variations=
 
     paramsBtagSf = params["jet_scale_factors"]["btagSF"][year]
     btag_algo = params["btagging"]["working_point"][year]["btagging_algorithm"]
-    btag_wps = params["btagging"]["working_point"][year]["btagging_WP"]
+    btag_wps = params["btagging"]["working_point"][year]["btagging_WP"][btag_algo]
     sf_file = paramsBtagSf["file"]
     btag_effi_file = paramsBtagSf["btagEfficiencyFile"][btag_algo]
 
@@ -180,10 +180,10 @@ def get_sf_btag_fixed_multiple_wp(params, Jets, year, sample, return_variations=
     mask_light = jetflav < 4
     for wp_low, wp_high in zip(wp_list[:-1], wp_list[1:]): # Always left and right edge
         # This part is inefficient. Need to find out why...
-        wp = wp_low # I name my bins after the left edge of the bins
+        wp = wp_low  # I name my bins after the left edge of the bins
         b_wp_bins[wp] = {}
         # Filter, which jets are belonging into this bin:
-        bin_mask = (Jets[btag_algo] >= btag_wps[wp_low]) & (Jets[btag_algo] < btag_wps[wp_high])
+        bin_mask = (Jets[btag_algo] > btag_wps[wp_low]) & (Jets[btag_algo] <= btag_wps[wp_high])
         # Get all efficiencies into dict
         b_wp_bins[wp]["eff_left"] = ak.unflatten(eff[wp_low], counts=jetcounts)[bin_mask]
         b_wp_bins[wp]["eff_right"] = ak.unflatten(eff[wp_high], counts=jetcounts)[bin_mask]
@@ -255,8 +255,54 @@ def get_sf_btag_fixed_multiple_wp(params, Jets, year, sample, return_variations=
             btag_weight_wp = numerator / denominator
             # Search for inf or None and set the weight to 1
             # btag_weight_wp = ak.fill_none(btag_weight_wp, 1, axis=1)
-            if ak.any(ak.is_none(btag_weight_wp)):
-                print(btag_weight_wp)
+            if ak.any(ak.is_none(btag_weight_wp)) or ak.any(btag_weight_wp > 1000) or ak.any(btag_weight_wp < -1000):
+                bad_idx = ak.is_none(btag_weight_wp) | (btag_weight_wp > 1000) | (btag_weight_wp < -1000)
+                sf_x_eff_left_0 = b_wp_bins["0"]["sf_x_eff_left"][variationType][f"{variation_light}_{variation_heavy}"][bad_idx]
+                sf_x_eff_left_L = b_wp_bins["L"]["sf_x_eff_left"][variationType][f"{variation_light}_{variation_heavy}"][bad_idx]
+                sf_x_eff_left_M = b_wp_bins["M"]["sf_x_eff_left"][variationType][f"{variation_light}_{variation_heavy}"][bad_idx]
+                sf_x_eff_left_T = b_wp_bins["T"]["sf_x_eff_left"][variationType][f"{variation_light}_{variation_heavy}"][bad_idx]
+                sf_x_eff_left_XT = b_wp_bins["XT"]["sf_x_eff_left"][variationType][f"{variation_light}_{variation_heavy}"][bad_idx]
+                sf_x_eff_left_XXT = b_wp_bins["XXT"]["sf_x_eff_left"][variationType][f"{variation_light}_{variation_heavy}"][bad_idx]
+                sf_x_eff_right_0 = b_wp_bins["0"]["sf_x_eff_right"][variationType][f"{variation_light}_{variation_heavy}"][bad_idx]
+                sf_x_eff_right_L = b_wp_bins["L"]["sf_x_eff_right"][variationType][f"{variation_light}_{variation_heavy}"][bad_idx]
+                sf_x_eff_right_M = b_wp_bins["M"]["sf_x_eff_right"][variationType][f"{variation_light}_{variation_heavy}"][bad_idx]
+                sf_x_eff_right_T = b_wp_bins["T"]["sf_x_eff_right"][variationType][f"{variation_light}_{variation_heavy}"][bad_idx]
+                sf_x_eff_right_XT = b_wp_bins["XT"]["sf_x_eff_right"][variationType][f"{variation_light}_{variation_heavy}"][bad_idx]
+                sf_x_eff_right_XXT = b_wp_bins["XXT"]["sf_x_eff_right"][variationType][f"{variation_light}_{variation_heavy}"][bad_idx]
+                raise ValueError(
+                    f"Unsensible value(s): "
+                    f"btag_weight={btag_weight_wp[bad_idx]}, "
+                    f"b-tag score={Jets['btagPNetB'][bad_idx]}, "
+                    f"pt={ak.unflatten(jetpt, counts=jetcounts)[bad_idx]}, "
+                    f"eta={ak.unflatten(jeteta, counts=jetcounts)[bad_idx]}, "
+                    f"flavour={ak.unflatten(jetflav, counts=jetcounts)[bad_idx]} "
+                    f"b-tag_eff_left_0={b_wp_bins['0']['eff_left'][bad_idx]}, "
+                    f"b-tag_eff_left_L={b_wp_bins['L']['eff_left'][bad_idx]}, "
+                    f"b-tag_eff_left_M={b_wp_bins['M']['eff_left'][bad_idx]}, "
+                    f"b-tag_eff_left_T={b_wp_bins['T']['eff_left'][bad_idx]}, "
+                    f"b-tag_eff_left_XT={b_wp_bins['XT']['eff_left'][bad_idx]}, "
+                    f"b-tag_eff_left_XXT={b_wp_bins['XXT']['eff_left'][bad_idx]}, "
+                    f"b-tag_eff_right_0={b_wp_bins['0']['eff_right'][bad_idx]}, "
+                    f"b-tag_eff_right_L={b_wp_bins['L']['eff_right'][bad_idx]}, "
+                    f"b-tag_eff_right_M={b_wp_bins['M']['eff_right'][bad_idx]}, "
+                    f"b-tag_eff_right_T={b_wp_bins['T']['eff_right'][bad_idx]}, "
+                    f"b-tag_eff_right_XT={b_wp_bins['XT']['eff_right'][bad_idx]}, "
+                    f"b-tag_eff_right_XXT={b_wp_bins['XXT']['eff_right'][bad_idx]}, "
+                    f"sf x eff left 0={sf_x_eff_left_0}, "
+                    f"sf x eff left L={sf_x_eff_left_L}, "
+                    f"sf x eff left M={sf_x_eff_left_M}, "
+                    f"sf x eff left T={sf_x_eff_left_T}, "
+                    f"sf x eff left XT={sf_x_eff_left_XT}, "
+                    f"sf x eff left XXT={sf_x_eff_left_XXT}, "
+                    f"sf x eff right 0={sf_x_eff_right_0}, "
+                    f"sf x eff right L={sf_x_eff_right_L}, "
+                    f"sf x eff right M={sf_x_eff_right_M}, "
+                    f"sf x eff right T={sf_x_eff_right_T}, "
+                    f"sf x eff right XT={sf_x_eff_right_XT}, "
+                    f"sf x eff right XXT={sf_x_eff_right_XXT}, "
+                    f"in variation {variationType}, "
+                    f"light {variation_light}, heavy {variation_heavy}"
+                )
 
             variationsDict[variationType]["btag_sf"].append(btag_weight_wp)
     if return_variations:
