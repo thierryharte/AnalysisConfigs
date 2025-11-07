@@ -349,6 +349,47 @@ Then the `build_datacards.py` script can just be run like this:
 python </path/to/AnalysisConfigs>/scripts/build_datacards.py -i <input_folder> -o <desired output folder>
 ```
 
+#### Compute b-tag WP efficiencies
+
+> [!TIP]
+> @Tier-3/AnalysisConfigs
+
+We need to compute the b-tag efficiencies within the phase-space where we perform our analysis. This has to be done in a region in which we do Not cut at all on b-tags. This requires to run a different config file:
+
+```bash
+cd AnalysisConfig/configs/HH4b_btagging
+pocket-coffea run --cfg config_compute_befficiency_HH4b.py -e dask@T3_CH_PSI --custom-run-options <run_option_file> -o <outputfolder>
+```
+
+Using the output from that, we can then run the scrip `produceBtagEff.py`. This file needs an input file of type `output_all.coffea`. It still needs some improvement. But the core works:
+
+```bash
+python </path/to/AnalysisConfigs>/configs/HH4b_btagging/produceBtagEff.py -i <input_file> -o <desired output folder>
+```
+
+The output is then the b-tag WP efficiency files:
+```bash
+btag_efficiencies_btagDeepFlavB_2022_postEE.json
+btag_efficiencies_btagPNetB_2022_postEE.json
+btag_efficiencies_btagRobustParTAK4B_2022_postEE.json
+```
+and they have to be copied to the folder:
+```bash
+cp btag_efficiencies*.json AnalysisConfig/configs/HH4b_common/params/btag_efficiencies_multipleWP/
+```
+
+To then validate the procedure, we need to run on the same region a corrected and an uncorrected set.
+Both should then have the same normalisation.
+This part is still subject to changes and might be still bugged.
+```bash
+# Still inside HH4b_btagging
+run_pocket_coffea no_model HH4b_parton_matching_config_btagWPsf.py ../HH4b/params/t3_run_options.yaml ../../../samples_no_model_input_for_spanet/no_model_sf_btag_comparison
+```
+
+The output from that will save histograms of different kinematic variables. This could be expanded, but should show the differences well enough.
+There will be two regions saved. One is called `inclusive`, which only contains standard variations and weights and No b-tag sf. Then there is a `inclusive_btag_sf`. This contains also the b-tag sf. The histograms from both regions can be compared and should more or less fit. All histograms should have the same summed up values within each region if considering over-/underflow bins.
+
+> **TODO.** Write file for comparison of both regions (Notebook Matteo)
 
 ## Example commands
 
