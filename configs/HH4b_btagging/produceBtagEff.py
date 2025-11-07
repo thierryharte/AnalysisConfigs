@@ -1,0 +1,227 @@
+# np.seterr(divide='ignore', invalid='ignore')
+import json
+import logging
+import argparse
+
+import correctionlib
+import correctionlib.convert
+import hist
+import matplotlib.pyplot as plt
+import numpy as np
+from coffea.util import load
+from matplotlib.ticker import MultipleLocator
+
+
+def plotBtagEffiControl(sampleGroups, bJetHistNames, histos, bTaggingAlgorithm, outputpath):
+    histo = histos[0]
+    markers = ["1", "P", "X", "o", "*"]
+    flavors = ["light-jets", "c-jets", "b-jets"]
+    colors = ["#f89c20", "#e42536", "#5790fc"]
+    sampGroupNames = ["HH4b"]
+    for flav in range(len(histo.axes[2].centers)):
+        fig = plt.figure(figsize=(14.5, 14))
+        for i in range(len(histo.axes[1].edges) - 1):
+            ax = plt.subplot(4, 3, i + 1)
+            axTitle = r"$|\eta^{jet}|$ $\in$ " + "$[${},{}$]$".format(
+                histo.axes[1].edges[i],
+                histo.axes[1].edges[i + 1]
+            )
+            ax.set_title(axTitle)
+            for j in range(len(sampleGroups)):
+                for wp, bJetHistName in enumerate(bJetHistNames):
+                    workingPoint = bJetHistName.split("_")[2]
+                    histoId = j * len(bJetHistNames) + wp
+                    histo = histos[histoId]
+                    bWidth = [(histo.axes[0].edges[i + 1] - histo.axes[0].edges[i]) / 2 for i in range(len(histo.axes[0].edges) - 1)]
+                    label = sampGroupNames[j] + ", wp {}".format(workingPoint) if (i == 0) else None
+                    ax.set_ylim((0, 1.))
+                    ax.set_xlim((15., 500.))
+                    ax.errorbar(
+                        histo.axes[0].centers,
+                        histo.values()[:, i, flav],
+                        xerr=bWidth,
+                        label=label,
+                        marker=markers[wp],
+                        markersize=10,
+                        fillstyle="none",
+                        color=colors[j],
+                    )
+                    ax.xaxis.set_minor_locator(MultipleLocator(20))
+                    ax.yaxis.set_minor_locator(MultipleLocator(0.05))
+                    ax.tick_params(direction='in', which="both")
+                    ax.set_ylabel("Efficiency")
+                    ax.set_xlabel(r"$p_T^{jet}$ [GeV]")
+        fig.legend(bbox_to_anchor=(0.62, 0.25), fontsize=16)
+        flavText = "Jet flavor: {}\n\nBtagger: {}".format(flavors[flav], bTaggingAlgorithm)
+        processText = "Process groups:\n  Top: $t\\overline{t}$, ttH(bb), ttZ, ttW, single t\n"\
+            + "  VV: WW, WZ, ZZ\n  V+Jets: DY, W+Jets"
+        flavTextProps = dict(boxstyle='round', facecolor="none", pad=0.6)
+        fig.text(0.7, 0.17, flavText, fontsize=16, bbox=flavTextProps)
+        fig.text(0.7, 0.05, processText, fontsize=16)
+        plt.tight_layout(pad=0.7)
+        plt.savefig(outputpath + "btaggingEfficiency_{}_{}.pdf".format(bTaggingAlgorithm, flavors[flav]))
+
+
+def produceBtagEfficiencies(outputpath, inputfile, histCategoryToUse, sampleGroups, bjetHistNames, jetHistName, btaggingAlgorithm, produceControlPlots=False):
+
+    histCollection = bjetHistNames + jetHistName
+
+    # Reading in config and parameters to obtain year
+    inputFile = load(inputfile)
+    year = list(inputFile["datasets_metadata"]['by_datataking_period'])
+    # print("Producing btagging sfs for " + year[0])
+    # Reading in jet Histogramms
+
+    for jetHistVar in histCollection:  # different jet collections (btaggedJets for each wp, jetsTotal)
+        for sampleGroup in sampleGroups.keys():  # groupings of samples to calculated efficiencies in
+            tempHistColl = []
+            for sampleName in sampleGroups[sampleGroup]["sampleNames"]:
+                for dataset, inputHist in inputFile["variables"][jetHistVar][sampleName].items():
+                    nominalHist = inputHist[hist.loc(histCategoryToUse), hist.loc("nominal"), :, :, :]
+                    tempHistColl.append(nominalHist * inputFile["sum_genweights"][dataset])
+            sampleGroups[sampleGroup]["hists"][jetHistVar] = sum(tempHistColl)  # sum samples in each sample group
+
+    # Calculating Efficiency and creating correction sets
+
+    correction_set_collection = []
+    if produceControlPlots:
+        effiHistos = []
+    for sampleGroup in sampleGroups.keys():
+        nJetsTotalHist = sampleGroups[sampleGroup]["hists"][jetHistName[0]]
+
+        for bJetHistName in bjetHistNames:
+            nbJetsHist = sampleGroups[sampleGroup]["hists"][bJetHistName]
+            workingPoint = bJetHistName.split("_")[2]
+
+            # Calculating btaggin efficiency
+            btagEfficiencyArray = np.divide(
+                nbJetsHist.values(),
+                nJetsTotalHist.values()
+            )
+            btagEfficiencyHisto = hist.Hist(
+                *nJetsTotalHist.axes,
+                data=btagEfficiencyArray,
+                name=sampleGroup + "_wp_" + workingPoint,
+                label="btag_efficiency"
+            )
+            if produceControlPlots:
+                effiHistos.append(btagEfficiencyHisto)
+            # Creating Correctionset
+            view = btagEfficiencyHisto.view(flow=True)
+            view[...] = np.nan_to_num(view, nan=0.0)
+            cset = correctionlib.convert.from_histogram(btagEfficiencyHisto)
+            cset.description = "Btagging efficiencies for " + sampleGroup + " samples using " + workingPoint + " working point"
+            cset.data.flow = "clamp"
+            correction_set_collection.append(cset)
+
+    if produceControlPlots:
+        plotBtagEffiControl(sampleGroups.keys(), bjetHistNames, effiHistos, btaggingAlgorithm, outputpath)
+
+    btag_effi_correction_set = correctionlib.schemav2.CorrectionSet(
+        schema_version=2,
+        description="btagging efficiencies",
+        corrections=correction_set_collection,
+    )
+
+    # Creating output file
+    parsed_json = json.loads(btag_effi_correction_set.json(exclude_unset=True))
+    with open(f"{outputpath}/btag_efficiencies_" + btaggingAlgorithm + "_" + year[0] + ".json", "w") as fout:
+        fout.write(json.dumps(parsed_json, indent=2))
+
+
+if __name__ == "__main__":
+
+    logging.basicConfig(format='%(asctime)s,%(msecs)03d %(name)s %(levelname)s %(message)s',
+                        datefmt='%Y-%m-%d %H:%M:%S',
+                        level=logging.INFO)
+    logger = logging.getLogger()
+
+    parser = argparse.ArgumentParser(description="Build datacards from pocket-coffea outputs")
+    parser.add_argument(
+        "-i",
+        "--input-file",
+        type=str,
+        required=True,
+        help="Input coffea file (needs to be single file currently)",
+    )
+    parser.add_argument(
+        "-o", "--output", type=str, help="Output directory", default="./"
+    )
+    parser.add_argument(
+        "-c", "--category", type=str, help="Category to calculate efficiency in", default="inclusive"
+    )
+    parser.add_argument(
+        "-p",
+        "--plot",
+        action="store_true",
+        help="Produce control plots",
+        default=False,
+    )
+    args = parser.parse_args()
+
+    sampleGroups = {
+       #  "ttH" :  {
+       #      "sampleNames" : [
+       #          "TTH_Hto2B",
+       #          "TTHtoNon2B"
+       #      ],
+       #      "hists" : {}
+       #  },
+        "HH4b": {
+            "sampleNames": [
+                    "GluGlutoHHto4B_spanet_kl-1p00_kt-1p00_c2-0p00_skimmed",
+                #    "GluGlutoHHto4B_spanet_kl-m2p00_kt-1p00_c2-0p00_skimmed",
+                #    "GluGlutoHHto4B_spanet_kl-m1p00_kt-1p00_c2-0p00_skimmed",
+                #     "GluGlutoHHto4B_spanet_kl-5p00_kt-1p00_c2-0p00_skimmed",
+                #     "GluGlutoHHto4B_spanet_kl-2p45_kt-1p00_c2-0p00_skimmed",
+                #     "GluGlutoHHto4B_spanet_kl-0p00_kt-0p00_c2-0p00_skimmed",
+                #     "GluGlutoHHto4B_spanet_kl-3p50_kt-1p00_c2-0p00_skimmed",
+                #     "GluGlutoHHto4B_spanet_kl-4p00_kt-1p00_c2-0p00_skimmed",
+                #     "GluGlutoHHto4B_spanet_kl-3p00_kt-1p00_c2-0p00_skimmed",
+                #     "GluGlutoHHto4B_spanet_kl-2p00_kt-1p00_c2-0p00_skimmed",
+                #     "GluGlutoHHto4B_spanet_kl-1p50_kt-1p00_c2-0p00_skimmed",
+                #     "GluGlutoHHto4B_spanet_kl-0p50_kt-1p00_c2-0p00_skimmed",
+
+                ],
+            "hists": {}
+            }
+    }
+
+    # Collection of histograms output with config_BtagEff_fixed_wp
+
+    bjetHist_dictionary = {
+        "btagDeepFlavB": [
+            "bjets_deepJet_L_pt_eta_flav",
+            "bjets_deepJet_M_pt_eta_flav",
+            "bjets_deepJet_T_pt_eta_flav",
+            "bjets_deepJet_XT_pt_eta_flav",
+            "bjets_deepJet_XXT_pt_eta_flav"
+            ],
+        "btagPNetB": [
+            "bjets_particleNet_L_pt_eta_flav",
+            "bjets_particleNet_M_pt_eta_flav",
+            "bjets_particleNet_T_pt_eta_flav",
+            "bjets_particleNet_XT_pt_eta_flav",
+            "bjets_particleNet_XXT_pt_eta_flav"
+            ],
+        "btagRobustParTAK4B": [
+            "bjets_robustParticleTransformer_L_pt_eta_flav",
+            "bjets_robustParticleTransformer_M_pt_eta_flav",
+            "bjets_robustParticleTransformer_T_pt_eta_flav",
+            "bjets_robustParticleTransformer_XT_pt_eta_flav",
+            "bjets_robustParticleTransformer_XXT_pt_eta_flav"
+        ]
+    }
+    jetHistName = ["jets_pt_eta_flav"]
+
+    for btaggingAlgorithm, bjetHistNames in bjetHist_dictionary.items():
+        produceBtagEfficiencies(
+            args.output,
+            args.input_file,
+            args.category,
+            sampleGroups,
+            bjetHistNames,
+            jetHistName,
+            btaggingAlgorithm,
+            args.plot,
+        )
