@@ -1,3 +1,5 @@
+import logging
+
 import awkward as ak
 import numpy as np
 import vector
@@ -6,7 +8,6 @@ from pocket_coffea.workflows.base import BaseProcessorABC
 
 from utils.basic_functions import add_fields
 from utils.dnn_evaluation_functions import get_dnn_prediction
-from utils.quantile_transformer import WeightedQuantileTransformer
 
 # from utils.inference_session_onnx_slurm import get_model_session
 from utils.inference_session_onnx import get_model_session
@@ -22,6 +23,11 @@ from utils.spanet_evaluation_functions import get_best_pairings, get_pairing_inf
 from .custom_object_preselection_common import jet_selection_nopu, lepton_selection
 
 vector.register_awkward()
+
+logging.basicConfig(format='%(asctime)s,%(msecs)03d %(name)s %(levelname)s %(message)s',
+                    datefmt='%Y-%m-%d %H:%M:%S',
+                    level=logging.INFO)
+logger = logging.getLogger()
 
 era_dict = {
     "2022_preEE_C": 0,
@@ -868,7 +874,7 @@ class HH4bCommonProcessor(BaseProcessorABC):
             arctanh_delta_prob_bin_edges = [
                 np.min(self.events.Arctanh_Delta_pairing_probabilities) - 1,
                 self.arctanh_delta_prob_bin_edge,
-                np.max(self.events.Arctanh_Delta_pairing_probabilities) + 1,
+                np.max([np.max(self.events.Arctanh_Delta_pairing_probabilities) + 1, self.arctanh_delta_prob_bin_edge + 1]),
             ]
             self.events["Binned_Arctanh_Delta_pairing_probabilities"] = (
                 np.digitize(
