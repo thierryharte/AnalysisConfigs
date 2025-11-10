@@ -365,7 +365,7 @@ default_jets_calibration:
           C:
             # - "${default_params_dir:}/jec/Summer22/Summer22-22Sep2023_RunCD_V2_DATA_L1FastJet_AK4PFPuppi.txt.gz"
             - "${default_params_dir:}/jec/AK4PFPNet/Summer22-22Sep2023_RunCD_V2_DATA_L2Relative_AK4PFPuppi.txt.gz"
-            - "${default_params_dir:}/jec/Summer22/Summer22-22Sep2023_RunCD_V2_DATA_L2L3Residual_AK4PFPuppi.txt.gz"
+            - "${default_params_dir:}/jec/AK4PFPNet/Summer22-22Sep2023_RunCD_V2_DATA_L2L3Residual_AK4PFPuppi.txt.gz"
 
           D: "${default_jets_calibration.factory_configuration_Data.AK4PFPuppiPNetRegression.JES.2022_preEE.C}"
                  
@@ -373,15 +373,15 @@ default_jets_calibration:
           E:
             # - "${default_params_dir:}/jec/Summer22EE/Summer22EE-22Sep2023_RunE_V2_DATA_L1FastJet_AK4PFPuppi.txt.gz"
             - "${default_params_dir:}/jec/AK4PFPNet/Summer22EE-22Sep2023_RunE_V2_DATA_L2Relative_AK4PFPuppi.txt.gz"
-            - "${default_params_dir:}/jec/Summer22EE/Summer22EE-22Sep2023_RunE_V2_DATA_L2L3Residual_AK4PFPuppi.txt.gz"
+            - "${default_params_dir:}/jec/AK4PFPNet/Summer22EE-22Sep2023_RunE_V2_DATA_L2L3Residual_AK4PFPuppi.txt.gz"
           F:
             # - "${default_params_dir:}/jec/Summer22EE/Summer22EE-22Sep2023_RunF_V2_DATA_L1FastJet_AK4PFPuppi.txt.gz"
             - "${default_params_dir:}/jec/AK4PFPNet/Summer22EE-22Sep2023_RunF_V2_DATA_L2Relative_AK4PFPuppi.txt.gz"
-            - "${default_params_dir:}/jec/Summer22EE/Summer22EE-22Sep2023_RunF_V2_DATA_L2L3Residual_AK4PFPuppi.txt.gz"
+            - "${default_params_dir:}/jec/AK4PFPNet/Summer22EE-22Sep2023_RunF_V2_DATA_L2L3Residual_AK4PFPuppi.txt.gz"
           G:
             # - "${default_params_dir:}/jec/Summer22EE/Summer22EE-22Sep2023_RunG_V2_DATA_L1FastJet_AK4PFPuppi.txt.gz"
             - "${default_params_dir:}/jec/AK4PFPNet/Summer22EE-22Sep2023_RunG_V2_DATA_L2Relative_AK4PFPuppi.txt.gz"
-            - "${default_params_dir:}/jec/Summer22EE/Summer22EE-22Sep2023_RunG_V2_DATA_L2L3Residual_AK4PFPuppi.txt.gz"
+            - "${default_params_dir:}/jec/AK4PFPNet/Summer22EE-22Sep2023_RunG_V2_DATA_L2L3Residual_AK4PFPuppi.txt.gz"
 
         2023_preBPix:
           Cv1:
@@ -408,7 +408,7 @@ default_jets_calibration:
           C:
             # - "${default_params_dir:}/jec/Summer22/Summer22-22Sep2023_RunCD_V2_DATA_L1FastJet_AK4PFPuppi.txt.gz"
             - "${default_params_dir:}/jec/AK4PFPNetPlusNeutrino/Summer22-22Sep2023_RunCD_V2_DATA_L2Relative_AK4PFPuppi.txt.gz"
-            - "${default_params_dir:}/jec/Summer22/Summer22-22Sep2023_RunCD_V2_DATA_L2L3Residual_AK4PFPuppi.txt.gz"
+            - "${default_params_dir:}/jec/AK4PFPNetPlusNeutrino/Summer22-22Sep2023_RunCD_V2_DATA_L2L3Residual_AK4PFPuppi.txt.gz"
 
           D: "${default_jets_calibration.factory_configuration_Data.AK4PFPuppiPNetRegressionPlusNeutrino.JES.2022_preEE.C}"
                  
@@ -416,15 +416,15 @@ default_jets_calibration:
           E:
             # - "${default_params_dir:}/jec/Summer22EE/Summer22EE-22Sep2023_RunE_V2_DATA_L1FastJet_AK4PFPuppi.txt.gz"
             - "${default_params_dir:}/jec/AK4PFPNetPlusNeutrino/Summer22EE-22Sep2023_RunE_V2_DATA_L2Relative_AK4PFPuppi.txt.gz"
-            - "${default_params_dir:}/jec/Summer22EE/Summer22EE-22Sep2023_RunE_V2_DATA_L2L3Residual_AK4PFPuppi.txt.gz"
+            - "${default_params_dir:}/jec/AK4PFPNetPlusNeutrino/Summer22EE-22Sep2023_RunE_V2_DATA_L2L3Residual_AK4PFPuppi.txt.gz"
           F:
             # - "${default_params_dir:}/jec/Summer22EE/Summer22EE-22Sep2023_RunF_V2_DATA_L1FastJet_AK4PFPuppi.txt.gz"
             - "${default_params_dir:}/jec/AK4PFPNetPlusNeutrino/Summer22EE-22Sep2023_RunF_V2_DATA_L2Relative_AK4PFPuppi.txt.gz"
-            - "${default_params_dir:}/jec/Summer22EE/Summer22EE-22Sep2023_RunF_V2_DATA_L2L3Residual_AK4PFPuppi.txt.gz"
+            - "${default_params_dir:}/jec/AK4PFPNetPlusNeutrino/Summer22EE-22Sep2023_RunF_V2_DATA_L2L3Residual_AK4PFPuppi.txt.gz"
           G:
             # - "${default_params_dir:}/jec/Summer22EE/Summer22EE-22Sep2023_RunG_V2_DATA_L1FastJet_AK4PFPuppi.txt.gz"
             - "${default_params_dir:}/jec/AK4PFPNetPlusNeutrino/Summer22EE-22Sep2023_RunG_V2_DATA_L2Relative_AK4PFPuppi.txt.gz"
-            - "${default_params_dir:}/jec/Summer22EE/Summer22EE-22Sep2023_RunG_V2_DATA_L2L3Residual_AK4PFPuppi.txt.gz"
+            - "${default_params_dir:}/jec/AK4PFPNetPlusNeutrino/Summer22EE-22Sep2023_RunG_V2_DATA_L2L3Residual_AK4PFPuppi.txt.gz"
 
         2023_preBPix:
           Cv1:
