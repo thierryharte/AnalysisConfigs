@@ -113,8 +113,6 @@ class HH4bCommonProcessor(BaseProcessorABC):
             pt_cut_name=pt_cut_name,
         )
 
-        breakpoint()
-
         self.events["Electron"] = ak.with_field(
             self.events.Electron,
             self.events.Electron.eta + self.events.Electron.deltaEtaSC,
@@ -847,7 +845,6 @@ class HH4bCommonProcessor(BaseProcessorABC):
         return matched_jet_higgs_idx_not_none
 
     def process_extra_after_presel(self, variation):  # -> ak.Array:
-        breakpoint()
 
         self.events["JetGood"] = self.generate_btag_workingpoints(
             self.events["JetGood"], 5
