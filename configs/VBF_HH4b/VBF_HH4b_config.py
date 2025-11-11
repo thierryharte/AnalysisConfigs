@@ -12,7 +12,10 @@ from pocket_coffea.parameters.cuts import passthrough
 from pocket_coffea.lib.columns_manager import ColOut
 from pocket_coffea.parameters import defaults
 from pocket_coffea.lib.weights.common.common import common_weights
-from pocket_coffea.lib.calibrators.common import default_calibrators_sequence
+from pocket_coffea.lib.calibrators.legacy.legacy_calibrators import (
+    JetsCalibrator,
+    JetsPtRegressionCalibrator,
+)
 
 from configs.VBF_HH4b.workflow import VBFHH4bProcessor
 from configs.VBF_HH4b.custom_cuts import vbf_hh4b_presel, vbf_hh4b_presel_tight
@@ -52,10 +55,9 @@ parameters = defaults.merge_parameters_from_files(
     f"{localdir}/../HH4b_common/params/object_preselection.yaml",
     f"{localdir}/../HH4b_common/params/triggers.yaml",
     f"{localdir}/../HH4b_common/params/btagging_multipleWP.yaml",
-    f"{localdir}/../HH4b_common/params/jets_calibration_Calibrator_withoutVariations.yaml",
+    f"{localdir}/../HH4b_common/params/jets_calibration_Calibrator_withoutVariations_withJERC.yaml",
     update=True,
 )
-
 
 if config_options_dict["save_chunk"]:
     config_options_dict["dump_columns_as_arrays_per_chunk"] = config_options_dict[
@@ -306,7 +308,7 @@ cfg = Configurator(
         },
         "bysample": bysample_bycategory_weight_dict,
     },
-    calibrators=default_calibrators_sequence,
+    calibrators=[JetsCalibrator, JetsPtRegressionCalibrator],
     variations={
         "weights": {
             "common": {

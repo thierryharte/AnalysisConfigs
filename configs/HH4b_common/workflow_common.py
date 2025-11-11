@@ -4,7 +4,7 @@ import vector
 from pocket_coffea.lib.deltaR_matching import object_matching
 from pocket_coffea.workflows.base import BaseProcessorABC
 
-from utils.basic_functions import add_fields
+from utils.basic_functions import add_fields, align_by_eta
 from utils.dnn_evaluation_functions import get_dnn_prediction
 from utils.quantile_transformer import WeightedQuantileTransformer
 
@@ -19,7 +19,10 @@ from utils.reconstruct_higgs_candidates import (
 )
 from utils.spanet_evaluation_functions import get_best_pairings, get_pairing_information
 
-from .custom_object_preselection_common import jet_selection_nopu, lepton_selection
+from .custom_object_preselection_common import (
+    lepton_selection,
+    jet_selection_custom,
+)
 
 vector.register_awkward()
 
@@ -56,28 +59,29 @@ class HH4bCommonProcessor(BaseProcessorABC):
         for key, value in self.workflow_options.items():
             setattr(self, key, value)
 
+    def process_extra_after_skim(self):
+        self.events["JetPNet"] = ak.copy(self.events["Jet"])
+        self.events["JetPNetPlusNeutrino"] = ak.copy(self.events["Jet"])
+
     def apply_object_preselection(self, variation):
+        jet_regressed_extended = align_by_eta(
+            self.events["Jet"], self.events["JetPNetPlusNeutrino"]
+        )
         self.events["Jet"] = ak.with_field(
-            self.events.Jet,
-            ak.where(
-                self.events.Jet.PNetRegPtRawCorr > 0,
-                self.events.Jet.pt_raw
-                * self.events.Jet.PNetRegPtRawCorr
-                * self.events.Jet.PNetRegPtRawCorrNeutrino,
-                self.events.Jet.pt,
-            ),
-            "pt",
+            self.events["Jet"],
+            jet_regressed_extended.pt,
+            "pt_regressed",
         )
         self.events["Jet"] = ak.with_field(
             self.events.Jet,
-            ak.where(
-                self.events.Jet.PNetRegPtRawCorr > 0,
-                self.events.Jet.mass_raw
-                * self.events.Jet.PNetRegPtRawCorr
-                * self.events.Jet.PNetRegPtRawCorrNeutrino,
-                self.events.Jet.mass,
-            ),
-            "mass",
+            self.events.Jet.pt,
+            "pt_JEC",
+        )
+        # replace pt with the regressed one
+        self.events["Jet"] = ak.with_field(
+            self.events.Jet,
+            self.events.Jet.pt_regressed,
+            "pt",
         )
 
         if self.add_jet_spanet:
@@ -86,12 +90,30 @@ class HH4bCommonProcessor(BaseProcessorABC):
                 ak.argsort(self.events["Jet"].pt, axis=1, ascending=False)
             ]
 
+        # get index after reordering in pt
         self.events["Jet"] = ak.with_field(
             self.events.Jet, ak.local_index(self.events.Jet, axis=1), "index"
         )
-        self.events["JetGood"] = jet_selection_nopu(
-            self.events, "Jet", self.params, tight_cuts=self.tight_cuts
+
+        if (
+            self.tight_cuts
+            and "pt_tight" in self.params.object_preselection["Jet"].keys()
+        ):
+            pt_cut_name = "pt_tight"
+        else:
+            pt_cut_name = "pt"
+
+        # Cut on the JEC pt (w/o regression)
+        self.events["JetGood"] = jet_selection_custom(
+            self.events,
+            "Jet",
+            self.params,
+            year=self._year,
+            pt_type="pt_JEC",
+            pt_cut_name=pt_cut_name,
         )
+
+        breakpoint()
 
         self.events["Electron"] = ak.with_field(
             self.events.Electron,
@@ -103,11 +125,11 @@ class HH4bCommonProcessor(BaseProcessorABC):
             self.events, "Electron", self.params
         )
         self.events["MuonGood"] = lepton_selection(self.events, "Muon", self.params)
-        # order jet by btag score and keep only the first 4
+
+        # order jet by btag score
         self.events["JetGood"] = self.events.JetGood[
             ak.argsort(self.events.JetGood.btagPNetB, axis=1, ascending=False)
         ]
-
         # keep only the first 4 jets for the Higgs candidates reconstruction
         self.events["JetGoodHiggs"] = self.events.JetGood[:, :4]
 
@@ -540,8 +562,22 @@ class HH4bCommonProcessor(BaseProcessorABC):
             {"JetNotFromHiggs": self.params.object_preselection["Jet"]}
         )
 
-        self.events["JetNotFromHiggs"] = jet_selection_nopu(
-            self.events, "JetNotFromHiggs", self.params, tight_cuts=self.tight_cuts
+        if (
+            self.tight_cuts
+            and "pt_tight" in self.params.object_preselection["Jet"].keys()
+        ):
+            pt_cut_name = "pt_tight"
+        else:
+            pt_cut_name = "pt"
+
+        # Cut on the JEC pt (w/o regression)
+        self.events["JetNotFromHiggs"] = jet_selection_custom(
+            self.events,
+            "JetNotFromHiggs",
+            self.params,
+            year=self._year,
+            pt_type="pt_JEC",
+            pt_cut_name=pt_cut_name,
         )
 
         if self.add_jet_spanet:
@@ -811,6 +847,8 @@ class HH4bCommonProcessor(BaseProcessorABC):
         return matched_jet_higgs_idx_not_none
 
     def process_extra_after_presel(self, variation):  # -> ak.Array:
+        breakpoint()
+
         self.events["JetGood"] = self.generate_btag_workingpoints(
             self.events["JetGood"], 5
         )
