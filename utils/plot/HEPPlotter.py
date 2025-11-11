@@ -6,6 +6,7 @@ from scipy.stats.distributions import chi2
 
 import numpy as np
 import mplhep as hep
+import os
 
 
 class HEPPlotter:
@@ -129,9 +130,11 @@ class HEPPlotter:
             self.data_formats = formats
         return self
 
-    def set_output(self, output_base):
-        """Set the base name for output files (without extension)."""
-        self.output_base = output_base
+    def set_output(self, output_base, create_dir=False):
+        """Set the base name for output files (without extension) and optionally create the output directory."""
+        # remove the extension if provided
+        self.output_base = os.path.splitext(output_base)[0]
+        self.create_dir=create_dir
         return self
 
     def set_labels(
@@ -830,6 +833,9 @@ class HEPPlotter:
         if self.legend:
             self._set_legend(ax, self.legend_loc)
 
+        if self.create_dir:
+            os.makedirs(os.path.dirname(self.output_base), exist_ok=True)
+            
         self._save(fig)
         if self.show_plot:
             plt.show()
