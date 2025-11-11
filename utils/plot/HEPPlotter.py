@@ -150,7 +150,7 @@ class HEPPlotter:
         - For 1D histograms:
             series_dict : dict
                 Dictionary mapping names to {name:{"data": hist.Hist, "style": dict}}.
-                The reference histogram must include {"is_reference": True}.
+                To plot the ratio plot, the reference histogram must include {"is_reference": True} inside the style dict.
         - For 2D histograms:
             series_dict : dict
                 {name:{"data": hist.Hist, "style": dict}}
@@ -602,6 +602,12 @@ class HEPPlotter:
         ratio_plot = False
         ref_name = None
         for name, props in series_dict.items():
+            # check that the props has only the "data" and "style" keys
+            if not all(key in ["data", "style"] for key in props.keys()):
+                raise ValueError(
+                    f"Invalid keys in series_dict for {name}. Expected only 'data' and 'style', got {list(props.keys())}. The provided key should probably be inside the 'style' dictionary."
+                )
+                
             hist_1d = props["data"]
             if not isinstance(hist_1d, Hist) and not isinstance(hist_1d[0], Hist):
                 raise ValueError(f"Expected hist.Hist for {name}, got {type(hist_1d)}")
