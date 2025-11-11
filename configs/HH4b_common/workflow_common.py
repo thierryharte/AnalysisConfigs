@@ -99,9 +99,9 @@ class HH4bCommonProcessor(BaseProcessorABC):
             self.tight_cuts
             and "pt_tight" in self.params.object_preselection["Jet"].keys()
         ):
-            pt_cut_name = "pt_tight"
+            self.pt_cut_name = "pt_tight"
         else:
-            pt_cut_name = "pt"
+            self.pt_cut_name = "pt"
 
         # Cut on the JEC pt (w/o regression)
         self.events["JetGood"] = jet_selection_custom(
@@ -110,7 +110,7 @@ class HH4bCommonProcessor(BaseProcessorABC):
             self.params,
             year=self._year,
             pt_type="pt_JEC",
-            pt_cut_name=pt_cut_name,
+            pt_cut_name=self.pt_cut_name,
         )
 
         self.events["Electron"] = ak.with_field(
@@ -560,14 +560,6 @@ class HH4bCommonProcessor(BaseProcessorABC):
             {"JetNotFromHiggs": self.params.object_preselection["Jet"]}
         )
 
-        if (
-            self.tight_cuts
-            and "pt_tight" in self.params.object_preselection["Jet"].keys()
-        ):
-            pt_cut_name = "pt_tight"
-        else:
-            pt_cut_name = "pt"
-
         # Cut on the JEC pt (w/o regression)
         self.events["JetNotFromHiggs"] = jet_selection_custom(
             self.events,
@@ -575,7 +567,7 @@ class HH4bCommonProcessor(BaseProcessorABC):
             self.params,
             year=self._year,
             pt_type="pt_JEC",
-            pt_cut_name=pt_cut_name,
+            pt_cut_name=self.pt_cut_name,
         )
 
         if self.add_jet_spanet:
