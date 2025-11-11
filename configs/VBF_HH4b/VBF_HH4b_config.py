@@ -17,6 +17,7 @@ from pocket_coffea.lib.calibrators.legacy.legacy_calibrators import (
     JetsPtRegressionCalibrator,
 )
 
+
 from configs.VBF_HH4b.workflow import VBFHH4bProcessor
 from configs.VBF_HH4b.custom_cuts import vbf_hh4b_presel, vbf_hh4b_presel_tight
 
@@ -290,9 +291,7 @@ cfg = Configurator(
     },
     workflow=VBFHH4bProcessor,
     workflow_options=config_options_dict,
-    skim=[
-        get_HLTsel(primaryDatasets=["JetMET"]),
-    ],
+    skim=cuts.skimming_cut_list,
     preselections=preselection,
     categories=categories_dict,
     weights_classes=common_weights

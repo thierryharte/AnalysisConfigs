@@ -8,15 +8,7 @@ from configs.HH4b_common.config_files.__config_file__ import (
 )
 from pocket_coffea.lib.calibrators.common import default_calibrators_sequence
 from pocket_coffea.lib.calibrators.common import JetsCalibrator
-from pocket_coffea.lib.cut_functions import (
-    get_HLTsel,
-    goldenJson,
-    eventFlags,
-)
-from configs.HH4b_common.custom_cuts_common import (
-    JetVetoMap,
-    nPVgood,
-)
+
 
 from pocket_coffea.lib.weights.common.common import common_weights
 
@@ -324,13 +316,7 @@ cfg = Configurator(
     },
     workflow=HH4bbQuarkMatchingProcessor,
     workflow_options=config_options_dict,
-    skim=[
-        eventFlags,
-        goldenJson,
-        nPVgood,
-        get_HLTsel(primaryDatasets=["JetMET"]),
-        JetVetoMap,
-    ],
+    skim=cuts.skimming_cut_list,
     preselections=preselection,
     categories=categories_dict,
     weights_classes=common_weights

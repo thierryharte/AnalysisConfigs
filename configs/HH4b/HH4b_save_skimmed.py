@@ -1,13 +1,12 @@
 import os
 
-from pocket_coffea.lib.cut_functions import (
-    get_HLTsel,
-)
+
 
 # from pocket_coffea.parameters.cuts import passthrough
 from pocket_coffea.parameters import defaults
 from pocket_coffea.utils.configurator import Configurator
 from workflow_dummy import HH4bbQuarkMatchingProcessorDummy
+import configs.HH4b_common.custom_cuts_common as cuts
 
 localdir = os.path.dirname(os.path.abspath(__file__))
 
@@ -76,10 +75,11 @@ cfg = Configurator(
     workflow=HH4bbQuarkMatchingProcessorDummy,
     workflow_options={
     },
-    skim=[
-        get_HLTsel(primaryDatasets=["JetMET"]),
-        # get_HLTsel(primaryDatasets=["ParkingHH"]),
-    ],
+    skim=cuts.skimming_cut_list,
+    # skim=[
+    #     get_HLTsel(primaryDatasets=["JetMET"]),
+    #     # get_HLTsel(primaryDatasets=["ParkingHH"]),
+    # ],
     preselections=[
         #
     ],

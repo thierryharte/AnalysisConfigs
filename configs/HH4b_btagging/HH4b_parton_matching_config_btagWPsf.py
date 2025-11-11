@@ -227,9 +227,7 @@ cfg = Configurator(
     },
     workflow=HH4bCommonProcessor,
     workflow_options=config_options_dict,
-    skim=[
-        get_HLTsel(primaryDatasets=["JetMET"]),
-    ],
+    skim=cuts.skimming_cut_list,
     preselections=preselection,
     categories=categories_dict,
     weights_classes=common_weights

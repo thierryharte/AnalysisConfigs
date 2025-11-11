@@ -1,7 +1,12 @@
 from . import custom_cut_functions_common as cuts_f
 from pocket_coffea.lib.cut_definition import Cut
-from pocket_coffea.lib import cut_functions as cuts_f_pc
-
+from pocket_coffea.lib.cut_functions import (
+    get_HLTsel,
+    goldenJson,
+    eventFlags,
+    get_nPVgood,
+    get_JetVetoMap,
+)
 
 hh4b_presel = Cut(
     name="hh4b_presel",
@@ -82,9 +87,9 @@ hh4b_signal_region = Cut(
         "Run2": False,
         "radius_min": 0,
         "radius_max": 30,
-        "higgs_lead_center":125,
-        "higgs_sublead_center":120,
-        },
+        "higgs_lead_center": 125,
+        "higgs_sublead_center": 120,
+    },
     function=cuts_f.hh4b_Rhh_cuts,
 )
 
@@ -94,9 +99,9 @@ hh4b_control_region = Cut(
         "Run2": False,
         "radius_min": 30,
         "radius_max": 55,
-        "higgs_lead_center":125,
-        "higgs_sublead_center":120,
-        },
+        "higgs_lead_center": 125,
+        "higgs_sublead_center": 120,
+    },
     function=cuts_f.hh4b_Rhh_cuts,
 )
 
@@ -106,9 +111,9 @@ hh4b_signal_region_run2 = Cut(
         "Run2": True,
         "radius_min": 0,
         "radius_max": 30,
-        "higgs_lead_center":125,
-        "higgs_sublead_center":120,
-        },
+        "higgs_lead_center": 125,
+        "higgs_sublead_center": 120,
+    },
     function=cuts_f.hh4b_Rhh_cuts,
 )
 
@@ -118,9 +123,9 @@ hh4b_control_region_run2 = Cut(
         "Run2": True,
         "radius_min": 30,
         "radius_max": 55,
-        "higgs_lead_center":125,
-        "higgs_sublead_center":120,
-        },
+        "higgs_lead_center": 125,
+        "higgs_sublead_center": 120,
+    },
     function=cuts_f.hh4b_Rhh_cuts,
 )
 
@@ -130,9 +135,9 @@ hh4b_VR1_signal_region = Cut(
         "Run2": False,
         "radius_min": 0,
         "radius_max": 30,
-        "higgs_lead_center":185,
-        "higgs_sublead_center":180,
-        },
+        "higgs_lead_center": 185,
+        "higgs_sublead_center": 180,
+    },
     function=cuts_f.hh4b_Rhh_cuts,
 )
 
@@ -142,9 +147,9 @@ hh4b_VR1_control_region = Cut(
         "Run2": False,
         "radius_min": 30,
         "radius_max": 55,
-        "higgs_lead_center":185,
-        "higgs_sublead_center":180,
-        },
+        "higgs_lead_center": 185,
+        "higgs_sublead_center": 180,
+    },
     function=cuts_f.hh4b_Rhh_cuts,
 )
 
@@ -154,9 +159,9 @@ hh4b_VR1_signal_region_run2 = Cut(
         "Run2": True,
         "radius_min": 0,
         "radius_max": 30,
-        "higgs_lead_center":185,
-        "higgs_sublead_center":180,
-        },
+        "higgs_lead_center": 185,
+        "higgs_sublead_center": 180,
+    },
     function=cuts_f.hh4b_Rhh_cuts,
 )
 
@@ -166,9 +171,9 @@ hh4b_VR1_control_region_run2 = Cut(
         "Run2": True,
         "radius_min": 30,
         "radius_max": 55,
-        "higgs_lead_center":185,
-        "higgs_sublead_center":180,
-        },
+        "higgs_lead_center": 185,
+        "higgs_sublead_center": 180,
+    },
     function=cuts_f.hh4b_Rhh_cuts,
 )
 
@@ -177,7 +182,7 @@ blinded = Cut(
     params={
         "score": 0.9,
         "score_variable": "sig_bkg_dnn_score",
-        },
+    },
     function=cuts_f.blinding_cuts,
 )
 
@@ -186,18 +191,14 @@ blindedRun2 = Cut(
     params={
         "score": 0.9,
         "score_variable": "sig_bkg_dnn_scoreRun2",
-        },
+    },
     function=cuts_f.blinding_cuts,
 )
 
-JetVetoMap = Cut(
-    name="JetVetoMaps",
-    params={},
-    function=cuts_f_pc.get_JetVetoMap_Mask
-)
-
-nPVgood = Cut(
-    name="nPVgood",
-    params={"N": 1},
-    function=lambda events, params, **kwargs: events.PV.npvsGood >= params["N"],
-)
+skimming_cut_list = [
+    eventFlags,
+    goldenJson,
+    get_nPVgood(1),
+    get_HLTsel(primaryDatasets=["JetMET"]),
+    get_JetVetoMap(),
+]
