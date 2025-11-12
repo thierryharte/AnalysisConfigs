@@ -37,7 +37,7 @@ parameters = defaults.merge_parameters_from_files(
     f"{localdir}/../HH4b_common/params/triggers.yaml",
     f"{localdir}/../HH4b_common/params/variations.yaml",
     f"{localdir}/../HH4b_common/params/btagging_multipleWP.yaml",
-    f"{localdir}/../HH4b_common/params/jets_calibration_Calibrator_withoutVariations.yaml",
+    f"{localdir}/../HH4b_common/params/jets_calibration_Calibrator_withoutVariations_withJERC.yaml",
     # f"{localdir}/../HH4b_common/params/jets_calibration_Calibrator_withVariations.yaml",
     update=True,
     )

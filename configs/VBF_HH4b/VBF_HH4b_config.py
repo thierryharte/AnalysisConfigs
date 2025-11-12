@@ -56,6 +56,7 @@ parameters = defaults.merge_parameters_from_files(
     f"{localdir}/../HH4b_common/params/object_preselection.yaml",
     f"{localdir}/../HH4b_common/params/triggers.yaml",
     f"{localdir}/../HH4b_common/params/btagging_multipleWP.yaml",
+    # f"{localdir}/../HH4b_common/params/jets_calibration_Calibrator_withVariations.yaml",
     f"{localdir}/../HH4b_common/params/jets_calibration_Calibrator_withoutVariations_withJERC.yaml",
     update=True,
 )
@@ -128,6 +129,7 @@ sample_list = (
         #     "GluGlutoHHto4B_spanet_skimmed",
         #     # "GluGlutoHHto4B",
         #     # "VBF_HHto4B",
+        # "GluGlutoHHto4B_spanet"
         ]
     )
 )
@@ -276,7 +278,8 @@ cfg = Configurator(
             f"{localdir}/../HH4b_common/datasets/signal_VBF_HH4b.json",
             # f"{localdir}/../HH4b_common/datasets/signal_ggF_HH4b_local.json",
             # f"{localdir}/../HH4b_common/datasets/signal_ggF_HH4b_local_rucio.json",
-            f"{localdir}/../HH4b_common/datasets/signal_ggF_HH4b_SM_local_rucio_redirector.json",
+            # f"{localdir}/../HH4b_common/datasets/signal_ggF_HH4b_SM_local_rucio_redirector.json",
+            f"{localdir}/../HH4b_common/datasets/signal_ggF_HH4b_spanet_redirector.json",
             f"{localdir}/../HH4b_common/datasets/GluGlutoHHto4B_spanet_skimmed.json",
             f"{localdir}/../HH4b_common/datasets/GluGlutoHHto4B_spanet_skimmed_separateSamples.json",
             # f"{localdir}/../HH4b_common/datasets/signal_ggF_HH4b_test.json",
