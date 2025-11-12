@@ -83,6 +83,18 @@ def jet_selection_custom(
     pt_type="pt",
     pt_cut_name="pt",
 ):
+    """
+    Custom jet selection function to apply selection on different pt types.
+    Args:
+        events: awkward array with events
+        jet_type: str, type of jet to select (e.g. "Jet")
+        params: configuration parameters
+        year: int, year of the data-taking period
+        leptons_collection: str, type of leptons to consider for overlap removal
+        jet_tagger: str, jet tagger to use
+        pt_type: str, type of pt to apply the cut on (e.g. "pt", "pt_JEC", "pt_regressed")
+        pt_cut_name: str, name of the pt cut in the params (e.g. "pt", "pt_tight")
+    """
     jet_type_default = "Jet"
     params_copy = copy.copy(params)
     params_copy.object_preselection[jet_type_default]["pt"] = params.object_preselection[
