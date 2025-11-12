@@ -1,6 +1,7 @@
 import awkward as ak
 import numpy as np
 import vector
+import copy
 from pocket_coffea.lib.deltaR_matching import object_matching
 from pocket_coffea.workflows.base import BaseProcessorABC
 
@@ -60,28 +61,31 @@ class HH4bCommonProcessor(BaseProcessorABC):
             setattr(self, key, value)
 
     def process_extra_after_skim(self):
-        self.events["JetPNet"] = ak.copy(self.events["Jet"])
-        self.events["JetPNetPlusNeutrino"] = ak.copy(self.events["Jet"])
+        self.events["JetJEC"] = copy.copy(self.events["Jet"])
+        self.events["JetPNet"] = copy.copy(self.events["Jet"])
+        self.events["JetPNetPlusNeutrino"] = copy.copy(self.events["Jet"])
 
     def apply_object_preselection(self, variation):
-        jet_regressed_extended = align_by_eta(
-            self.events["Jet"], self.events["JetPNetPlusNeutrino"]
-        )
-        self.events["Jet"] = ak.with_field(
-            self.events["Jet"],
-            jet_regressed_extended.pt,
-            "pt_regressed",
-        )
+        # Use the regressed pt from PNet+Neutrino collection if available, 
+        # otherwise use the JEC corrected pt collection
+        # This way we consider correctly all fields which change depending on
+        # the pt definition, namely the pt, mass and the associated systematic variations 
+        self.events["Jet"] = ak.where(
+                ak.nan_to_num(self.events["JetPNetPlusNeutrino"].pt, nan=-1) > 0,
+                self.events["JetPNetPlusNeutrino"],
+                self.events.JetJEC,
+            )
+        # save also the different pt definitions for bookkeeping
+        # we anyway miss the different mass definitions and the various variations
         self.events["Jet"] = ak.with_field(
             self.events.Jet,
-            self.events.Jet.pt,
+            self.events.JetJEC.pt,
             "pt_JEC",
         )
-        # replace pt with the regressed one
         self.events["Jet"] = ak.with_field(
             self.events.Jet,
-            self.events.Jet.pt_regressed,
-            "pt",
+            self.events.JetPNetPlusNeutrino.pt,
+            "pt_regressed",
         )
 
         if self.add_jet_spanet:
@@ -112,7 +116,7 @@ class HH4bCommonProcessor(BaseProcessorABC):
             pt_type="pt_JEC",
             pt_cut_name=self.pt_cut_name,
         )
-
+        
         self.events["Electron"] = ak.with_field(
             self.events.Electron,
             self.events.Electron.eta + self.events.Electron.deltaEtaSC,

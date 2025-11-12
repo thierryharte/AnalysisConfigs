@@ -1,7 +1,7 @@
 import numpy as np
 import awkward as ak
 from pocket_coffea.lib.jets import jet_selection
-
+import copy
 
 def lepton_selection(events, lepton_flavour, params):
     leptons = events[lepton_flavour]
@@ -83,42 +83,32 @@ def jet_selection_custom(
     pt_type="pt",
     pt_cut_name="pt",
 ):
-    params_copy = params.copy()
-    params_copy.object_preselection[jet_type]["pt"] = params.object_preselection[
+    jet_type_default = "Jet"
+    params_copy = copy.copy(params)
+    params_copy.object_preselection[jet_type_default]["pt"] = params.object_preselection[
         jet_type
     ][pt_cut_name]
 
-    # save original pt
-    events[jet_type] = ak.with_field(
-        events[jet_type],
-        events[jet_type]["pt"],
-        "pt_original",
-    )
-
+    events_copy=copy.copy(events)
     # replace the pt with the pt_type requested to do the cut on
-    events[jet_type] = ak.with_field(
-        events[jet_type],
-        events[jet_type][pt_type],
+    events_copy[jet_type_default] = ak.with_field(
+        events_copy[jet_type],
+        events_copy[jet_type][pt_type],
         "pt",
     )
 
     _, mask = jet_selection(
-        events,
-        jet_type,
+        events_copy,
+        jet_type_default,
         params_copy,
         year,
         leptons_collection,
         jet_tagger,
     )
 
-    # remove parameters not needed anymore
+    # remove copies
     del params_copy
+    del events_copy
 
-    # restore original pt
-    events[jet_type] = ak.with_field(
-        events[jet_type],
-        events[jet_type]["pt_original"],
-        "pt",
-    )
 
     return events[jet_type][mask]
