@@ -92,7 +92,7 @@ def jet_selection_custom(
         year: int, year of the data-taking period
         leptons_collection: str, type of leptons to consider for overlap removal
         jet_tagger: str, jet tagger to use
-        pt_type: str, type of pt to apply the cut on (e.g. "pt", "pt_JEC", "pt_regressed")
+        pt_type: str, type of pt to apply the cut on (e.g. "pt", "pt_default", "pt_regressed")
         pt_cut_name: str, name of the pt cut in the params (e.g. "pt", "pt_tight")
     """
     jet_type_default = "Jet"

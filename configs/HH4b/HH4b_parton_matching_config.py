@@ -6,8 +6,10 @@ from configs.HH4b_common.config_files.__config_file__ import (
     config_options_dict,
     onnx_model_dict,
 )
-from pocket_coffea.lib.calibrators.common import default_calibrators_sequence
-from pocket_coffea.lib.calibrators.common import JetsCalibrator
+from pocket_coffea.lib.calibrators.legacy.legacy_calibrators import (
+    JetsCalibrator,
+    JetsPtRegressionCalibrator,
+)
 
 
 from pocket_coffea.lib.weights.common.common import common_weights
@@ -321,8 +323,7 @@ cfg = Configurator(
     categories=categories_dict,
     weights_classes=common_weights
     + [bkg_morphing_dnn_weight, bkg_morphing_dnn_weightRun2, SF_btag_fixed_multiple_wp],
-    # calibrators=default_calibrators_sequence,
-    calibrators=default_calibrators_sequence,
+    calibrators=[JetsCalibrator, JetsPtRegressionCalibrator],
     weights={
         "common": {
             # "inclusive": ["genWeight", "lumi", "XS", "sf_btag_fixed_multiple_wp"],

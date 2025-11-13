@@ -8,6 +8,10 @@ from pocket_coffea.lib.weights.common.common import common_weights
 from pocket_coffea.parameters import defaults
 from pocket_coffea.parameters.histograms import *
 from pocket_coffea.utils.configurator import Configurator
+from pocket_coffea.lib.calibrators.legacy.legacy_calibrators import (
+    JetsCalibrator,
+    JetsPtRegressionCalibrator,
+)
 from workflow_btagSF_HH4b import HH4bCommonProcessor
 
 import configs.HH4b_common.custom_cuts_common as cuts
@@ -121,6 +125,7 @@ cfg = Configurator(
     skim=cuts.skimming_cut_list,
     preselections=preselection,
     categories=categories_dict,
+    calibrators=[JetsCalibrator, JetsPtRegressionCalibrator],
 
     weights_classes=common_weights,
     weights={

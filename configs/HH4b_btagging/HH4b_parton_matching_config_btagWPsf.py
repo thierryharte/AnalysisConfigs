@@ -5,7 +5,6 @@ from configs.HH4b_common.config_files.__config_file__ import (
     config_options_dict,
     onnx_model_dict,
 )
-from pocket_coffea.lib.calibrators.common import default_calibrators_sequence
 from pocket_coffea.lib.cut_functions import (
     get_HLTsel,
 )
@@ -15,6 +14,10 @@ from pocket_coffea.lib.weights.common.common import common_weights
 # rom pocket_coffea.lib.columns_manager import ColOut
 from pocket_coffea.parameters import defaults
 from pocket_coffea.parameters.histograms import *
+from pocket_coffea.lib.calibrators.legacy.legacy_calibrators import (
+    JetsCalibrator,
+    JetsPtRegressionCalibrator,
+)
 
 # from collections import defaultdict
 from pocket_coffea.utils.configurator import Configurator
@@ -232,8 +235,7 @@ cfg = Configurator(
     categories=categories_dict,
     weights_classes=common_weights
     + [bkg_morphing_dnn_weight, bkg_morphing_dnn_weightRun2, SF_btag_fixed_multiple_wp],
-    # calibrators=default_calibrators_sequence,
-    calibrators=default_calibrators_sequence,
+    calibrators=[JetsCalibrator, JetsPtRegressionCalibrator],
     weights={
         "common": {
             "inclusive": ["genWeight", "lumi", "XS", "pileup"],

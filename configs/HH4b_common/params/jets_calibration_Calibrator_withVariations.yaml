@@ -565,6 +565,9 @@ default_jets_calibration:
           - JES_CorrelationGroupUncorrelated
           - JES_jes
           - JER
+        AK4PFPuppiPNetRegression: "${default_jets_calibration.variations.full_variations.2022_preEE.AK4PFPuppi}"
+        AK4PFPuppiPNetRegressionPlusNeutrino: "${default_jets_calibration.variations.full_variations.2022_preEE.AK4PFPuppi}"
+
       2022_postEE:
         AK4PFPuppi: 
           - JES_AbsoluteStat
@@ -621,6 +624,8 @@ default_jets_calibration:
           - JES_CorrelationGroupUncorrelated
           - JES_jes
           - JER
+        AK4PFPuppiPNetRegression: "${default_jets_calibration.variations.full_variations.2022_postEE.AK4PFPuppi}"
+        AK4PFPuppiPNetRegressionPlusNeutrino: "${default_jets_calibration.variations.full_variations.2022_postEE.AK4PFPuppi}"
       2023_preBPix:
         AK4PFPuppi:      
           - JES_AbsoluteStat
@@ -677,6 +682,8 @@ default_jets_calibration:
           - JES_CorrelationGroupUncorrelated
           - JES_jes
           - JER
+        AK4PFPuppiPNetRegression: "${default_jets_calibration.variations.full_variations.2023_preBPix.AK4PFPuppi}"
+        AK4PFPuppiPNetRegressionPlusNeutrino: "${default_jets_calibration.variations.full_variations.2023_preBPix.AK4PFPuppi}"
       2023_postBPix:
         AK4PFPuppi:      
           - JES_AbsoluteStat
@@ -733,6 +740,8 @@ default_jets_calibration:
           - JES_CorrelationGroupUncorrelated
           - JES_jes
           - JER
+        AK4PFPuppiPNetRegression: "${default_jets_calibration.variations.full_variations.2023_postBPix.AK4PFPuppi}"
+        AK4PFPuppiPNetRegressionPlusNeutrino: "${default_jets_calibration.variations.full_variations.2023_postBPix.AK4PFPuppi}"
       
     total_variation: 
       2016_PreVFP: 
@@ -755,18 +764,26 @@ default_jets_calibration:
         AK4PFPuppi:  
         - JES_Total
         - JER
+        AK4PFPuppiPNetRegression: "${default_jets_calibration.variations.total_variation.2022_preEE.AK4PFPuppi}"
+        AK4PFPuppiPNetRegressionPlusNeutrino: "${default_jets_calibration.variations.total_variation.2022_preEE.AK4PFPuppi}"
       2022_postEE:
         AK4PFPuppi: 
         - JES_Total
         - JER
+        AK4PFPuppiPNetRegression: "${default_jets_calibration.variations.total_variation.2022_postEE.AK4PFPuppi}"
+        AK4PFPuppiPNetRegressionPlusNeutrino: "${default_jets_calibration.variations.total_variation.2022_postEE.AK4PFPuppi}"
       2023_preBPix:
         AK4PFPuppi:       
         - JES_Total
         - JER
+        AK4PFPuppiPNetRegression: "${default_jets_calibration.variations.total_variation.2023_preBPix.AK4PFPuppi}"
+        AK4PFPuppiPNetRegressionPlusNeutrino: "${default_jets_calibration.variations.total_variation.2023_preBPix.AK4PFPuppi}"
       2023_postBPix:
         AK4PFPuppi: 
         - JES_Total
         - JER
+        AK4PFPuppiPNetRegression: "${default_jets_calibration.variations.total_variation.2023_postBPix.AK4PFPuppi}"
+        AK4PFPuppiPNetRegressionPlusNeutrino: "${default_jets_calibration.variations.total_variation.2023_postBPix.AK4PFPuppi}"
 
 #####################################################################################
 # Default jets calibration for the user used by the processor
@@ -790,22 +807,22 @@ jets_calibration:
     
   collection:  # this is needed to know which collection is corrected with which jet factory
     2022_preEE:
-      AK4PFPuppi: "JetJEC"
+      AK4PFPuppi: "JetDefault"
       AK4PFPuppiPNetRegression: "JetPNet"
       AK4PFPuppiPNetRegressionPlusNeutrino: "JetPNetPlusNeutrino"
       AK8PFPuppi: "FatJet"
     2022_postEE:
-      AK4PFPuppi: "JetJEC"
+      AK4PFPuppi: "JetDefault"
       AK4PFPuppiPNetRegression: "JetPNet"
       AK4PFPuppiPNetRegressionPlusNeutrino: "JetPNetPlusNeutrino"
       AK8PFPuppi: "FatJet"
     2023_preBPix:
-      AK4PFPuppi: "JetJEC"
+      AK4PFPuppi: "JetDefault"
       AK4PFPuppiPNetRegression: "JetPNet"
       AK4PFPuppiPNetRegressionPlusNeutrino: "JetPNetPlusNeutrino"
       AK8PFPuppi: "FatJet"
     2023_postBPix:
-      AK4PFPuppi: "JetJEC"
+      AK4PFPuppi: "JetDefault"
       AK4PFPuppiPNetRegression: "JetPNet"
       AK4PFPuppiPNetRegressionPlusNeutrino: "JetPNetPlusNeutrino"
       AK8PFPuppi: "FatJet"

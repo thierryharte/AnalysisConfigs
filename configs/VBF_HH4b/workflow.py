@@ -25,7 +25,7 @@ class VBFHH4bProcessor(HH4bCommonProcessor):
                 "JetVBF_matching",
                 self.params,
                 year=self._year,
-                pt_type="pt_JEC",
+                pt_type="pt_default",
                 pt_cut_name=self.pt_cut_name,
             )
 
@@ -35,7 +35,7 @@ class VBFHH4bProcessor(HH4bCommonProcessor):
                 "JetGoodVBF",
                 self.params,
                 year=self._year,
-                pt_type="pt_JEC",
+                pt_type="pt_default",
                 pt_cut_name=self.pt_cut_name,
             )
 
@@ -54,7 +54,7 @@ class VBFHH4bProcessor(HH4bCommonProcessor):
                 "JetVBF_generalSelection",
                 self.params,
                 year=self._year,
-                pt_type="pt_JEC",
+                pt_type="pt_default",
                 pt_cut_name=self.pt_cut_name_vbf,
             )
 
@@ -77,7 +77,7 @@ class VBFHH4bProcessor(HH4bCommonProcessor):
                 "JetVBFNotFromHiggs",
                 self.params,
                 year=self._year,
-                pt_type="pt_JEC",
+                pt_type="pt_default",
                 pt_cut_name=self.pt_cut_name_vbf,
             )
 

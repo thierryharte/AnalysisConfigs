@@ -20,14 +20,14 @@ def vbf_hh4b_presel_cuts(events, params, **kwargs):
     )
 
     jets_pt_order = jets_btag_order[
-        ak.argsort(jets_btag_order.pt_JEC, axis=1, ascending=False)
+        ak.argsort(jets_btag_order.pt_default, axis=1, ascending=False)
     ]
 
     mask_pt_none = (
-        (jets_pt_order.pt_JEC[:, 0] > params["pt_jet0"])
-        & (jets_pt_order.pt_JEC[:, 1] > params["pt_jet1"])
-        & (jets_pt_order.pt_JEC[:, 2] > params["pt_jet2"])
-        & (jets_pt_order.pt_JEC[:, 3] > params["pt_jet3"])
+        (jets_pt_order.pt_default[:, 0] > params["pt_jet0"])
+        & (jets_pt_order.pt_default[:, 1] > params["pt_jet1"])
+        & (jets_pt_order.pt_default[:, 2] > params["pt_jet2"])
+        & (jets_pt_order.pt_default[:, 3] > params["pt_jet3"])
     )
     # convert none to false
     mask_pt = ak.where(ak.is_none(mask_pt_none), False, mask_pt_none)
@@ -72,7 +72,7 @@ def VBF_cuts(events, params, **args):
 
 
 def VBFtight_cuts(events, params, **args):
-    mask_pt = events.JetVBF_matched.pt_JEC > params["pt_JEC"]
+    mask_pt = events.JetVBF_matched.pt_default > params["pt_default"]
     mask_eta = events.JetVBF_matched.eta < params["eta"]
     mask_btag = events.JetVBF_matched.btagPNetB < params["btag"]
 
@@ -107,10 +107,10 @@ def VBF_generalSelection_cuts(events, params, **kwargs):
     jets_btag_order = events[mask_two_vbf_jets].JetVBF_generalSelection
 
     jets_pt_order = jets_btag_order[
-        ak.argsort(jets_btag_order.pt_JEC, axis=1, ascending=False)
+        ak.argsort(jets_btag_order.pt_default, axis=1, ascending=False)
     ]
 
-    mask_VBF_pt_none = jets_pt_order.pt_JEC[:, 0] > params["pt_VBFjet0"]
+    mask_VBF_pt_none = jets_pt_order.pt_default[:, 0] > params["pt_VBFjet0"]
 
     # convert none to false
     mask_pt = ak.where(ak.is_none(mask_VBF_pt_none), False, mask_VBF_pt_none)

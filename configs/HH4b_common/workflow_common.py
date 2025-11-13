@@ -61,7 +61,7 @@ class HH4bCommonProcessor(BaseProcessorABC):
             setattr(self, key, value)
 
     def process_extra_after_skim(self):
-        self.events["JetJEC"] = copy.copy(self.events["Jet"])
+        self.events["JetDefault"] = copy.copy(self.events["Jet"])
         self.events["JetPNet"] = copy.copy(self.events["Jet"])
         self.events["JetPNetPlusNeutrino"] = copy.copy(self.events["Jet"])
 
@@ -73,14 +73,14 @@ class HH4bCommonProcessor(BaseProcessorABC):
         self.events["Jet"] = ak.where(
                 ak.nan_to_num(self.events["JetPNetPlusNeutrino"].pt, nan=-1) > 0,
                 self.events["JetPNetPlusNeutrino"],
-                self.events.JetJEC,
+                self.events.JetDefault,
             )
         # save also the different pt definitions for bookkeeping
         # we anyway miss the different mass definitions and the various variations
         self.events["Jet"] = ak.with_field(
             self.events.Jet,
-            self.events.JetJEC.pt,
-            "pt_JEC",
+            self.events.JetDefault.pt,
+            "pt_default",
         )
         self.events["Jet"] = ak.with_field(
             self.events.Jet,
@@ -94,6 +94,7 @@ class HH4bCommonProcessor(BaseProcessorABC):
                 ak.argsort(self.events["Jet"].pt, axis=1, ascending=False)
             ]
 
+        breakpoint()
         # get index after reordering in pt
         self.events["Jet"] = ak.with_field(
             self.events.Jet, ak.local_index(self.events.Jet, axis=1), "index"
@@ -113,7 +114,7 @@ class HH4bCommonProcessor(BaseProcessorABC):
             "Jet",
             self.params,
             year=self._year,
-            pt_type="pt_JEC",
+            pt_type="pt_default",
             pt_cut_name=self.pt_cut_name,
         )
         
@@ -570,7 +571,7 @@ class HH4bCommonProcessor(BaseProcessorABC):
             "JetNotFromHiggs",
             self.params,
             year=self._year,
-            pt_type="pt_JEC",
+            pt_type="pt_default",
             pt_cut_name=self.pt_cut_name,
         )
 
