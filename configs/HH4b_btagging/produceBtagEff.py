@@ -4,6 +4,7 @@ import json
 import yaml
 import logging
 import argparse
+import boost_histogram as bh
 
 import correctionlib
 import correctionlib.convert
@@ -77,18 +78,16 @@ def produceBtagEfficiencies(outputpath, inputfile, histCategoryToUse, sampleGrou
     samples_found = {k: True for k in sampleGroups.keys()}
     for jetHistVar in histCollection:  # different jet collections (btaggedJets for each wp, jetsTotal)
         for sampleGroup in sampleGroups.keys():  # groupings of samples to calculated efficiencies in
-            if samples_found[sampleGroup]:
-                pass
             tempHistColl = []
             if "hists" not in sampleGroups[sampleGroup].keys():
                 sampleGroups[sampleGroup]["hists"] = {}
             for sampleName in sampleGroups[sampleGroup]["sampleNames"]:
                 if sampleName not in inputFile["variables"][jetHistVar].keys() or not samples_found[sampleGroup]:
                     samples_found[sampleGroup] = False
-                    pass
+                    continue
                 for dataset, inputHist in inputFile["variables"][jetHistVar][sampleName].items():
                     nominalHist = inputHist[hist.loc(histCategoryToUse), hist.loc("nominal"), :, :, :]
-                    tempHistColl.append(nominalHist * inputFile["sum_genweights"][dataset])
+                    tempHistColl.append(nominalHist) # * inputFile["sum_genweights"][dataset])
             if samples_found:
                 sampleGroups[sampleGroup]["hists"][jetHistVar] = sum(tempHistColl)  # sum samples in each sample group
     for sampleGroup, found in samples_found.items():
@@ -105,6 +104,7 @@ def produceBtagEfficiencies(outputpath, inputfile, histCategoryToUse, sampleGrou
 
         for bJetHistName in bjetHistNames:
             nbJetsHist = sampleGroups[sampleGroup]["hists"][bJetHistName]
+            check_flow(nbJetsHist)
             workingPoint = bJetHistName.split("_")[2]
 
             # Calculating btaggin efficiency
@@ -127,7 +127,8 @@ def produceBtagEfficiencies(outputpath, inputfile, histCategoryToUse, sampleGrou
             view[...] = np.nan_to_num(view, nan=0.0)
             cset = correctionlib.convert.from_histogram(btagEfficiencyHisto)
             cset.description = "Btagging efficiencies for " + sampleGroup + " samples using " + workingPoint + " working point"
-            cset.data.flow = "clamp"
+            # For the moment let correctionlib fail evaluation in case a jet is in the under-/overflow bin of the efficiency map.
+            cset.data.flow = "error"
             correction_set_collection.append(cset)
 
     if produceControlPlots:
@@ -147,6 +148,21 @@ def produceBtagEfficiencies(outputpath, inputfile, histCategoryToUse, sampleGrou
         fout.write(json.dumps(parsed_json, indent=2))
 
 
+def check_flow(hist):
+    """Check if there are entries in over-/ underflow bin of Hist() object and raise exception if so."""
+    for ax in range(hist.ndim):
+        if np.any(hist[{ax: bh.underflow}].view(flow=True).value):
+            raise ValueError(
+                    "No entries in under-/ overflows allowed \n" +
+                    f"Found underflow bin in axis {hist.axes[ax].name}. Values are: {hist[{ax: bh.underflow}].view(flow=True).value}"
+                    )
+        elif np.any(hist[{ax: bh.overflow}].view(flow=True).value):
+            raise ValueError(
+                    "No entries in under-/ overflows allowed \n" +
+                    f"Found overflow bin in axis {hist.axes[ax].name}. Values are: {hist[{ax: bh.overflow}].view(flow=True).value}"
+                    )
+
+
 if __name__ == "__main__":
 
     logging.basicConfig(format='%(asctime)s,%(msecs)03d %(name)s %(levelname)s %(message)s',
@@ -154,7 +170,7 @@ if __name__ == "__main__":
                         level=logging.INFO)
     logger = logging.getLogger()
 
-    parser = argparse.ArgumentParser(description="Build datacards from pocket-coffea outputs")
+    parser = argparse.ArgumentParser(description="Produce btagWP efficiency files for SF correction.")
     parser.add_argument(
         "-i",
         "--input-file",

@@ -1,27 +1,29 @@
 import os
 
 from histConfigBtagEfficiency import btag_sf_hist
-from pocket_coffea.lib.cut_functions import (
-    get_HLTsel,
+from pocket_coffea.lib.calibrators.legacy.legacy_calibrators import (
+    JetsCalibrator,
+    JetsPtRegressionCalibrator,
 )
 from pocket_coffea.lib.weights.common.common import common_weights
 from pocket_coffea.parameters import defaults
 from pocket_coffea.parameters.histograms import *
 from pocket_coffea.utils.configurator import Configurator
-from pocket_coffea.lib.calibrators.legacy.legacy_calibrators import (
-    JetsCalibrator,
-    JetsPtRegressionCalibrator,
-)
-from workflow_btagSF_HH4b import HH4bCommonProcessor
+from workflow_btagSF_HH4b import HH4bbtagWPefficiencyProcessor
 
 import configs.HH4b_common.custom_cuts_common as cuts
 from configs.HH4b_common.config_files.configurator_tools import (
-    define_categories,
+    DEFAULT_JET_COLUMNS,
     define_single_category,
+    get_columns_list,
 )
 from configs.HH4b_common.config_files.spanet_ptflat_btag5WP import (
     config_options_dict,
     onnx_model_dict,
+)
+from configs.HH4b_common.custom_weights import (
+    bkg_morphing_dnn_weight,
+    bkg_morphing_dnn_weightRun2,
 )
 
 localdir = os.path.dirname(os.path.abspath(__file__))
@@ -35,6 +37,7 @@ default_parameters = defaults.get_default_parameters()
 defaults.register_configuration_dir("config_dir", localdir)
 
 
+year = ["2022_postEE", "2022_preEE"]  # , "2023_preBPix", "2023_postBPix"]
 parameters = defaults.merge_parameters_from_files(
     default_parameters,
     f"{localdir}/../HH4b_common/params/object_preselection.yaml",
@@ -46,8 +49,14 @@ parameters = defaults.merge_parameters_from_files(
     update=True,
     )
 parameters["run_period"] = "Run3"
-year = ["2022_postEE", "2022_preEE"]  # , "2023_preBPix", "2023_postBPix"]
 config_options_dict["num_bins"] = 20
+preselection = [
+    (
+        cuts.hh4b_presel_nobtag
+        if config_options_dict["tight_cuts"] is False
+        else cuts.hh4b_presel_tight
+    )
+]
 # Defining the used samples
 sample_ggF_list = [
     "GluGlutoHHto4B_spanet_kl-1p00_kt-1p00_c2-0p00_skimmed",
@@ -81,23 +90,26 @@ sample_list = [
     # "DATA_ParkingHH_2023_Dv2",
 ] + sample_ggF_list
 
-preselection = [
-    (
-        cuts.hh4b_presel_nobtag
-        if config_options_dict["tight_cuts"] is False
-        else cuts.hh4b_presel_tight
-    )
-]
-categories_dict = define_categories(
-    bkg_morphing_dnn=config_options_dict["bkg_morphing_dnn"],
-    blind=config_options_dict["blind"],
-    spanet=config_options_dict["spanet"],
-    run2=config_options_dict["run2"],
-    vr1=config_options_dict["vr1"],
-)
-if all([model == "" for model in onnx_model_dict.values()]):
-    print("Didn't find any onnx model. Will choose region for SPANet training")
-    categories_dict = define_single_category("inclusive")
+categories_dict = define_single_category("inclusive")
+
+column_list = get_columns_list(DEFAULT_JET_COLUMNS, not config_options_dict["save_chunk"])
+
+
+bysample_bycategory_column_dict = {}
+for sample in sample_list:
+    bysample_bycategory_column_dict[sample] = {
+        "inclusive": [],
+        "bycategory": {},
+    }
+    for category in categories_dict.keys():
+        if "Run2" in category:
+            bysample_bycategory_column_dict[sample]["bycategory"][category] = (
+                column_listRun2
+            )
+        else:
+            bysample_bycategory_column_dict[sample]["bycategory"][category] = (
+                column_list
+            )
 
 cfg = Configurator(
     parameters=parameters,
@@ -120,14 +132,16 @@ cfg = Configurator(
         "subsamples": {},
     },
 
-    workflow=HH4bCommonProcessor,
+    workflow=HH4bbtagWPefficiencyProcessor,
     workflow_options=config_options_dict,
     skim=cuts.skimming_cut_list,
     preselections=preselection,
     categories=categories_dict,
+    # calibrators=default_calibrators_sequence,
     calibrators=[JetsCalibrator, JetsPtRegressionCalibrator],
 
-    weights_classes=common_weights,
+    weights_classes=common_weights
+    + [bkg_morphing_dnn_weight, bkg_morphing_dnn_weightRun2],
     weights={
         "common": {
 			"inclusive": ["genWeight", "lumi", "XS",
@@ -182,5 +196,13 @@ cfg = Configurator(
         "bjets_robustParticleTransformer_XXT_pt_eta_flav": btag_sf_hist("BJetGood_robustParticleTransformer_XXT"),
 
         "jets_pt_eta_flav": btag_sf_hist("JetGood")
+    },
+    columns={
+        "common": {
+            "inclusive": [],
+            "bycategory": {},
+        },
+        "bysample": bysample_bycategory_column_dict,
+        # "bysample": {},
     },
 )

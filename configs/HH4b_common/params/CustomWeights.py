@@ -57,6 +57,7 @@ SF_btag_fixed_multiple_wp_lamb = WeightLambda.wrap_func(
 def get_sf_btag_fixed_multiple_wp(params, Jets, year, sample, return_variations=True):
 
     sampleGroups = params["btagging"]["sampleGroups"]
+    Jets = Jets[:,:5]
 
     btag_effi_sample_group = ""
     for sampleGroupName, sampleGroup in sampleGroups.items():
@@ -155,6 +156,7 @@ def get_sf_btag_fixed_multiple_wp(params, Jets, year, sample, return_variations=
         else:
             eff[wp] = btag_effi_corr_set[btag_effi_sample_group + "_wp_" + wp].evaluate(jetpt, jeteta, jetflav)
 
+
     # Preloading some things.
     ones_array = ak.ones_like(jetflav)
     zero_array = ak.zeros_like(jetflav)
@@ -179,11 +181,11 @@ def get_sf_btag_fixed_multiple_wp(params, Jets, year, sample, return_variations=
             for variation_light, variation_heavy in zip(variationColl["light"], variationColl["heavy"]):
                 # I did not find a better solution, than always calculating left and right edge. This means I repeat each operation once when it is the left and once when it is the right bin...
                 for leftright, wp_tag in zip(["left", "right"], [wp_low, wp_high]):
-                    if leftright == "left" and wp_tag == "0":
+                    if wp_tag == "0":
                         sf_flat = ones_array  # Only oneses
                         # sf_light_flat = zero_array  # Only oneses
                         # sf_heavy_flat = zero_array  # Only oneses
-                    elif leftright == "right" and wp_tag == "1":
+                    elif wp_tag == "1":
                         sf_flat = zero_array  # Only oneses
                         # sf_light_flat = zero_array  # Only zeros
                         # sf_heavy_flat = zero_array  # Only zeros
