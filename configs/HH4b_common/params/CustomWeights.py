@@ -57,7 +57,7 @@ SF_btag_fixed_multiple_wp_lamb = WeightLambda.wrap_func(
 def get_sf_btag_fixed_multiple_wp(params, Jets, year, sample, return_variations=True):
 
     sampleGroups = params["btagging"]["sampleGroups"]
-    Jets = Jets[:,:5]
+    Jets = Jets[:, :5]
 
     btag_effi_sample_group = ""
     for sampleGroupName, sampleGroup in sampleGroups.items():
