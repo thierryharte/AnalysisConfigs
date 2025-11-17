@@ -328,7 +328,7 @@ for hist_cat, sob_hist in histograms_dict.items():
             mc_processes=mc_processes,
             data_processes=data_processes,
             category=region_name,
-            process_suffix="",
+            single_year=True,
             )
     datacard.dump(directory=f"{args.output}/{hist_cat}", card_name=f"{region_name}_{_label}.txt", shapes_name=f"shapes_{region_name}_{_label}.root")
 
