@@ -1,6 +1,11 @@
 import awkward as ak
 import numpy as np
 
+
+def four_jets(events, params, **kwargs):
+    mask = events.nJetGood >= params["njet"]
+    return ak.where(ak.is_none(mask), False, mask)
+
 def hh4b_presel_cuts(events, params, **kwargs):
     at_least_four_jets = events.nJetGood >= params["njet"]
     no_electron = events.nElectronGood == 0
@@ -64,17 +69,25 @@ def hh4b_4b_cuts(events, params, **kwargs):
 
 
 def hh4b_Rhh_cuts(events, params, **kwargs):
+    Rhh=None
     if params["Run2"]:
-        higgs_lead_mass = events.HiggsLeadingRun2.mass
-        higgs_sublead_mass = events.HiggsSubLeadingRun2.mass
+        if "Rhh_Run2" in events.fields:
+            Rhh = events.Rhh_Run2
+        else:
+            higgs_lead_mass = events.HiggsLeadingRun2.mass
+            higgs_sublead_mass = events.HiggsSubLeadingRun2.mass
     else:
-        higgs_lead_mass = events.HiggsLeading.mass
-        higgs_sublead_mass = events.HiggsSubLeading.mass
+        if "Rhh" in events.fields:
+            Rhh = events.Rhh
+        else:
+            higgs_lead_mass = events.HiggsLeading.mass
+            higgs_sublead_mass = events.HiggsSubLeading.mass
 
-    Rhh = np.sqrt(
-        (higgs_lead_mass - params["higgs_lead_center"]) ** 2
-        + (higgs_sublead_mass - params["higgs_sublead_center"]) ** 2
-    )
+    if Rhh is None:
+        Rhh = np.sqrt(
+            (higgs_lead_mass - params["higgs_lead_center"]) ** 2
+            + (higgs_sublead_mass - params["higgs_sublead_center"]) ** 2
+        )
 
     mask = (Rhh >= params["radius_min"]) & (Rhh < params["radius_max"])
 
@@ -89,5 +102,13 @@ def blinding_cuts(events, params, **kwargs):
     '''
     mask = (events[params["score_variable"]] < params["score"])
     
+    # Pad None values with False
+    return ak.where(ak.is_none(mask), False, mask)
+
+
+def dhh_cuts(events, params, **kwargs):
+
+    mask = (events.delta_dhh > params["delta_dhh_cut"])
+
     # Pad None values with False
     return ak.where(ak.is_none(mask), False, mask)
