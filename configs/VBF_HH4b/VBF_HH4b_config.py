@@ -56,8 +56,8 @@ parameters = defaults.merge_parameters_from_files(
     f"{localdir}/../HH4b_common/params/object_preselection.yaml",
     f"{localdir}/../HH4b_common/params/triggers.yaml",
     f"{localdir}/../HH4b_common/params/btagging_multipleWP.yaml",
-    # f"{localdir}/../HH4b_common/params/jets_calibration_Calibrator_withVariations.yaml",
-    f"{localdir}/../HH4b_common/params/jets_calibration_Calibrator_withoutVariations_withJERC.yaml",
+    # f"{localdir}/../HH4b_common/params/jets_calibration_legacy_Calibrator_withVariations.yaml",
+    f"{localdir}/../HH4b_common/params/jets_calibration_legacy_Calibrator_withoutVariations_withJERC.yaml",
     update=True,
 )
 
@@ -119,17 +119,17 @@ sample_list = (
         # "DATA_JetMET_JMENano_C_skimmed",
         # "DATA_JetMET_JMENano_D_skimmed",
         ## 2022 postEE
-        "DATA_JetMET_JMENano_E_skimmed",
-        "DATA_JetMET_JMENano_F_skimmed",
-        "DATA_JetMET_JMENano_G_skimmed",
+        # "DATA_JetMET_JMENano_E_skimmed",
+        # "DATA_JetMET_JMENano_F_skimmed",
+        # "DATA_JetMET_JMENano_G_skimmed",
     ]
-    + sample_ggF_list
+    # + sample_ggF_list
     + (
         [
         #     "GluGlutoHHto4B_spanet_skimmed",
         #     # "GluGlutoHHto4B",
         #     # "VBF_HHto4B",
-        # "GluGlutoHHto4B_spanet"
+        "GluGlutoHHto4B_spanet"
         ]
     )
 )
@@ -318,7 +318,13 @@ cfg = Configurator(
                 "bycategory": {},
             },
             "bysample": {},
-        }
+        },
+        # "shape": {
+        #     "common": {
+        #         "inclusive": ["jet_calibration_with_pt_regression_legacy"],
+        #         # "inclusive": [],
+        #         },
+        #     }
     },
     variables=variables_dict,
     columns={

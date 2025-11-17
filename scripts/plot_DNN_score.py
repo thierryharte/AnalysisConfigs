@@ -292,8 +292,8 @@ def plot_single_var_from_columns(
             # savesuffix = f"kl_{kl}"
 
         cat_plot_name = plot_regions_names(cat, namesuffix).replace("Run2", "_DHH")
-        print(cat_plot_name)
 
+        print("\n\n######################################################################")
         print(f"Found something to plot {cat} -> {cat_plot_name}")
 
         # Mask the blinded region
@@ -317,8 +317,12 @@ def plot_single_var_from_columns(
         # histogram of the denominator
         histo = Hist.new.Var(bin_edges, name=var_plot_name, flow=False).Weight()
         histo.fill(col_den, weight=weights_den)
+        
+        # print the histo and the total number of events
         print(cat_plot_name)
         print(histo)
+        print(f"Total number of events: {np.sum(histo.values())}")
+        
 
         if i == 0:
             hist_1d_dict[cat_plot_name] = {

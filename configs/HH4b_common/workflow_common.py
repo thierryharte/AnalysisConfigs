@@ -94,7 +94,6 @@ class HH4bCommonProcessor(BaseProcessorABC):
                 ak.argsort(self.events["Jet"].pt, axis=1, ascending=False)
             ]
 
-        breakpoint()
         # get index after reordering in pt
         self.events["Jet"] = ak.with_field(
             self.events.Jet, ak.local_index(self.events.Jet, axis=1), "index"
