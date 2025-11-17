@@ -293,7 +293,9 @@ def plot_single_var_from_columns(
 
         cat_plot_name = plot_regions_names(cat, namesuffix).replace("Run2", "_DHH")
 
-        print("\n\n######################################################################")
+        print(
+            "\n\n######################################################################"
+        )
         print(f"Found something to plot {cat} -> {cat_plot_name}")
 
         # Mask the blinded region
@@ -310,19 +312,18 @@ def plot_single_var_from_columns(
                 int((len(bin_edges) - 1) * (1 - BLINDED_SIGNAL_FRACTION))
             ]
             mask_blind = col_den <= blind_value
-            
-            col_den=col_den[mask_blind]
-            weights_den=weights_den[mask_blind]
-            
+
+            col_den = col_den[mask_blind]
+            weights_den = weights_den[mask_blind]
+
         # histogram of the denominator
         histo = Hist.new.Var(bin_edges, name=var_plot_name, flow=False).Weight()
         histo.fill(col_den, weight=weights_den)
-        
+
         # print the histo and the total number of events
         print(cat_plot_name)
         print(histo)
         print(f"Total number of events: {np.sum(histo.values())}")
-        
 
         if i == 0:
             hist_1d_dict[cat_plot_name] = {
@@ -464,44 +465,52 @@ def main(cat_cols, lumi, era_string):
             f"Unknown normalisation type {args.normalisation}. Use num_events or sum_weights"
         )
 
-    if args.run2:
-        if args.test:
-            CRratio_4b_2bpostW_Run2 = 1
-        else:
-            CR_region_keys = cat_dict[f"CR{args.region_suffix}Run2"]
-            CRratio_4b_2bpostW_Run2 = op_norm(
-                cat_cols[0][CR_region_keys[0]]["weight"],
-                cat_cols[0][CR_region_keys[1]]["weight"],
+    try:
+        if args.run2:
+            if args.test:
+                CRratio_4b_2bpostW_Run2 = 1
+            else:
+                CR_region_keys = cat_dict[f"CR{args.region_suffix}Run2"]
+                CRratio_4b_2bpostW_Run2 = op_norm(
+                    cat_cols[0][CR_region_keys[0]]["weight"],
+                    cat_cols[0][CR_region_keys[1]]["weight"],
+                )
+
+            SR_region_keys = cat_dict[f"SR{args.region_suffix}Run2"]
+            SRratio_4b_2bpostW_Run2 = op_norm(
+                cat_cols[0][SR_region_keys[0]]["weight"],
+                cat_cols[0][SR_region_keys[1]]["weight"],
             )
 
-        SR_region_keys = cat_dict[f"SR{args.region_suffix}Run2"]
-        SRratio_4b_2bpostW_Run2 = op_norm(
-            cat_cols[0][SR_region_keys[0]]["weight"],
-            cat_cols[0][SR_region_keys[1]]["weight"],
-        )
-
-        print(f"CR ratio Run2: {CRratio_4b_2bpostW_Run2}")
-        print(f"SR ratio Run2: {SRratio_4b_2bpostW_Run2}")
-    else:
-        if args.test:
-            CRratio_4b_2bpostW = 1
+            print(f"CR ratio Run2: {CRratio_4b_2bpostW_Run2}")
+            print(f"SR ratio Run2: {SRratio_4b_2bpostW_Run2}")
         else:
-            CR_region_keys = cat_dict[f"CR{args.region_suffix}"]
-            print(CR_region_keys)
+            if args.test:
+                CRratio_4b_2bpostW = 1
+            else:
+                CR_region_keys = cat_dict[f"CR{args.region_suffix}"]
+                print(CR_region_keys)
 
-            CRratio_4b_2bpostW = op_norm(
-                cat_cols[0][CR_region_keys[0]]["weight"],
-                cat_cols[0][CR_region_keys[1]]["weight"],
+                CRratio_4b_2bpostW = op_norm(
+                    cat_cols[0][CR_region_keys[0]]["weight"],
+                    cat_cols[0][CR_region_keys[1]]["weight"],
+                )
+
+            SR_region_keys = cat_dict[f"SR{args.region_suffix}"]
+            SRratio_4b_2bpostW = op_norm(
+                cat_cols[0][SR_region_keys[0]]["weight"],
+                cat_cols[0][SR_region_keys[1]]["weight"],
             )
 
-        SR_region_keys = cat_dict[f"SR{args.region_suffix}"]
-        SRratio_4b_2bpostW = op_norm(
-            cat_cols[0][SR_region_keys[0]]["weight"],
-            cat_cols[0][SR_region_keys[1]]["weight"],
+            print(f"CR ratio: {CRratio_4b_2bpostW}")
+            print(f"SR ratio: {SRratio_4b_2bpostW}")
+    except KeyError as e:
+        # print the error output
+        print(e)
+        print(
+            "Maybe you didn't provide the `--run2` flag while using Run2 categories or vice versa?"
         )
-
-        print(f"CR ratio: {CRratio_4b_2bpostW}")
-        print(f"SR ratio: {SRratio_4b_2bpostW}")
+        sys.exit(1)
 
     # cat_dict defined on top (global variable)
     for cats_name, cat_list in cat_dict.items():
