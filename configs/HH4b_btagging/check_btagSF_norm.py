@@ -38,6 +38,7 @@ def compare_bin_by_bin(hist_collection, sample_datasets, output):
             if all(hist.ndim == 1 for hist in hist_nom_sf):
                 logger.info(", ".join(f"{bin:.4f}" for bin in hist_ratio))
                 logger.info(f"maximal ratio: {max(hist_ratio[~nan_mask]):.4f}, \t minimal ratio: {min(hist_ratio[~nan_mask]):.4f}")
+                ylim_ratio = (max(abs(hist_ratio[~nan_mask])) * 1.01) - 1
                 (
                     HEPPlotter()
                     .set_plot_config(
@@ -50,7 +51,7 @@ def compare_bin_by_bin(hist_collection, sample_datasets, output):
                         "Events",
                         ratio_label="with btag-sf / no btag-sf",
                     )
-                    .set_options(y_log=True, x_log=False, set_ylim=False, legend=True)
+                    .set_options(y_log=True, x_log=False, set_ylim=False, set_ylim_ratio=ylim_ratio, legend=True)
                     .set_data(hist_dict, plot_type="1d").run()
                 )
             elif all(hist.ndim == 2 for hist in hist_nom_sf):
@@ -66,13 +67,13 @@ def compare_bin_by_bin(hist_collection, sample_datasets, output):
                         lumitext=f"{era_string}, {lumi}" + r" $fb^{-1}$, (13.6 TeV)",
                             figsize=[13, 13],
                         )
-                        .set_output(f"{output}/{sample}/{variable}_events_with_{njets}_Jets_comparison")
+                        .set_output(f"{output}/{sample}/{variable}_events_with_{int(hist_nom_sf[0].axes[0][njets][0])}_Jets")
                         .set_labels(
                             f"{hist_nom_sf[0].axes[1].name}",
-                            f"Events with {njets} Jets"
+                            f"Events with {int(hist_nom_sf[0].axes[0][njets][0])} Jets"
                             # ratio_label="with btag-sf / no btag-sf",
                         )
-                        .set_options(y_log=True, x_log=False, set_ylim=False, legend=True)
+                        .set_options(y_log=True, x_log=False, set_ylim=False, set_ylim_ratio=ylim_ratio, legend=True)
                         .set_data(hist_dict, plot_type="1d").run()
                     )
 
