@@ -80,6 +80,9 @@ class HH4bbtagWPefficiencyProcessor(HH4bCommonProcessor):
         return Jet[Jet[btag] > wp]
 
     def process_extra_after_presel(self, variation):  # -> ak.Array:
+        self.events["JetGood"] = self.events.JetGood[
+            ak.argsort(self.events.JetGood.pt, axis=1, ascending=False)
+        ]
         self.events["JetGood"] = self.generate_btag_workingpoints(
             self.events["JetGood"], 5
         )

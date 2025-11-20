@@ -76,7 +76,7 @@ def get_sf_btag_fixed_multiple_wp(params, Jets, year, sample, return_variations=
     btag_sf_corr_set = correctionlib.CorrectionSet.from_file(sf_file)
 
     jetpt = ak.flatten(Jets["pt"])
-    jeteta = ak.flatten(Jets["eta"])
+    jeteta = abs(ak.flatten(Jets["eta"]))
     jetflav = ak.flatten(Jets["hadronFlavour"])
     jetcounts = ak.num(Jets["pt"])
     btag_sf_name = paramsBtagSf["fixed_wp_name_map"][btag_algo]
@@ -135,10 +135,6 @@ def get_sf_btag_fixed_multiple_wp(params, Jets, year, sample, return_variations=
             }
         }
 
-    ''' 
-    This code works for 3 working points. For more WPs, additional terms need to be added to the formula. For more details check out the BTV POG twiki https://btv-wiki.docs.cern.ch/PerformanceCalibration/fixedWPSFRecommendations/#b-tagging-efficiencies-in-simulation
-    Note: Fixed for variable WP. Just enter the WPs in following list
-    '''
     wp_list = ["0", "L", "M", "T", "XT", "XXT", "1"] # These are the bin edges, I am considering. 0: btag-score <=0, 1:btag-score>1
     # Hack fake WPs into btag_wps:
     btag_wps["0"] = 0.0
@@ -152,10 +148,8 @@ def get_sf_btag_fixed_multiple_wp(params, Jets, year, sample, return_variations=
             eff[wp] = ak.ones_like(jetpt)
         elif wp == "1":
             eff[wp] = ak.zeros_like(jetpt)
-            # eff[wp] = ak.unflatten(ak.zeros_like(jetpt), counts=jetcounts)
         else:
-            eff[wp] = btag_effi_corr_set[btag_effi_sample_group + "_wp_" + wp].evaluate(jetpt, jeteta, jetflav)
-
+            eff[wp] = btag_effi_corr_set[btag_effi_sample_group + "_wp_" + wp].evaluate(jetpt, abs(jeteta), jetflav)
 
     # Preloading some things.
     ones_array = ak.ones_like(jetflav)
@@ -183,12 +177,8 @@ def get_sf_btag_fixed_multiple_wp(params, Jets, year, sample, return_variations=
                 for leftright, wp_tag in zip(["left", "right"], [wp_low, wp_high]):
                     if wp_tag == "0":
                         sf_flat = ones_array  # Only oneses
-                        # sf_light_flat = zero_array  # Only oneses
-                        # sf_heavy_flat = zero_array  # Only oneses
                     elif wp_tag == "1":
                         sf_flat = zero_array  # Only oneses
-                        # sf_light_flat = zero_array  # Only zeros
-                        # sf_heavy_flat = zero_array  # Only zeros
                     else:
                         # This is an ugly hack. the two evaluation fuctions fail, if wrong flavor is given.
                         # I set a mask for light flavors and set all heavy flavors as if they are heavy and vice versa.
@@ -404,7 +394,7 @@ def sf_btag_fixed_multiple_wp_calibrated(events, params, Jets, year, sample, nje
     for wp in wp_list:
         # Storing btag efficiencies for MC (taken from the maps previously computed) in different branches of Jets, one for each working point
         effi_MC[wp] = ak.unflatten(
-        btag_effi_corr_set[btag_effi_sample_group + "_wp_" + wp].evaluate(jetpt, jeteta, jetflav),
+        btag_effi_corr_set[btag_effi_sample_group + "_wp_" + wp].evaluate(jetpt, abs(jeteta), jetflav),
         counts=jetcounts
     )
         Jets = ak.with_field(Jets, effi_MC[wp], "effi_MC_" + wp)
