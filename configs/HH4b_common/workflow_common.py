@@ -117,6 +117,14 @@ class HH4bCommonProcessor(BaseProcessorABC):
             pt_cut_name=self.pt_cut_name,
         )
         
+        # Add btag WP
+        self.events["JetGood"] = self.generate_btag_workingpoints(
+            self.events["JetGood"], 5
+        )
+        self.events["JetGood"] = self.generate_btag_workingpoints(
+            self.events["JetGood"], 3
+        )
+        
         self.events["Electron"] = ak.with_field(
             self.events.Electron,
             self.events.Electron.eta + self.events.Electron.deltaEtaSC,
@@ -841,16 +849,11 @@ class HH4bCommonProcessor(BaseProcessorABC):
         return matched_jet_higgs_idx_not_none
 
     def process_extra_after_presel(self, variation):  # -> ak.Array:
-
-        self.events["JetGood"] = self.generate_btag_workingpoints(
-            self.events["JetGood"], 5
-        )
-        self.events["JetGood"] = self.generate_btag_workingpoints(
-            self.events["JetGood"], 3
-        )
+        # Define the Delta WP
         self.events["JetGood"] = self.generate_btag_delta_workingpoints(
             self.events["JetGood"], 5
         )
+        
         if self._isMC and not self.spanet:
             matched_jet_higgs_idx_not_none = self.get_true_pairing_and_compare()
 

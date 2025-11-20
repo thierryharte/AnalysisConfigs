@@ -1140,8 +1140,9 @@ SPANET_TRAINING_DEFAULT_COLUMN_PARAMS_BTWP = [
     "eta",
     "phi",
     "mass",
+    "btagPNetB_5wp",
+    "btagPNetB_3wp",
     "btagPNetB",
-    "btagPNetB_wp",
 ]
 SPANET_TRAINING_DEFAULT_COLUMNS_BTWP = {
     "JetGoodMatched": SPANET_TRAINING_DEFAULT_COLUMN_PARAMS_BTWP,

@@ -9,9 +9,8 @@ from configs.HH4b_common.config_files.default_config import default_config_optio
 
 
 onnx_model_dict  |= {
-    "bkg_morphing_dnn": "/work/tharte/datasets/ML_pytorch/out/bkg_reweighting/DHH_method_20_runs_postEE/best_models/ratio/average_model_from_onnx.onnx", # --> training on postEE
-    # "bkg_morphing_spread_dnn": "/work/tharte/datasets/ML_pytorch/out/bkg_reweighting/DHH_method_20_runs_postEE/best_models/ratio/all_ratios_model_onnx.onnx", # --> training on postEE
-    "sig_bkg_dnn": "/work/tharte/datasets/ML_pytorch/out/sig_bkg_classifier/DHH_method_norm_e5drop75_postEE/state_dict/model_best_epoch_18.onnx",
+    "bkg_morphing_dnn": "/work/mmalucch/out_ML_pytorch/hh4b_bkg_morphing/DNN_AN_1e-3_e20drop75_minDelta1em5_run2_newUpdates_postEE/best_models/average_model_from_onnx.onnx", 
+    "sig_bkg_dnn": "/work/mmalucch/out_ML_pytorch/hh4b_sig_bkg_classifier/DNN_AN_1e-3_e20drop75_minDelta1em5_run2_newUpdates_postEE/run100/state_dict/model_best_epoch_28.onnx",
 }
 
 
@@ -23,5 +22,5 @@ config_options_dict |= {
     "fifth_jet": "pt",
     "pad_value": -999.0,
     "add_jet_spanet": True,
-    "qt_postEE": "/work/tharte/datasets/quantile_transformer/DHH_quantiles/SRRun2_qt/qt_events_sig_bkg_dnn_score_kl_1.00.pkl",
+    "qt_postEE": "/work/mmalucch/out_hh4b/bkg_morphing_studies/out_DATA_MC_DHH_newUpdates_JECRegression_BkgMorphing/quantile_transformer/SRRun2_qt/qt_events_sig_bkg_dnn_score_DHH_kl_1.00.pkl",
 }| onnx_model_dict

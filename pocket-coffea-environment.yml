@@ -17,6 +17,7 @@ dependencies:
   - pyarrow=20.0.0
   - xrootd=5.8.1
   - lz4
+  - h5py
   - tqdm
   - pip
   - pip:
