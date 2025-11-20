@@ -18,6 +18,69 @@ from pocket_coffea.utils.stat import (
 )
 
 
+logging.basicConfig(format='%(asctime)s,%(msecs)03d %(name)s %(levelname)s %(message)s',
+                    datefmt='%Y-%m-%d %H:%M:%S',
+                    level=logging.INFO)
+logger = logging.getLogger()
+
+
+parser = argparse.ArgumentParser(description="Build datacards from pocket-coffea outputs")
+parser.add_argument(
+    "-i",
+    "--input-data",
+    type=str,
+    nargs="+",
+    required=True,
+    help="Input directory for data with coffea files or coffea files themselves",
+)
+parser.add_argument(
+    "-r2",
+    "--run2",
+    action="store_true",
+    help="If running with Run2 method",
+    default=False,
+)
+parser.add_argument(
+    "-sn",
+    "--separate-normalisation",
+    action="store_true",
+    help="If true, normalise signal region and control region separately. Otherwise, normalise everything to control region.",
+    default=False,
+)
+parser.add_argument(
+    "-o", "--output", type=str, help="Output directory", default="./datacards"
+)
+args = parser.parse_args()
+
+
+input_dir = os.path.dirname(args.input_data[0])
+
+if not os.path.exists(args.output):
+    os.makedirs(args.output)
+    
+
+# Define signal, background, and data datasets
+sig_bkg_dict = {
+        "signal": {
+            "ggHH_kl_1_kt_1_13p6TeV_hbbhbb": ["GluGlutoHHto4B_spanet_kl-1p00_kt-1p00_c2-0p00_2022_postEE"],
+            "ggHH_kl_2p45_kt_1_13p6TeV_hbbhbb": ["GluGlutoHHto4B_spanet_kl-2p45_kt-1p00_c2-0p00_2022_postEE"],
+            "ggHH_kl_5_kt_1_13p6TeV_hbbhbb": ["GluGlutoHHto4B_spanet_kl-5p00_kt-1p00_c2-0p00_2022_postEE"],
+            },
+        "data": {
+            # This needs to have this name, and only be one category
+            "data_obs": ["DATA_JetMET_JMENano_E_2022_postEE_EraE", "DATA_JetMET_JMENano_F_2022_postEE_EraF", "DATA_JetMET_JMENano_G_2022_postEE_EraG"]
+            },
+        "background": {
+            "bbbb_background": ["DATA_JetMET_JMENano_E_2022_postEE_EraE_background", "DATA_JetMET_JMENano_F_2022_postEE_EraF_background", "DATA_JetMET_JMENano_G_2022_postEE_EraG_background"]
+            }
+        }
+# Define the new region name
+region_name = "bbbb_signal_analysis_region"
+suffix = "Run2" if args.run2 else ""
+sig_region_name=f"4b_signal_region{suffix}"
+bkg_region_name=f"2b_signal_region_postW{suffix}"
+rescale_bkg_region_name=f"4b_control_region{suffix}"
+
 def add_variation_axis(histogram):
     """Return a histogram with an extra variation axis ('nominal'), preserving values+variances."""
     import hist
@@ -50,8 +113,6 @@ def add_variation_axis(histogram):
         new_hist.view(flow=True)[tuple(sl_new)] = vals
 
     return new_hist
-
-
 
 
 
@@ -119,20 +180,20 @@ def duplicate_category(histo, src_label, new_label, axis=0, rescale_label=False)
     return new_histo
 
 
-def create_new_region(coffea_file, cat_name, run2):
+def create_new_region(coffea_file, cat_name):
     """Create a new region in the coffea file, that contains all the regions we need for the analysis."""
-    suffix = "Run2" if run2 else ""
+    
     for key in ["sumw", "sumw2"]:
-        coffea_file[key][cat_name] = coffea_file[key][f"4b_signal_region{suffix}"]
+        coffea_file[key][cat_name] = coffea_file[key][sig_region_name]
     # == adding cutflow ==
     presel_samples = list(coffea_file["cutflow"]["presel"].keys())
     for key in presel_samples:
         coffea_file["cutflow"]["presel"][f"{key}_background"] = coffea_file["cutflow"]["presel"][key]
-    coffea_file["cutflow"][cat_name] = coffea_file["cutflow"][f"4b_signal_region{suffix}"]
-    for key in coffea_file["cutflow"][f"2b_signal_region_postW{suffix}"].keys():
+    coffea_file["cutflow"][cat_name] = coffea_file["cutflow"][sig_region_name]
+    for key in coffea_file["cutflow"][bkg_region_name].keys():
         if "DATA" in key:
             coffea_file["cutflow"][cat_name][f"{key}_background"] = {}
-            for subkey, subvalue in coffea_file["cutflow"][f"2b_signal_region_postW{suffix}"][key].items():
+            for subkey, subvalue in coffea_file["cutflow"][bkg_region_name][key].items():
                 coffea_file["cutflow"][cat_name][f"{key}_background"][f"{subkey}_background"] = subvalue
     # == variables ==
     for column in coffea_file["variables"].keys():
@@ -142,13 +203,13 @@ def create_new_region(coffea_file, cat_name, run2):
             for dataset in dset_list:
                 histogram = coffea_file["variables"][column][sample][dataset]
                 if "DATA" not in dataset:
-                    histogram_with_new = duplicate_category(histogram, f"4b_signal_region{suffix}", cat_name, axis=0, rescale_label=False)
-                    histogram_with_new = duplicate_category(histogram, f"4b_signal_region{suffix}", cat_name, axis=0, rescale_label=False)
+                    histogram_with_new = duplicate_category(histogram, sig_region_name, cat_name, axis=0, rescale_label=False)
+                    histogram_with_new = duplicate_category(histogram, sig_region_name, cat_name, axis=0, rescale_label=False)
                 else:
-                    histogram_with_new = duplicate_category(histogram, f"4b_signal_region{suffix}", cat_name, axis=0, rescale_label=False)
+                    histogram_with_new = duplicate_category(histogram, sig_region_name, cat_name, axis=0, rescale_label=False)
                 coffea_file["variables"][column][sample][dataset] = histogram_with_new
                 if "DATA" in dataset:
-                    histogram_with_new = duplicate_category(histogram, f"2b_signal_region_postW{suffix}", cat_name, axis=0, rescale_label=f"4b_signal_region{suffix}")
+                    histogram_with_new = duplicate_category(histogram, bkg_region_name, cat_name, axis=0, rescale_label=(sig_region_name if args.separate_normalisation else rescale_bkg_region_name))
                     coffea_file["variables"][column][f"{sample}_background"][f"{dataset}_background"] = histogram_with_new
     # == datasets_metadata : by_datataking_period ==
     for period in coffea_file["datasets_metadata"]["by_datataking_period"].keys():
@@ -168,169 +229,123 @@ def create_new_region(coffea_file, cat_name, run2):
     return coffea_file
 
 
-logging.basicConfig(format='%(asctime)s,%(msecs)03d %(name)s %(levelname)s %(message)s',
-                    datefmt='%Y-%m-%d %H:%M:%S',
-                    level=logging.INFO)
-logger = logging.getLogger()
 
 
-parser = argparse.ArgumentParser(description="Build datacards from pocket-coffea outputs")
-parser.add_argument(
-    "-i",
-    "--input-data",
-    type=str,
-    nargs="+",
-    required=True,
-    help="Input directory for data with coffea files or coffea files themselves",
-)
-parser.add_argument(
-    "-r2",
-    "--run2",
-    action="store_true",
-    help="If running with Run2 method",
-    default=False,
-)
-parser.add_argument(
-    "-o", "--output", type=str, help="Output directory", default="./datacards"
-)
-args = parser.parse_args()
+if __name__ == "__main__":
+    # I want to use the coffea file with all outputs. Therefore, it should be merged beforehand.
+    coffea_list = [file for file in os.listdir(input_dir) if file.endswith(".coffea")]
+    if "output_all.coffea" in coffea_list:
+        coffea_file = os.path.join(input_dir, "output_all.coffea")
+    else:
+        raise NameError(f"No combined coffea file found in {coffea_list}")
 
-input_dir = os.path.dirname(args.input_data[0])
+    # -- Load Coffea file and config.json --
+    coffea_file = load(coffea_file)
 
-if not os.path.exists(args.output):
-    os.makedirs(args.output)
+    coffea_file = create_new_region(coffea_file, cat_name=region_name)
 
+    # -- Histograms --
+    histograms_dict = {}
+    for key, sob_hist in coffea_file["variables"].items():
+        if "sig_bkg" in key:
+            histograms_dict[key] = sob_hist
+            # "SoB": coffea_file["variables"]["sig_bkg_dnn_score"],
+    # -- Create Processes
+    meta_dict = coffea_file['datasets_metadata']['by_dataset']
 
-# I want to use the coffea file with all outputs. Therefore, it should be merged beforehand.
-coffea_list = [file for file in os.listdir(input_dir) if file.endswith(".coffea")]
-if "output_all.coffea" in coffea_list:
-    coffea_file = os.path.join(input_dir, "output_all.coffea")
-else:
-    raise NameError(f"No combined coffea file found in {coffea_list}")
+    for dataset_list in sig_bkg_dict["signal"].values():
+        for dataset in dataset_list:
+            if dataset not in meta_dict.keys():
+                raise Exception(f"Signal dataset {dataset} not found in file")
+    for dataset in sig_bkg_dict["data"].values():
+        for dataset in dataset_list:
+            if dataset not in meta_dict.keys():
+                raise Exception(f"Data dataset {dataset} not found in file")
+    for dataset in sig_bkg_dict["background"].values():
+        for dataset in dataset_list:
+            if dataset not in meta_dict.keys():
+                raise Exception(f"Background dataset {dataset} not found in file")
 
-# At some point, this should be the defining dictionary telling us, what sample/dataset belongs in which bin:
-sig_bkg_dict = {
-        "signal": {
-            "ggHH_kl_1_kt_1_13p6TeV_hbbhbb": ["GluGlutoHHto4B_spanet_kl-1p00_kt-1p00_c2-0p00_2022_postEE"],
-            "ggHH_kl_2p45_kt_1_13p6TeV_hbbhbb": ["GluGlutoHHto4B_spanet_kl-2p45_kt-1p00_c2-0p00_2022_postEE"],
-            "ggHH_kl_5_kt_1_13p6TeV_hbbhbb": ["GluGlutoHHto4B_spanet_kl-5p00_kt-1p00_c2-0p00_2022_postEE"],
-            },
-        "data": {
-            # This needs to have this name, and only be one category
-            "data_obs": ["DATA_JetMET_JMENano_E_2022_postEE_EraE", "DATA_JetMET_JMENano_F_2022_postEE_EraF", "DATA_JetMET_JMENano_G_2022_postEE_EraG"]
-            },
-        "background": {
-            "bbbb_background": ["DATA_JetMET_JMENano_E_2022_postEE_EraE_background", "DATA_JetMET_JMENano_F_2022_postEE_EraF_background", "DATA_JetMET_JMENano_G_2022_postEE_EraG_background"]
-            }
-        }
+    logger.info(f"These are the MC samples: {sig_bkg_dict['signal']}")
+    logger.info(f"These are the Data samples: {sig_bkg_dict['data']}")
+    logger.info(f"These are the Data background samples: {sig_bkg_dict['background']}")
 
-# -- Load Coffea file and config.json --
-coffea_file = load(coffea_file)
+    # -- Filling metadata into the respective objects --
+    mc_process = []
+    for name, datasets in sig_bkg_dict["signal"].items():
+        mc_process.append(MCProcess(
+                name=name,
+                # All these ugly catings are to get a list with unique values.
+                samples=set([meta_dict[dataset]["sample"] for dataset in datasets]),
+                years=set([meta_dict[dataset]["year"] for dataset in datasets]),
+                is_signal=True,
+                ))
+    data_bg_process = []
+    for name, datasets in sig_bkg_dict["background"].items():
+        data_bg_process.append(MCProcess(
+                name=name,
+                samples=set([meta_dict[dataset]["sample"] for dataset in datasets]),
+                years=set([meta_dict[dataset]["year"] for dataset in datasets]),
+                is_signal=False,
+                ))
+    mc_processes = MCProcesses(mc_process + data_bg_process)
 
-region_name = "bbbb_signal_analysis_region"
-coffea_file = create_new_region(coffea_file, cat_name=region_name, run2=args.run2)
+    if len(sig_bkg_dict["data"].keys()) > 1:
+        raise Exception("Only one single data process is allowed with fixed name 'data_obs'")
+    for name, datasets in sig_bkg_dict["data"].items():
+        data_process = DataProcess(
+                name=name,
+                samples=set([meta_dict[dataset]["sample"] for dataset in datasets]),
+                years=set([meta_dict[dataset]["year"] for dataset in datasets]),
+                )
+    data_processes = DataProcesses([data_process])
 
-# -- Histograms --
-histograms_dict = {}
-for key, sob_hist in coffea_file["variables"].items():
-    if "sig_bkg" in key:
-        histograms_dict[key] = sob_hist
-        # "SoB": coffea_file["variables"]["sig_bkg_dnn_score"],
-# -- Create Processes
-meta_dict = coffea_file['datasets_metadata']['by_dataset']
+    # -- Systematics --
+    # common_systematics = [
+    #     "JES_Total_AK4PFPuppi", "JER_AK4PFPuppi"
+    # ]
 
-for dataset_list in sig_bkg_dict["signal"].values():
-    for dataset in dataset_list:
-        if dataset not in meta_dict.keys():
-            raise Exception(f"Signal dataset {dataset} not found in file")
-for dataset in sig_bkg_dict["data"].values():
-    for dataset in dataset_list:
-        if dataset not in meta_dict.keys():
-            raise Exception(f"Data dataset {dataset} not found in file")
-for dataset in sig_bkg_dict["background"].values():
-    for dataset in dataset_list:
-        if dataset not in meta_dict.keys():
-            raise Exception(f"Background dataset {dataset} not found in file")
+    # Trying to make this generic. Ideally, we want exactly one single set of variations at the moment because we are using MC only for signal. This has to be improved im some shape or form.
+    # Essentially, right now, all MC sets belong to "GluGluHHto4b"
+    for hist_cat, sob_hist in histograms_dict.items():
+        # Get to the variation infos in the histograms for MC signal:
+        systematics_list = []
+        # Iterate through different signal types
+        for sig_type, datasets in sig_bkg_dict["signal"].items():
+            # Iterate through the datasets in a particular signal type (often a signle one)
+            variations_updown = list(sob_hist[meta_dict[datasets[0]]["sample"]][datasets[0]].axes['variation'])
+            for var in variations_updown:
+                sliced = sob_hist[meta_dict[datasets[0]]["sample"]][datasets[0]][{"variation": var, "cat": region_name}]
+                print(f"Variation: {var}")
+                print(sliced.values())
+            variations = set([re.sub(r'(Up|Down)$', '', var) for var in variations_updown])
+            try:
+                variations.remove("nominal")
+            except:
+                raise ValueError(f"Variations list {variations} does not contain 'nominal'.")
+            logger.info(f"Found variations: {variations}")
+            for syst in variations:
+                systematics_list.append(SystematicUncertainty(name=syst, datacard_name=f"{syst}_{meta_dict[datasets[0]]['year']}", typ="shape", processes=list(sig_bkg_dict["signal"].keys()), years=[meta_dict[datasets[0]]["year"]], value=1.0))
+            systematics = Systematics(systematics_list)
 
-logger.info(f"These are the MC samples: {sig_bkg_dict['signal']}")
-logger.info(f"These are the Data samples: {sig_bkg_dict['data']}")
-logger.info(f"These are the Data background samples: {sig_bkg_dict['background']}")
+        _label = "run3"
+        _datacard_name = f"datacard_combined_{_label}"
+        _workspace_name = f"workspace_{_label}.root"
 
-# -- Filling metadata into the respective objects --
-mc_process = []
-for name, datasets in sig_bkg_dict["signal"].items():
-    mc_process.append(MCProcess(
-            name=name,
-            # All these ugly catings are to get a list with unique values.
-            samples=set([meta_dict[dataset]["sample"] for dataset in datasets]),
-            years=set([meta_dict[dataset]["year"] for dataset in datasets]),
-            is_signal=True,
-            ))
-data_bg_process = []
-for name, datasets in sig_bkg_dict["background"].items():
-    data_bg_process.append(MCProcess(
-            name=name,
-            samples=set([meta_dict[dataset]["sample"] for dataset in datasets]),
-            years=set([meta_dict[dataset]["year"] for dataset in datasets]),
-            is_signal=False,
-            ))
-mc_processes = MCProcesses(mc_process + data_bg_process)
+        datacard = Datacard(
+                histograms=sob_hist,
+                datasets_metadata=coffea_file["datasets_metadata"],
+                cutflow=coffea_file["cutflow"],
+                systematics=systematics,
+                # This might have to change. Right now I am binding the year to the data year...
+                years=set([meta_dict[dataset]["year"] for dataset in sig_bkg_dict["data"]["data_obs"]]),
+                mc_processes=mc_processes,
+                data_processes=data_processes,
+                category=region_name,
+                single_year=True,
+                )
+        datacard.dump(directory=f"{args.output}/{hist_cat}", card_name=f"{region_name}_{_label}.txt", shapes_name=f"shapes_{region_name}_{_label}.root")
 
-if len(sig_bkg_dict["data"].keys()) > 1:
-    raise Exception("Only one single data process is allowed with fixed name 'data_obs'")
-for name, datasets in sig_bkg_dict["data"].items():
-    data_process = DataProcess(
-            name=name,
-            samples=set([meta_dict[dataset]["sample"] for dataset in datasets]),
-            years=set([meta_dict[dataset]["year"] for dataset in datasets]),
-            )
-data_processes = DataProcesses([data_process])
-
-# -- Systematics --
-# common_systematics = [
-#     "JES_Total_AK4PFPuppi", "JER_AK4PFPuppi"
-# ]
-
-# Trying to make this generic. Ideally, we want exactly one single set of variations at the moment because we are using MC only for signal. This has to be improved im some shape or form.
-# Essentially, right now, all MC sets belong to "GluGluHHto4b"
-for hist_cat, sob_hist in histograms_dict.items():
-    # Get to the variation infos in the histograms for MC signal:
-    systematics_list = []
-    # Iterate through different signal types
-    for sig_type, datasets in sig_bkg_dict["signal"].items():
-        # Iterate through the datasets in a particular signal type (often a signle one)
-        variations_updown = list(sob_hist[meta_dict[datasets[0]]["sample"]][datasets[0]].axes['variation'])
-        for var in variations_updown:
-            sliced = sob_hist[meta_dict[datasets[0]]["sample"]][datasets[0]][{"variation": var, "cat": region_name}]
-            print(f"Variation: {var}")
-            print(sliced.values())
-        variations = set([re.sub(r'(Up|Down)$', '', var) for var in variations_updown])
-        try:
-            variations.remove("nominal")
-        except:
-            raise ValueError(f"Variations list {variations} does not contain 'nominal'.")
-        logger.info(f"Found variations: {variations}")
-        for syst in variations:
-            systematics_list.append(SystematicUncertainty(name=syst, datacard_name=f"{syst}_{meta_dict[datasets[0]]['year']}", typ="shape", processes=list(sig_bkg_dict["signal"].keys()), years=[meta_dict[datasets[0]]["year"]], value=1.0))
-        systematics = Systematics(systematics_list)
-
-    _label = "run3"
-    _datacard_name = f"datacard_combined_{_label}"
-    _workspace_name = f"workspace_{_label}.root"
-
-    datacard = Datacard(
-            histograms=sob_hist,
-            datasets_metadata=coffea_file["datasets_metadata"],
-            cutflow=coffea_file["cutflow"],
-            systematics=systematics,
-            # This might have to change. Right now I am binding the year to the data year...
-            years=set([meta_dict[dataset]["year"] for dataset in sig_bkg_dict["data"]["data_obs"]]),
-            mc_processes=mc_processes,
-            data_processes=data_processes,
-            category=region_name,
-            single_year=True,
-            )
-    datacard.dump(directory=f"{args.output}/{hist_cat}", card_name=f"{region_name}_{_label}.txt", shapes_name=f"shapes_{region_name}_{_label}.root")
 
 # _datacards = {
 #         "4b_signal_region": datacard

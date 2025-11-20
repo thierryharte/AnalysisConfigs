@@ -12,15 +12,6 @@ localdir = os.path.dirname(os.path.abspath(__file__))
 
 # Loading default parameters
 
-CLASSIFICATION = False
-TIGHT_CUTS = False
-RANDOM_PT = False
-SAVE_CHUNK = False
-
-print("CLASSIFICATION ", CLASSIFICATION)
-print("TIGHT_CUTS ", TIGHT_CUTS)
-print("RANDOM_PT ", RANDOM_PT)
-
 default_parameters = defaults.get_default_parameters()
 defaults.register_configuration_dir("config_dir", localdir + "/params")
 

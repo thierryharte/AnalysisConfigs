@@ -16,6 +16,17 @@ The full analysis workflow is composed by multiple steps, which are spread in di
 - DNN training
   - <https://github.com/matteomalucchi/ML_pytorch>
 
+### Build datasets
+
+> [!TIP]
+> @Tier-3/AnalysisConfigs &rarr;  [README](https://github.com/matteomalucchi/AnalysisConfigs/blob/main/README.md)
+
+To build the datasets needed for the Analysis, run the following command on `tier-3`:
+
+```bash
+"build-datasets --cfg datasets/datasets_definitions.json -o -rs 'T[123]_(FR|IT|BE|CH|DE|US)_\w+'"
+```
+
 ### Produce SPANet input files
 
 On `tier-3`, run the following commands to produce the input files for SPANet training.
@@ -26,14 +37,14 @@ On `tier-3`, run the following commands to produce the input files for SPANet tr
 > @Tier-3/AnalysisConfigs &rarr;  [README](https://github.com/matteomalucchi/AnalysisConfigs/blob/main/README.md)
 
 ```bash
-cd AnalysisConfigs/configs/HH4b_common
+cd AnalysisConfigs/configs/HH4b
 # SPANet training with normal pT spectrum
-run_pocket_coffea no_model <config_file> <t3_run_options> <output_dir>
+run_pocket_coffea no_model HH4b_spanet_input.py <t3_run_options> <output_dir>
 # SPANet training with flat pT spectrum
-run_pocket_coffea pt_vary <config_file> <t3_run_options> <output_dir>
+run_pocket_coffea pt_vary HH4b_spanet_input.py <t3_run_options> <output_dir>
 
 # e.g.
-run_pocket_coffea no_model HH4b_parton_matching_config.py params/t3_run_options.yaml ../../../sample_spanet/loose_MC_postEE_btagWP
+run_pocket_coffea no_model HH4b_spanet_input.py params/t3_run_options.yaml ../../../sample_spanet/loose_MC_postEE_btagWP
 ```
 
 > [!NOTE]

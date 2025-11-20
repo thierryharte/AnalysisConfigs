@@ -155,6 +155,8 @@ cat_col_data, total_datasets_list_data = get_columns_from_files(
     novars=args.novars,
 )
 
+yields_dict = {}
+
 
 def compute_sob(hist_1d_dict):
     # Calculating binwise s/sqrt(b).
@@ -268,8 +270,9 @@ def plot_single_var_from_columns(
         col_den = col_den[col_den != PAD_VALUE]
         weights_den = weight_dict[cat]
         weights_den = weights_den[col_den != PAD_VALUE]
+        if args.normalisation == "density":
+            weights_den = weights_den / np.sum(weights_den)
         if "DATA" in cat and "2b" in cat:
-
             weights_den = weights_den * ratio2b4b
         bins_center = (bin_edges[1:] + bin_edges[:-1]) / 2
 
@@ -293,7 +296,9 @@ def plot_single_var_from_columns(
 
         cat_plot_name = plot_regions_names(cat, namesuffix).replace("Run2", "_DHH")
 
-        print("\n\n######################################################################")
+        print(
+            "\n\n######################################################################"
+        )
         print(f"Found something to plot {cat} -> {cat_plot_name}")
 
         # Mask the blinded region
@@ -310,19 +315,21 @@ def plot_single_var_from_columns(
                 int((len(bin_edges) - 1) * (1 - BLINDED_SIGNAL_FRACTION))
             ]
             mask_blind = col_den <= blind_value
-            
-            col_den=col_den[mask_blind]
-            weights_den=weights_den[mask_blind]
-            
+
+            col_den = col_den[mask_blind]
+            weights_den = weights_den[mask_blind]
+
         # histogram of the denominator
         histo = Hist.new.Var(bin_edges, name=var_plot_name, flow=False).Weight()
         histo.fill(col_den, weight=weights_den)
-        
+
         # print the histo and the total number of events
         print(cat_plot_name)
         print(histo)
         print(f"Total number of events: {np.sum(histo.values())}")
-        
+        yields_dict[f"Yields {dir_cat}/{var}_{cat_plot_name}"] = np.sum(
+            histo.values()
+        )
 
         if i == 0:
             hist_1d_dict[cat_plot_name] = {
@@ -459,49 +466,58 @@ def main(cat_cols, lumi, era_string):
         op_norm = lambda x, y: sum(x) / sum(y)
     elif args.normalisation == "num_events":
         op_norm = lambda x, y: len(x) / len(y)
+    elif args.normalisation == "density":
+        op_norm = lambda x, y: 1
     else:
         raise ValueError(
-            f"Unknown normalisation type {args.normalisation}. Use num_events or sum_weights"
+            f"Unknown normalisation type {args.normalisation}. Use num_events, sum_weights or density"
         )
 
-    if args.run2:
-        if args.test:
-            CRratio_4b_2bpostW_Run2 = 1
-        else:
-            CR_region_keys = cat_dict[f"CR{args.region_suffix}Run2"]
-            CRratio_4b_2bpostW_Run2 = op_norm(
-                cat_cols[0][CR_region_keys[0]]["weight"],
-                cat_cols[0][CR_region_keys[1]]["weight"],
+    try:
+        if args.run2:
+            if args.test:
+                CRratio_4b_2bpostW_Run2 = 1
+            else:
+                CR_region_keys = cat_dict[f"CR{args.region_suffix}Run2"]
+                CRratio_4b_2bpostW_Run2 = op_norm(
+                    cat_cols[0][CR_region_keys[0]]["weight"],
+                    cat_cols[0][CR_region_keys[1]]["weight"],
+                )
+
+            SR_region_keys = cat_dict[f"SR{args.region_suffix}Run2"]
+            SRratio_4b_2bpostW_Run2 = op_norm(
+                cat_cols[0][SR_region_keys[0]]["weight"],
+                cat_cols[0][SR_region_keys[1]]["weight"],
             )
 
-        SR_region_keys = cat_dict[f"SR{args.region_suffix}Run2"]
-        SRratio_4b_2bpostW_Run2 = op_norm(
-            cat_cols[0][SR_region_keys[0]]["weight"],
-            cat_cols[0][SR_region_keys[1]]["weight"],
-        )
-
-        print(f"CR ratio Run2: {CRratio_4b_2bpostW_Run2}")
-        print(f"SR ratio Run2: {SRratio_4b_2bpostW_Run2}")
-    else:
-        if args.test:
-            CRratio_4b_2bpostW = 1
+            print(f"CR ratio Run2: {CRratio_4b_2bpostW_Run2}")
+            print(f"SR ratio Run2: {SRratio_4b_2bpostW_Run2}")
         else:
-            CR_region_keys = cat_dict[f"CR{args.region_suffix}"]
-            print(CR_region_keys)
+            if args.test:
+                CRratio_4b_2bpostW = 1
+            else:
+                CR_region_keys = cat_dict[f"CR{args.region_suffix}"]
 
-            CRratio_4b_2bpostW = op_norm(
-                cat_cols[0][CR_region_keys[0]]["weight"],
-                cat_cols[0][CR_region_keys[1]]["weight"],
+                CRratio_4b_2bpostW = op_norm(
+                    cat_cols[0][CR_region_keys[0]]["weight"],
+                    cat_cols[0][CR_region_keys[1]]["weight"],
+                )
+
+            SR_region_keys = cat_dict[f"SR{args.region_suffix}"]
+            SRratio_4b_2bpostW = op_norm(
+                cat_cols[0][SR_region_keys[0]]["weight"],
+                cat_cols[0][SR_region_keys[1]]["weight"],
             )
 
-        SR_region_keys = cat_dict[f"SR{args.region_suffix}"]
-        SRratio_4b_2bpostW = op_norm(
-            cat_cols[0][SR_region_keys[0]]["weight"],
-            cat_cols[0][SR_region_keys[1]]["weight"],
+            print(f"CR ratio: {CRratio_4b_2bpostW}")
+            print(f"SR ratio: {SRratio_4b_2bpostW}")
+    except KeyError as e:
+        # print the error output
+        print(e)
+        print(
+            "Maybe you didn't provide the `--run2` flag while using Run2 categories or vice versa?"
         )
-
-        print(f"CR ratio: {CRratio_4b_2bpostW}")
-        print(f"SR ratio: {SRratio_4b_2bpostW}")
+        sys.exit(1)
 
     # cat_dict defined on top (global variable)
     for cats_name, cat_list in cat_dict.items():
@@ -639,16 +655,29 @@ def main(cat_cols, lumi, era_string):
 
         print("col_dict", col_dict)
         print("vars_to_plot_final", vars_to_plot_final)
+        
+        # print the length of each variable in of col_dict
+        # save them to a dictionary
+        for v in col_dict.keys():
+            print(f"Variable {v} has lengths: ", end="")
+            for cat in col_dict[v].keys():
+                print(f"{cat}: {len(col_dict[v][cat])} ", end="")
+                yields_dict[f"{v}_{cat}"] = len(col_dict[v][cat])
+            print("")
+            
 
-        print(f"Category name: {cats_name}")
-        if "SR" in cats_name:
+        print(f"\n\n\nCategory name: {cats_name}")
+        if "SR" in cats_name and args.separate_normalisation:
+            print("Using SR ratio for normalisation")
             ratio2b4b = (
                 SRratio_4b_2bpostW_Run2 if "Run2" in cats_name else SRratio_4b_2bpostW
             )
         else:
+            print("Using CR ratio for normalisation")
             ratio2b4b = (
                 CRratio_4b_2bpostW_Run2 if "Run2" in cats_name else CRratio_4b_2bpostW
             )
+        print(f"Using ratio2b4b: {ratio2b4b}")
         if args.workers > 1:
             with Pool(args.workers) as p:
                 p.starmap(
@@ -687,6 +716,10 @@ def main(cat_cols, lumi, era_string):
                 )
         del col_dict
 
+    # save the yields_dict to txt file
+    with open(os.path.join(outputdir, "yields.txt"), "w") as f:
+        for key, value in yields_dict.items():
+            f.write(f"{key}: {value}\n")
 
 if __name__ == "__main__":
 
