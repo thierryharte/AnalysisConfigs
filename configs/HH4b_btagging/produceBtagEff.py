@@ -1,7 +1,10 @@
 # np.seterr(divide='ignore', invalid='ignore')
+import os
 import json
+import yaml
 import logging
 import argparse
+import boost_histogram as bh
 
 import correctionlib
 import correctionlib.convert
@@ -72,31 +75,44 @@ def produceBtagEfficiencies(outputpath, inputfile, histCategoryToUse, sampleGrou
     # print("Producing btagging sfs for " + year[0])
     # Reading in jet Histogramms
 
+    samples_found = {k: True for k in sampleGroups.keys()}
     for jetHistVar in histCollection:  # different jet collections (btaggedJets for each wp, jetsTotal)
         for sampleGroup in sampleGroups.keys():  # groupings of samples to calculated efficiencies in
             tempHistColl = []
+            if "hists" not in sampleGroups[sampleGroup].keys():
+                sampleGroups[sampleGroup]["hists"] = {}
             for sampleName in sampleGroups[sampleGroup]["sampleNames"]:
+                if sampleName not in inputFile["variables"][jetHistVar].keys() or not samples_found[sampleGroup]:
+                    samples_found[sampleGroup] = False
+                    continue
                 for dataset, inputHist in inputFile["variables"][jetHistVar][sampleName].items():
                     nominalHist = inputHist[hist.loc(histCategoryToUse), hist.loc("nominal"), :, :, :]
-                    tempHistColl.append(nominalHist * inputFile["sum_genweights"][dataset])
-            sampleGroups[sampleGroup]["hists"][jetHistVar] = sum(tempHistColl)  # sum samples in each sample group
+                    tempHistColl.append(nominalHist) # * inputFile["sum_genweights"][dataset])
+            if samples_found:
+                sampleGroups[sampleGroup]["hists"][jetHistVar] = sum(tempHistColl)  # sum samples in each sample group
+    for sampleGroup, found in samples_found.items():
+        if found:
+            logger.info(f"Found all samples for group {sampleGroup} for algorithm {btaggingAlgorithm}")
 
     # Calculating Efficiency and creating correction sets
 
     correction_set_collection = []
     if produceControlPlots:
         effiHistos = []
-    for sampleGroup in sampleGroups.keys():
+    for sampleGroup in [group for group, found in samples_found.items() if found]:
         nJetsTotalHist = sampleGroups[sampleGroup]["hists"][jetHistName[0]]
 
         for bJetHistName in bjetHistNames:
             nbJetsHist = sampleGroups[sampleGroup]["hists"][bJetHistName]
+            check_flow(nbJetsHist)
             workingPoint = bJetHistName.split("_")[2]
 
             # Calculating btaggin efficiency
             btagEfficiencyArray = np.divide(
                 nbJetsHist.values(),
-                nJetsTotalHist.values()
+                nJetsTotalHist.values(),
+                out=np.zeros_like(nbJetsHist.values(), dtype=float),
+                where=nJetsTotalHist.values() != 0,
             )
             btagEfficiencyHisto = hist.Hist(
                 *nJetsTotalHist.axes,
@@ -111,11 +127,12 @@ def produceBtagEfficiencies(outputpath, inputfile, histCategoryToUse, sampleGrou
             view[...] = np.nan_to_num(view, nan=0.0)
             cset = correctionlib.convert.from_histogram(btagEfficiencyHisto)
             cset.description = "Btagging efficiencies for " + sampleGroup + " samples using " + workingPoint + " working point"
-            cset.data.flow = "clamp"
+            # For the moment let correctionlib fail evaluation in case a jet is in the under-/overflow bin of the efficiency map.
+            cset.data.flow = "error"
             correction_set_collection.append(cset)
 
     if produceControlPlots:
-        plotBtagEffiControl(sampleGroups.keys(), bjetHistNames, effiHistos, btaggingAlgorithm, outputpath)
+        plotBtagEffiControl([group for group, found in samples_found.items() if found], bjetHistNames, effiHistos, btaggingAlgorithm, outputpath)
 
     btag_effi_correction_set = correctionlib.schemav2.CorrectionSet(
         schema_version=2,
@@ -123,10 +140,27 @@ def produceBtagEfficiencies(outputpath, inputfile, histCategoryToUse, sampleGrou
         corrections=correction_set_collection,
     )
 
+    if not os.path.exists(outputpath):
+        os.makedirs(outputpath, exist_ok=True)
     # Creating output file
-    parsed_json = json.loads(btag_effi_correction_set.json(exclude_unset=True))
+    parsed_json = json.loads(btag_effi_correction_set.model_dump_json(exclude_unset=True))
     with open(f"{outputpath}/btag_efficiencies_" + btaggingAlgorithm + "_" + year[0] + ".json", "w") as fout:
         fout.write(json.dumps(parsed_json, indent=2))
+
+
+def check_flow(hist):
+    """Check if there are entries in over-/ underflow bin of Hist() object and raise exception if so."""
+    for ax in range(hist.ndim):
+        if np.any(hist[{ax: bh.underflow}].view(flow=True).value):
+            raise ValueError(
+                    "No entries in under-/ overflows allowed \n" +
+                    f"Found underflow bin in axis {hist.axes[ax].name}. Values are: {hist[{ax: bh.underflow}].view(flow=True).value}"
+                    )
+        elif np.any(hist[{ax: bh.overflow}].view(flow=True).value):
+            raise ValueError(
+                    "No entries in under-/ overflows allowed \n" +
+                    f"Found overflow bin in axis {hist.axes[ax].name}. Values are: {hist[{ax: bh.overflow}].view(flow=True).value}"
+                    )
 
 
 if __name__ == "__main__":
@@ -136,7 +170,7 @@ if __name__ == "__main__":
                         level=logging.INFO)
     logger = logging.getLogger()
 
-    parser = argparse.ArgumentParser(description="Build datacards from pocket-coffea outputs")
+    parser = argparse.ArgumentParser(description="Produce btagWP efficiency files for SF correction.")
     parser.add_argument(
         "-i",
         "--input-file",
@@ -151,6 +185,9 @@ if __name__ == "__main__":
         "-c", "--category", type=str, help="Category to calculate efficiency in", default="inclusive"
     )
     parser.add_argument(
+        "-g", "--groups", type=str, help="YAML file containing information about sample group names", default=f"{os.path.dirname(os.path.realpath(__file__))}/../HH4b_common/params/btagging_sampleGroups.yaml"
+    )
+    parser.add_argument(
         "-p",
         "--plot",
         action="store_true",
@@ -159,33 +196,8 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    sampleGroups = {
-       #  "ttH" :  {
-       #      "sampleNames" : [
-       #          "TTH_Hto2B",
-       #          "TTHtoNon2B"
-       #      ],
-       #      "hists" : {}
-       #  },
-        "HH4b": {
-            "sampleNames": [
-                    "GluGlutoHHto4B_spanet_kl-1p00_kt-1p00_c2-0p00_skimmed",
-                #    "GluGlutoHHto4B_spanet_kl-m2p00_kt-1p00_c2-0p00_skimmed",
-                #    "GluGlutoHHto4B_spanet_kl-m1p00_kt-1p00_c2-0p00_skimmed",
-                #     "GluGlutoHHto4B_spanet_kl-5p00_kt-1p00_c2-0p00_skimmed",
-                #     "GluGlutoHHto4B_spanet_kl-2p45_kt-1p00_c2-0p00_skimmed",
-                #     "GluGlutoHHto4B_spanet_kl-0p00_kt-0p00_c2-0p00_skimmed",
-                #     "GluGlutoHHto4B_spanet_kl-3p50_kt-1p00_c2-0p00_skimmed",
-                #     "GluGlutoHHto4B_spanet_kl-4p00_kt-1p00_c2-0p00_skimmed",
-                #     "GluGlutoHHto4B_spanet_kl-3p00_kt-1p00_c2-0p00_skimmed",
-                #     "GluGlutoHHto4B_spanet_kl-2p00_kt-1p00_c2-0p00_skimmed",
-                #     "GluGlutoHHto4B_spanet_kl-1p50_kt-1p00_c2-0p00_skimmed",
-                #     "GluGlutoHHto4B_spanet_kl-0p50_kt-1p00_c2-0p00_skimmed",
-
-                ],
-            "hists": {}
-            }
-    }
+    with open(args.groups, 'r') as file:
+        sampleGroups = yaml.safe_load(file)["btagging"]["sampleGroups"]
 
     # Collection of histograms output with config_BtagEff_fixed_wp
 

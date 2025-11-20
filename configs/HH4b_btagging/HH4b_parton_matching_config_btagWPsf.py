@@ -5,8 +5,10 @@ from configs.HH4b_common.config_files.__config_file__ import (
     config_options_dict,
     onnx_model_dict,
 )
-from pocket_coffea.lib.cut_functions import (
-    get_HLTsel,
+from pocket_coffea.lib.calibrators.common import default_calibrators_sequence
+from pocket_coffea.lib.calibrators.legacy.legacy_calibrators import (
+    JetsCalibrator,
+    JetsPtRegressionCalibrator,
 )
 from pocket_coffea.lib.weights.common.common import common_weights
 
@@ -14,34 +16,23 @@ from pocket_coffea.lib.weights.common.common import common_weights
 # rom pocket_coffea.lib.columns_manager import ColOut
 from pocket_coffea.parameters import defaults
 from pocket_coffea.parameters.histograms import *
-from pocket_coffea.lib.calibrators.legacy.legacy_calibrators import (
-    JetsCalibrator,
-    JetsPtRegressionCalibrator,
-)
+from pocket_coffea.parameters.histograms import Axis, HistConf
 
 # from collections import defaultdict
 from pocket_coffea.utils.configurator import Configurator
-from workflow_btagSF_HH4b import HH4bCommonProcessor
+from workflow_btagSF_HH4b import HH4bbtagWPefficiencyProcessor
 
 import configs.HH4b_common.custom_cuts_common as cuts
 import utils.quantile_transformer as quantile_transformer
 from configs.HH4b_common.config_files.configurator_tools import (
     SPANET_TRAINING_DEFAULT_COLUMNS,
     SPANET_TRAINING_DEFAULT_COLUMNS_BTWP,
-    create_DNN_columns_list,
-    define_categories,
     define_single_category,
     get_columns_list,
-    get_variables_dict,
 )
 from configs.HH4b_common.custom_weights import (
     bkg_morphing_dnn_weight,
     bkg_morphing_dnn_weightRun2,
-)
-from configs.HH4b_common.dnn_input_variables import (
-    bkg_morphing_dnn_input_variables,
-    # bkg_morphing_dnn_input_variables_altOrder,
-    sig_bkg_dnn_input_variables,
 )
 from configs.HH4b_common.params.CustomWeights import SF_btag_fixed_multiple_wp
 
@@ -61,33 +52,11 @@ parameters = defaults.merge_parameters_from_files(
     f"{localdir}/../HH4b_common/params/triggers.yaml",
     f"{localdir}/../HH4b_common/params/variations.yaml",
     f"{localdir}/../HH4b_common/params/btagging_multipleWP.yaml",
-    # f"{localdir}/../HH4b_common/params/jets_calibration_legacy_Calibrator_withoutVariations_withJERC.yaml",
-    f"{localdir}/../HH4b_common/params/jets_calibration_legacy_Calibrator_withVariations.yaml",
+    f"{localdir}/../HH4b_common/params/btagging_sampleGroups.yaml",
+    f"{localdir}/../HH4b_common/params/jets_calibration_legacy_Calibrator_withoutVariations_withJERC.yaml",
+    # f"{localdir}/../HH4b_common/params/jets_calibration_legacy_Calibrator_withVariations.yaml",
     update=True,
 )
-
-
-if config_options_dict["save_chunk"]:
-    config_options_dict["dump_columns_as_arrays_per_chunk"] = config_options_dict["save_chunk"]
-
-
-# score transform still in testing. So far hardcoded to be 2022_postEE...
-variables_dict = {}
-# Define the variables to save
-variables_dict = get_variables_dict(
-    year,
-    config_options_dict,
-    CLASSIFICATION=False,
-    RANDOM_PT=False,
-    VBF_VARIABLES=False,
-    BKG_MORPHING=False,  # bool(onnx_model_dict["bkg_morphing_dnn"]),
-    SCORE=bool(config_options_dict["sig_bkg_dnn"]),
-    RUN2=config_options_dict["run2"],
-    SPANET=bool(config_options_dict["spanet"]),
-)
-# print(variables_dict)
-
-# Define the preselection to apply
 preselection = [
     (
         cuts.hh4b_presel_nobtag
@@ -99,17 +68,17 @@ preselection = [
 # Defining the used samples
 sample_ggF_list = [
     "GluGlutoHHto4B_spanet_kl-1p00_kt-1p00_c2-0p00_skimmed",
-#    "GluGlutoHHto4B_spanet_kl-m2p00_kt-1p00_c2-0p00_skimmed",
-#    "GluGlutoHHto4B_spanet_kl-m1p00_kt-1p00_c2-0p00_skimmed",
-#     "GluGlutoHHto4B_spanet_kl-5p00_kt-1p00_c2-0p00_skimmed",
-#     "GluGlutoHHto4B_spanet_kl-2p45_kt-1p00_c2-0p00_skimmed",
-#     "GluGlutoHHto4B_spanet_kl-0p00_kt-0p00_c2-0p00_skimmed",
-#     "GluGlutoHHto4B_spanet_kl-3p50_kt-1p00_c2-0p00_skimmed",
-#     "GluGlutoHHto4B_spanet_kl-4p00_kt-1p00_c2-0p00_skimmed",
-#     "GluGlutoHHto4B_spanet_kl-3p00_kt-1p00_c2-0p00_skimmed",
-#     "GluGlutoHHto4B_spanet_kl-2p00_kt-1p00_c2-0p00_skimmed",
-#     "GluGlutoHHto4B_spanet_kl-1p50_kt-1p00_c2-0p00_skimmed",
-#     "GluGlutoHHto4B_spanet_kl-0p50_kt-1p00_c2-0p00_skimmed",
+    "GluGlutoHHto4B_spanet_kl-m2p00_kt-1p00_c2-0p00_skimmed",
+    "GluGlutoHHto4B_spanet_kl-m1p00_kt-1p00_c2-0p00_skimmed",
+    "GluGlutoHHto4B_spanet_kl-5p00_kt-1p00_c2-0p00_skimmed",
+    "GluGlutoHHto4B_spanet_kl-2p45_kt-1p00_c2-0p00_skimmed",
+    "GluGlutoHHto4B_spanet_kl-0p00_kt-0p00_c2-0p00_skimmed",
+    "GluGlutoHHto4B_spanet_kl-3p50_kt-1p00_c2-0p00_skimmed",
+    "GluGlutoHHto4B_spanet_kl-4p00_kt-1p00_c2-0p00_skimmed",
+    "GluGlutoHHto4B_spanet_kl-3p00_kt-1p00_c2-0p00_skimmed",
+    "GluGlutoHHto4B_spanet_kl-2p00_kt-1p00_c2-0p00_skimmed",
+    "GluGlutoHHto4B_spanet_kl-1p50_kt-1p00_c2-0p00_skimmed",
+    "GluGlutoHHto4B_spanet_kl-0p50_kt-1p00_c2-0p00_skimmed",
 ]
 sample_list = [
     # "DATA_JetMET_JMENano_C_skimmed",
@@ -129,13 +98,8 @@ sample_list = [
     # "DATA_ParkingHH_2023_Dv2",
 ] + sample_ggF_list
 
-categories_dict = {}
-# AKA if no model is applied
-# print(onnx_model_dict)
-if all([model == "" for model in onnx_model_dict.values()]):
-    print("Didn't find any onnx model. Will choose region for SPANet training")
-    categories_dict = define_single_category("inclusive")
-    categories_dict |= define_single_category("inclusive_sf_btag")
+categories_dict = define_single_category("inclusive")
+categories_dict |= define_single_category("inclusive_sf_btag")
 
 # Define the columns to save
 total_input_variables = {}
@@ -160,44 +124,15 @@ for sample in sample_list:
         if "Run2" in category:
             bysample_bycategory_column_dict[sample]["bycategory"][category] = (
                 column_listRun2
-                + (
-                    get_columns_list(
-                        {"events": ["bkg_morphing_spread_dnn_weightsRun2"]}
-                    )
-                    if "DATA" in sample
-                    and config_options_dict["bkg_morphing_spread_dnn"]
-                    and "postW" in category
-                    else []
-                )
             )
         else:
             bysample_bycategory_column_dict[sample]["bycategory"][category] = (
                 column_list
-                + (
-                    get_columns_list({"events": ["bkg_morphing_spread_dnn_weights"]})
-                    if "DATA" in sample
-                    and config_options_dict["bkg_morphing_spread_dnn"]
-                    and "postW" in category
-                    else []
-                )
             )
 # print("bysample_bycategory_column_dict", bysample_bycategory_column_dict)
 
 # Define the weights to apply
 bysample_bycategory_weight_dict = {}
-for sample in sample_list:
-    if "DATA" in sample:
-        bysample_bycategory_weight_dict[sample] = {"inclusive": [], "bycategory": {}}
-        for category in categories_dict.keys():
-            if "postW" in category:
-                if "Run2" in category:
-                    bysample_bycategory_weight_dict[sample]["bycategory"][category] = [
-                        "bkg_morphing_dnn_weightRun2"
-                    ]
-                else:
-                    bysample_bycategory_weight_dict[sample]["bycategory"][category] = [
-                        "bkg_morphing_dnn_weight"
-                    ]
 
 # print("bysample_bycategory_weight_dict", bysample_bycategory_weight_dict)
 
@@ -211,10 +146,6 @@ cfg = Configurator(
             f"{localdir}/../HH4b_common/datasets/GluGlutoHHto4B_spanet_skimmed_SM.json",
             f"{localdir}/../HH4b_common/datasets/GluGlutoHHto4B_spanet_skimmed_separateSamples.json",
             f"{localdir}/../HH4b_common/datasets/DATA_JetMET_skimmed.json",
-            # f"{localdir}/../HH4b_common/datasets/QCD.json",
-            # f"{localdir}/../HH4b_common/datasets/SPANet_classification.json",
-            # f"{localdir}/../HH4b_common/datasets/signal_ggF_HH4b_local.json",
-            # f"{localdir}/../HH4b_common/datasets/signal_VBF_HH4b_local.json",
             f"{localdir}/../HH4b_common/datasets/DATA_ParkingHH.json",
             f"{localdir}/../HH4b_common/datasets/DATA_JetMET.json",
         ],
@@ -225,13 +156,14 @@ cfg = Configurator(
         },
         "subsamples": {},
     },
-    workflow=HH4bCommonProcessor,
+    workflow=HH4bbtagWPefficiencyProcessor,
     workflow_options=config_options_dict,
     skim=cuts.skimming_cut_list,
     preselections=preselection,
     categories=categories_dict,
     weights_classes=common_weights
     + [bkg_morphing_dnn_weight, bkg_morphing_dnn_weightRun2, SF_btag_fixed_multiple_wp],
+    # calibrators=default_calibrators_sequence,
     calibrators=[JetsCalibrator, JetsPtRegressionCalibrator],
     weights={
         "common": {
@@ -255,8 +187,8 @@ cfg = Configurator(
         },
         "shape": {
             "common": {
-                "inclusive": ["jet_calibration"],
-                # "inclusive": [],
+                # "inclusive": ["jet_calibration"],
+                "inclusive": [],
                 },
             }
     },
@@ -264,7 +196,41 @@ cfg = Configurator(
         # **count_hist(name="nJets", coll="JetGood",bins=10, start=2, stop=12),
         # **count_hist(name="nBJets", coll="BJetGood",bins=14, start=0, stop=14),
         # **count_hist(name="nLeptons", coll="LeptonGood",bins=3, start=0, stop=3),
-        **jet_hists(name="jet", coll="JetGood", pos=0),
+        **{
+            f"jet_btagPNetB_{i}": HistConf(
+                [
+                    Axis(
+                        coll="JetGood",
+                        field="btagPNetB",
+                        bins=20,
+                        start=0,
+                        stop=1,
+                        label=f"jet_btagPNetB_{i}",
+                        pos=i
+                    ),
+                ]
+            )
+            for i in range(5)
+        },
+        "nJets_vs_HT": HistConf(
+            [
+                Axis(
+                    coll="events",
+                    field="nJetGood",
+                    bins=[4, 5, 6, 7, 8, 9, 10],
+                    label="nJets",
+                ),
+                Axis(
+                    coll="events",
+                    field="HT",
+                    bins=20,
+                    start=0,
+                    stop=2000,
+                    label="events_HT",
+                ),
+            ]
+        ),
+        ** jet_hists(name="jet", coll="JetGood", pos=0),
         **jet_hists(name="jet", coll="JetGood", pos=1),
         **jet_hists(name="jet", coll="JetGood", pos=2),
         **jet_hists(name="jet", coll="JetGood", pos=3),

@@ -56,30 +56,12 @@ SF_btag_fixed_multiple_wp_lamb = WeightLambda.wrap_func(
 
 def get_sf_btag_fixed_multiple_wp(params, Jets, year, sample, return_variations=True):
 
-    sampleGroups = {
-        # "ttH" :  [
-        #         "TTH_Hto2B",
-        #         "TTHtoNon2B"
-        #     ],
-        "HH4b": [
-                    "GluGlutoHHto4B_spanet_kl-1p00_kt-1p00_c2-0p00_skimmed",
-                #    "GluGlutoHHto4B_spanet_kl-m2p00_kt-1p00_c2-0p00_skimmed",
-                #    "GluGlutoHHto4B_spanet_kl-m1p00_kt-1p00_c2-0p00_skimmed",
-                #    "GluGlutoHHto4B_spanet_kl-5p00_kt-1p00_c2-0p00_skimmed",
-                #    "GluGlutoHHto4B_spanet_kl-2p45_kt-1p00_c2-0p00_skimmed",
-                #     "GluGlutoHHto4B_spanet_kl-0p00_kt-0p00_c2-0p00_skimmed",
-                #     "GluGlutoHHto4B_spanet_kl-3p50_kt-1p00_c2-0p00_skimmed",
-                #     "GluGlutoHHto4B_spanet_kl-4p00_kt-1p00_c2-0p00_skimmed",
-                #     "GluGlutoHHto4B_spanet_kl-3p00_kt-1p00_c2-0p00_skimmed",
-                #     "GluGlutoHHto4B_spanet_kl-2p00_kt-1p00_c2-0p00_skimmed",
-                #     "GluGlutoHHto4B_spanet_kl-1p50_kt-1p00_c2-0p00_skimmed",
-                #     "GluGlutoHHto4B_spanet_kl-0p50_kt-1p00_c2-0p00_skimmed",
-                ]
-    }
+    sampleGroups = params["btagging"]["sampleGroups"]
+    Jets = Jets[:, :5]
 
     btag_effi_sample_group = ""
     for sampleGroupName, sampleGroup in sampleGroups.items():
-        if sample in sampleGroup:
+        if sample in sampleGroup["sampleNames"]:
             btag_effi_sample_group = sampleGroupName
     if btag_effi_sample_group == "":
         print("WARNING: Sample does not correspond to one of the given sample groupings!")
@@ -174,6 +156,7 @@ def get_sf_btag_fixed_multiple_wp(params, Jets, year, sample, return_variations=
         else:
             eff[wp] = btag_effi_corr_set[btag_effi_sample_group + "_wp_" + wp].evaluate(jetpt, jeteta, jetflav)
 
+
     # Preloading some things.
     ones_array = ak.ones_like(jetflav)
     zero_array = ak.zeros_like(jetflav)
@@ -198,11 +181,11 @@ def get_sf_btag_fixed_multiple_wp(params, Jets, year, sample, return_variations=
             for variation_light, variation_heavy in zip(variationColl["light"], variationColl["heavy"]):
                 # I did not find a better solution, than always calculating left and right edge. This means I repeat each operation once when it is the left and once when it is the right bin...
                 for leftright, wp_tag in zip(["left", "right"], [wp_low, wp_high]):
-                    if leftright == "left" and wp_tag == "0":
+                    if wp_tag == "0":
                         sf_flat = ones_array  # Only oneses
                         # sf_light_flat = zero_array  # Only oneses
                         # sf_heavy_flat = zero_array  # Only oneses
-                    elif leftright == "right" and wp_tag == "1":
+                    elif wp_tag == "1":
                         sf_flat = zero_array  # Only oneses
                         # sf_light_flat = zero_array  # Only zeros
                         # sf_heavy_flat = zero_array  # Only zeros
@@ -314,34 +297,12 @@ def get_sf_btag_fixed_multiple_wp(params, Jets, year, sample, return_variations=
 
 
 def sf_btag_fixed_multiple_wp_calibrated(events, params, Jets, year, sample, njets, jetsHt, return_variations=True):
-
-    sampleGroups = {
-        "ttH":  [
-                "TTH_Hto2B",
-                "TTHtoNon2B"
-            ],
-        "HH4b": {
-            "sampleNames": [
-                    "GluGlutoHHto4B_spanet_kl-1p00_kt-1p00_c2-0p00_skimmed",
-                #    "GluGlutoHHto4B_spanet_kl-m2p00_kt-1p00_c2-0p00_skimmed",
-                #    "GluGlutoHHto4B_spanet_kl-m1p00_kt-1p00_c2-0p00_skimmed",
-                    "GluGlutoHHto4B_spanet_kl-5p00_kt-1p00_c2-0p00_skimmed",
-                    "GluGlutoHHto4B_spanet_kl-2p45_kt-1p00_c2-0p00_skimmed",
-                #     "GluGlutoHHto4B_spanet_kl-0p00_kt-0p00_c2-0p00_skimmed",
-                #     "GluGlutoHHto4B_spanet_kl-3p50_kt-1p00_c2-0p00_skimmed",
-                #     "GluGlutoHHto4B_spanet_kl-4p00_kt-1p00_c2-0p00_skimmed",
-                #     "GluGlutoHHto4B_spanet_kl-3p00_kt-1p00_c2-0p00_skimmed",
-                #     "GluGlutoHHto4B_spanet_kl-2p00_kt-1p00_c2-0p00_skimmed",
-                #     "GluGlutoHHto4B_spanet_kl-1p50_kt-1p00_c2-0p00_skimmed",
-                #     "GluGlutoHHto4B_spanet_kl-0p50_kt-1p00_c2-0p00_skimmed",
-
-                ]
-        }
-    }
+    """Warning: This function is outdated and might not be working. Might be deleted soon."""
+    sampleGroups = params["btagging"]["sampleGroups"]
 
     btag_effi_sample_group = ""
     for sampleGroupName, sampleGroup in sampleGroups.items():
-        if sample in sampleGroup:
+        if sample in sampleGroup["sampleNames"]:
             btag_effi_sample_group = sampleGroupName
     if btag_effi_sample_group == "":
         print("WARNING: Sample does not correspond to one of the given sample groupings!")

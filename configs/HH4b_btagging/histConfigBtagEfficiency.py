@@ -7,7 +7,7 @@ def btag_sf_hist(colName):
             Axis(
                 coll=colName,
                 field="pt",
-                bins=[20., 30., 50., 70., 100., 140., 200., 300., 600., 1000.],
+                bins=[0., 20., 30., 50., 70., 100., 140., 200., 300., 600., 1000., 14000.],
                 label=colName + " pT",
                 pos=None),
             Axis(

@@ -43,11 +43,6 @@ btagging:
     '2022_preEE':
       btagging_algorithm: btagPNetB
       btagging_WP:
-        L: 0.0849
-        M: 0.4319
-        T: 0.8482
-        XT: 0.9151
-        XXT: 0.9874
         btagDeepFlavB:
           L: 0.0583
           M: 0.3086

@@ -373,9 +373,10 @@ pocket-coffea run --cfg config_compute_befficiency_HH4b.py -e dask@T3_CH_PSI --c
 ```
 
 Using the output from that, we can then run the scrip `produceBtagEff.py`. This file needs an input file of type `output_all.coffea`. It still needs some improvement. But the core works:
+Different sample groups can be defined, that are combined and use the same efficiencies. This is expected in `YAML` fromat and can be given as input parameter `-g`. The idea is, that the same file is also used to load the groups into the params for `PocketCoffea`. An example with `ttHbb` and `HH4b` groups is given in `AnalysisConfig/configs/HH4b_common/params/btagging_sampleGroups.yaml`.
 
 ```bash
-python </path/to/AnalysisConfigs>/configs/HH4b_btagging/produceBtagEff.py -i <input_file> -o <desired output folder>
+python </path/to/AnalysisConfigs>/configs/HH4b_btagging/produceBtagEff.py -i <input_file> -o <desired output folder> -g <sampleGroup file (default works if script is not moved)>
 ```
 
 The output is then the b-tag WP efficiency files:

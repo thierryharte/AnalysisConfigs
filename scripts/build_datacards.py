@@ -232,7 +232,6 @@ def create_new_region(coffea_file, cat_name):
 
 
 if __name__ == "__main__":
-
     # I want to use the coffea file with all outputs. Therefore, it should be merged beforehand.
     coffea_list = [file for file in os.listdir(input_dir) if file.endswith(".coffea")]
     if "output_all.coffea" in coffea_list:
@@ -343,9 +342,10 @@ if __name__ == "__main__":
                 mc_processes=mc_processes,
                 data_processes=data_processes,
                 category=region_name,
-                process_suffix="",
+                single_year=True,
                 )
         datacard.dump(directory=f"{args.output}/{hist_cat}", card_name=f"{region_name}_{_label}.txt", shapes_name=f"shapes_{region_name}_{_label}.root")
+
 
 # _datacards = {
 #         "4b_signal_region": datacard
