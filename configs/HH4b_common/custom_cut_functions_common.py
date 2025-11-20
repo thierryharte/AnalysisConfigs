@@ -10,6 +10,7 @@ def hh4b_presel_cuts(events, params, **kwargs):
     at_least_four_jets = events.nJetGood >= params["njet"]
     no_electron = events.nElectronGood == 0
     no_muon = events.nMuonGood == 0
+    pt_type = params["pt_type"]
 
     mask_4jet_nolep = at_least_four_jets & no_electron & no_muon
 
@@ -22,14 +23,14 @@ def hh4b_presel_cuts(events, params, **kwargs):
     )
 
     jets_pt_order = jets_btag_order[
-        ak.argsort(jets_btag_order.pt_default, axis=1, ascending=False)
+        ak.argsort(jets_btag_order[pt_type], axis=1, ascending=False)
     ]
 
     mask_pt_none = (
-        (jets_pt_order.pt_default[:, 0] > params["pt_jet0"])
-        & (jets_pt_order.pt_default[:, 1] > params["pt_jet1"])
-        & (jets_pt_order.pt_default[:, 2] > params["pt_jet2"])
-        & (jets_pt_order.pt_default[:, 3] > params["pt_jet3"])
+        (jets_pt_order[pt_type][:, 0] > params["pt_jet0"])
+        & (jets_pt_order[pt_type][:, 1] > params["pt_jet1"])
+        & (jets_pt_order[pt_type][:, 2] > params["pt_jet2"])
+        & (jets_pt_order[pt_type][:, 3] > params["pt_jet3"])
     )
     # convert none to false
     mask_pt = ak.where(ak.is_none(mask_pt_none), False, mask_pt_none)
