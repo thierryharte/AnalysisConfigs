@@ -29,6 +29,7 @@ from configs.HH4b_common.config_files.configurator_tools import (
     SPANET_TRAINING_DEFAULT_COLUMNS_BTWP,
     define_single_category,
     get_columns_list,
+    define_preselection,
 )
 from configs.HH4b_common.custom_weights import (
     bkg_morphing_dnn_weight,
@@ -57,13 +58,9 @@ parameters = defaults.merge_parameters_from_files(
     # f"{localdir}/../HH4b_common/params/jets_calibration_legacy_Calibrator_withVariations.yaml",
     update=True,
 )
-preselection = [
-    (
-        cuts.hh4b_presel_nobtag
-        if config_options_dict["tight_cuts"] is False
-        else cuts.hh4b_presel_tight
-    )
-]
+
+## Define the preselection to apply
+preselection = define_preselection(config_options_dict | {"no_btag":True})
 
 # Defining the used samples
 sample_ggF_list = [

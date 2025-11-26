@@ -32,6 +32,7 @@ from configs.HH4b_common.config_files.configurator_tools import (
     define_single_category,
     get_columns_list,
     get_variables_dict,
+    define_preselection
 )
 from configs.HH4b_common.custom_weights import (
     bkg_morphing_dnn_weight,
@@ -85,14 +86,9 @@ variables_dict = get_variables_dict(
 )
 # print(variables_dict)
 
-# Define the preselection to apply
-preselection = [
-    (
-        cuts.hh4b_presel
-        if config_options_dict["tight_cuts"] is False
-        else cuts.hh4b_presel_tight
-    )
-]
+## Define the preselection to apply
+preselection = define_preselection(config_options_dict)
+
 
 # Defining the used samples
 sample_ggF_list = [

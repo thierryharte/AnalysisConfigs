@@ -12,10 +12,8 @@ from pocket_coffea.parameters.cuts import passthrough
 from pocket_coffea.lib.columns_manager import ColOut
 from pocket_coffea.parameters import defaults
 from pocket_coffea.lib.weights.common.common import common_weights
-from pocket_coffea.lib.calibrators.legacy.legacy_calibrators import (
-    JetsCalibrator,
-    JetsPtRegressionCalibrator,
-)
+import pocket_coffea.lib.calibrators.legacy.legacy_calibrators as legacy_cal 
+from pocket_coffea.lib.calibrators.common.common import JetsCalibrator
 
 
 from configs.VBF_HH4b.workflow import VBFHH4bProcessor
@@ -32,6 +30,7 @@ from configs.HH4b_common.config_files.configurator_tools import (
     create_DNN_columns_list,
     define_single_category,
     define_categories,
+    define_preselection,
 )
 
 from configs.HH4b_common.config_files.__config_file__ import (
@@ -80,25 +79,7 @@ variables_dict = get_variables_dict(
 # variables_dict = {}
 
 ## Define the preselection to apply
-preselection = (
-    [
-        (
-            vbf_hh4b_presel
-            if config_options_dict["tight_cuts"] is False
-            else vbf_hh4b_presel_tight
-        )
-    ]
-    if config_options_dict["vbf_presel"]
-    else [
-        (
-            cuts.hh4b_presel
-            if config_options_dict["tight_cuts"] is False
-            else cuts.hh4b_presel_tight
-        )
-    ]
-)
-# Add the Jet Veto Map
-preselection.append(cuts.hh4b_JetVetoMap)
+preselection = define_preselection(config_options_dict)
 
 
 sample_ggF_list = [
@@ -316,7 +297,8 @@ cfg = Configurator(
         },
         "bysample": bysample_bycategory_weight_dict,
     },
-    calibrators=[JetsCalibrator, JetsPtRegressionCalibrator],
+    calibrators=[legacy_cal.JetsCalibrator, legacy_cal.JetsPtRegressionCalibrator],
+    # calibrators=[JetsCalibrator],
     variations={
         "weights": {
             "common": {

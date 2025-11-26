@@ -39,7 +39,7 @@ hh4b_presel_tight = Cut(
 )
 
 hh4b_presel_nobtag = Cut(
-    name="hh4b_presel",
+    name="hh4b_presel_nobtag",
     params={
         "njet": 4,
         "pt_jet0": 80,
@@ -67,23 +67,6 @@ hh4b_presel_parking = Cut(
     },
     function=cuts_f.hh4b_presel_cuts,
 )
-
-
-def get_presel(tight_cuts, pt_cut_type):
-    return Cut(
-        name="hh4b_presel",
-        params={
-            "njet": 4,
-            "pt_jet0": 80,
-            "pt_jet1": 60,
-            "pt_jet2": 45,
-            "pt_jet3": 35,
-            "mean_pnet_jet": 0.65,
-            "tight_cuts": tight_cuts,
-            "pt_type": pt_cut_type,
-        },
-        function=cuts_f.hh4b_presel_cuts,
-    )
 
 
 hh4b_2b_region = Cut(

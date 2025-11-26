@@ -11,6 +11,7 @@ import numpy as np
 from utils.variables_helpers import jet_hists_dict, create_HistConf
 from utils.variables_helpers import jet_hists_dict, create_HistConf
 import configs.HH4b_common.custom_cuts_common as cuts
+import configs.VBF_HH4b.custom_cuts as vbf_cuts
 
 variables_dict_jets = {
     **jet_hists(coll="JetGoodFromHiggsOrdered", pos=0),
@@ -1358,3 +1359,27 @@ def define_categories(
         categories_dict |= define_single_category("4b_region")
 
     return categories_dict
+
+
+def define_preselection(options):
+    ## Define the preselection to apply
+    if "no_btag" in options.keys() and options["no_btag"]:
+        preselection = [cuts.hh4b_presel_nobtag]
+    else:
+        if options["vbf_presel"]:
+            if options["tight_cuts"]:
+                preselection = [vbf_cuts.vbf_hh4b_presel_tight]
+            else:
+                preselection = [vbf_cuts.vbf_hh4b_presel]
+        else:
+            if options["tight_cuts"]:
+                preselection = [cuts.hh4b_presel_tight]
+            else:
+                preselection = [cuts.hh4b_presel]
+    
+    # Add the Jet Veto Map
+    # Do this in the preselection to select jets based on
+    # corrected pT after the Calibrators have run
+    preselection.append(cuts.hh4b_JetVetoMap)
+    
+    return preselection
