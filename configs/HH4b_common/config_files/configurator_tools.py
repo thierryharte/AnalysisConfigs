@@ -1156,8 +1156,6 @@ DEFAULT_JET_COLUMN_PARAMS = [
     "eta",
     "phi",
     "mass",
-    "btagPNetB_5wp",
-    "btagPNetB_3wp",
     "btagPNetB",
 ]
 DEFAULT_JET_COLUMNS = {
@@ -1182,6 +1180,16 @@ def get_columns_list(
     columns = []
     for collection, attributes in columns_dict.items():
         columns.append(ColOut(collection, attributes, flatten))
+        
+    # add the event number if not present in the columns
+    add_event_number = True
+    for col in columns:
+        for attr in col.collection:
+            if attr == "event" and col.name == "events":
+                add_event_number = False
+    if add_event_number:
+        columns.append(ColOut("events", ["event"], flatten))
+    
     return columns
 
 
