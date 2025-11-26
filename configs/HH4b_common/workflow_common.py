@@ -28,9 +28,11 @@ from .custom_object_preselection_common import (
 
 vector.register_awkward()
 
-logging.basicConfig(format='%(asctime)s,%(msecs)03d %(name)s %(levelname)s %(message)s',
-                    datefmt='%Y-%m-%d %H:%M:%S',
-                    level=logging.INFO)
+logging.basicConfig(
+    format="%(asctime)s,%(msecs)03d %(name)s %(levelname)s %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+    level=logging.INFO,
+)
 logger = logging.getLogger()
 
 era_dict = {
@@ -72,15 +74,15 @@ class HH4bCommonProcessor(BaseProcessorABC):
         self.events["JetPNetPlusNeutrino"] = copy.copy(self.events["Jet"])
 
     def apply_object_preselection(self, variation):
-        # Use the regressed pt from PNet+Neutrino collection if available, 
+        # Use the regressed pt from PNet+Neutrino collection if available,
         # otherwise use the JEC corrected pt collection
         # This way we consider correctly all fields which change depending on
-        # the pt definition, namely the pt, mass and the associated systematic variations 
+        # the pt definition, namely the pt, mass and the associated systematic variations
         self.events["Jet"] = ak.where(
-                ak.nan_to_num(self.events["JetPNetPlusNeutrino"].pt, nan=-1) > 0,
-                self.events["JetPNetPlusNeutrino"],
-                self.events.JetDefault,
-            )
+            ak.nan_to_num(self.events["JetPNetPlusNeutrino"].pt, nan=-1) > 0,
+            self.events["JetPNetPlusNeutrino"],
+            self.events.JetDefault,
+        )
         # save also the different pt definitions for bookkeeping
         # we anyway miss the different mass definitions and the various variations
         self.events["Jet"] = ak.with_field(
@@ -122,7 +124,7 @@ class HH4bCommonProcessor(BaseProcessorABC):
             pt_type="pt_default",
             pt_cut_name=self.pt_cut_name,
         )
-        
+
         # Add btag WP
         self.events["JetGood"] = self.generate_btag_workingpoints(
             self.events["JetGood"], 5
@@ -130,7 +132,7 @@ class HH4bCommonProcessor(BaseProcessorABC):
         self.events["JetGood"] = self.generate_btag_workingpoints(
             self.events["JetGood"], 3
         )
-        
+
         self.events["Electron"] = ak.with_field(
             self.events.Electron,
             self.events.Electron.eta + self.events.Electron.deltaEtaSC,
@@ -192,7 +194,8 @@ class HH4bCommonProcessor(BaseProcessorABC):
         wp_array = jets[f"btagPNetB_{num_wp}wp"]
         num_jets = ak.num(wp_array)
         deltaWP = ak.where(
-            num_jets <= 4,
+            # if 4 jets
+            num_jets == 4,
             ak.concatenate(
                 [
                     (wp_array[:, 0] - wp_array[:, 1])[..., None],
@@ -203,6 +206,7 @@ class HH4bCommonProcessor(BaseProcessorABC):
                 ],
                 axis=1,
             ),
+            # if more than 4 jets
             ak.concatenate(
                 [
                     (wp_array[:, 0] - wp_array[:, 1])[..., None],
@@ -210,7 +214,7 @@ class HH4bCommonProcessor(BaseProcessorABC):
                     (wp_array[:, 2] - wp_array[:, 3])[..., None],
                     (wp_array[:, 3] - wp_array[:, 2])[..., None],
                     (ak.pad_none(wp_array, 5)[:, 4] - wp_array[:, 3])[..., None],
-                    # (wp_array[:, 4] - wp_array[:, 3])[..., None]
+                    # (wp_array[:, 4] - wp_array[:, 3])[..., None],
                     wp_array[:, 5:],
                 ],
                 axis=1,
@@ -859,7 +863,7 @@ class HH4bCommonProcessor(BaseProcessorABC):
         self.events["JetGood"] = self.generate_btag_delta_workingpoints(
             self.events["JetGood"], 5
         )
-        
+
         if self._isMC and not self.spanet:
             matched_jet_higgs_idx_not_none = self.get_true_pairing_and_compare()
 
@@ -908,7 +912,12 @@ class HH4bCommonProcessor(BaseProcessorABC):
             arctanh_delta_prob_bin_edges = [
                 np.min(self.events.Arctanh_Delta_pairing_probabilities) - 1,
                 self.arctanh_delta_prob_bin_edge,
-                np.max([np.max(self.events.Arctanh_Delta_pairing_probabilities) + 1, self.arctanh_delta_prob_bin_edge + 1]),
+                np.max(
+                    [
+                        np.max(self.events.Arctanh_Delta_pairing_probabilities) + 1,
+                        self.arctanh_delta_prob_bin_edge + 1,
+                    ]
+                ),
             ]
             self.events["Binned_Arctanh_Delta_pairing_probabilities"] = (
                 np.digitize(

@@ -97,6 +97,10 @@ preselection = (
         )
     ]
 )
+# Add the Jet Veto Map
+preselection.append(cuts.hh4b_JetVetoMap)
+
+
 sample_ggF_list = [
     "GluGlutoHHto4B_spanet_kl-1p00_kt-1p00_c2-0p00_skimmed",
     "GluGlutoHHto4B_spanet_kl-m2p00_kt-1p00_c2-0p00_skimmed",
@@ -119,17 +123,17 @@ sample_list = (
         # "DATA_JetMET_JMENano_C_skimmed",
         # "DATA_JetMET_JMENano_D_skimmed",
         ## 2022 postEE
-        # "DATA_JetMET_JMENano_E_skimmed",
-        # "DATA_JetMET_JMENano_F_skimmed",
-        # "DATA_JetMET_JMENano_G_skimmed",
+        "DATA_JetMET_JMENano_E_skimmed",
+        "DATA_JetMET_JMENano_F_skimmed",
+        "DATA_JetMET_JMENano_G_skimmed",
     ]
-    # + sample_ggF_list
+    + sample_ggF_list
     + (
         [
         #     "GluGlutoHHto4B_spanet_skimmed",
         #     # "GluGlutoHHto4B",
         #     # "VBF_HHto4B",
-        "GluGlutoHHto4B_spanet"
+        # "GluGlutoHHto4B_spanet"
         ]
     )
 )
@@ -218,6 +222,8 @@ if config_options_dict["sig_bkg_dnn"] and config_options_dict["spanet"]:
     column_list += get_columns_list({"events": ["sig_bkg_dnn_score"]})
 if config_options_dict["sig_bkg_dnn"] and config_options_dict["run2"]:
     column_listRun2 += get_columns_list({"events": ["sig_bkg_dnn_scoreRun2"]})
+
+
 
 bysample_bycategory_column_dict = {}
 for sample in sample_list:
