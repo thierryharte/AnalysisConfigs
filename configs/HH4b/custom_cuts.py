@@ -10,6 +10,7 @@ four_jets_cut = Cut(
     name="four_jets_cut",
     params={
         "njet": 4,
+        "jet_collection":"JetGood"
     },
     function=cuts_f.four_jets,
 )
@@ -24,6 +25,7 @@ lepton_veto = Cut(
         "pt_jet3": -999,
         "mean_pnet_jet": -999,
         "tight_cuts": False,
+        "pt_type": "pt_default",
     },
     function=cuts_f.hh4b_presel_cuts,
 )
@@ -38,6 +40,7 @@ jet_pt_cut = Cut(
         "pt_jet3": 35,
         "mean_pnet_jet": -999,
         "tight_cuts": False,
+        "pt_type": "pt_default",
     },
     function=cuts_f.hh4b_presel_cuts,
 )
@@ -52,6 +55,7 @@ two_b_cut = Cut(
         "pt_jet3": -999,
         "mean_pnet_jet": 0.65,
         "tight_cuts": False,
+        "pt_type": "pt_default",
     },
     function=cuts_f.hh4b_presel_cuts,
 )

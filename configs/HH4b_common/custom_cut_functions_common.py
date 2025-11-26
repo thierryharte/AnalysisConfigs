@@ -1,10 +1,15 @@
 import awkward as ak
 import numpy as np
+import copy
+
+from pocket_coffea.lib.cut_functions import get_JetVetoMap_Mask
 
 
 def four_jets(events, params, **kwargs):
-    mask = events.nJetGood >= params["njet"]
+    jet_collection=params["jet_collection"]
+    mask = events[f"n{jet_collection}"] >= params["njet"]
     return ak.where(ak.is_none(mask), False, mask)
+
 
 def hh4b_presel_cuts(events, params, **kwargs):
     at_least_four_jets = events.nJetGood >= params["njet"]
@@ -70,7 +75,7 @@ def hh4b_4b_cuts(events, params, **kwargs):
 
 
 def hh4b_Rhh_cuts(events, params, **kwargs):
-    Rhh=None
+    Rhh = None
     if params["Run2"]:
         if "Rhh_Run2" in events.fields:
             Rhh = events.Rhh_Run2
@@ -97,19 +102,33 @@ def hh4b_Rhh_cuts(events, params, **kwargs):
 
 
 def blinding_cuts(events, params, **kwargs):
-    '''
-        Function to apply a cut based on the dnn score.
-        The idea is, to look at the data in the low score sideband to compare performance.
-    '''
-    mask = (events[params["score_variable"]] < params["score"])
-    
+    """
+    Function to apply a cut based on the dnn score.
+    The idea is, to look at the data in the low score sideband to compare performance.
+    """
+    mask = events[params["score_variable"]] < params["score"]
+
     # Pad None values with False
     return ak.where(ak.is_none(mask), False, mask)
 
 
 def dhh_cuts(events, params, **kwargs):
 
-    mask = (events.delta_dhh > params["delta_dhh_cut"])
+    mask = events.delta_dhh > params["delta_dhh_cut"]
 
     # Pad None values with False
     return ak.where(ak.is_none(mask), False, mask)
+
+
+def get_hh4b_JetVetoMap_Mask(events, params, **kwargs):
+    """Function to get the JetVetoMap mask for HH->4b analysis"""
+    events_copy = copy.copy(events)
+    events_copy["Jet"] = ak.with_field(
+        events_copy["Jet"],
+        events_copy["Jet"][params["pt_type"]],
+        "pt",
+    )
+
+    mask = get_JetVetoMap_Mask(events_copy, params, **kwargs)
+
+    return mask

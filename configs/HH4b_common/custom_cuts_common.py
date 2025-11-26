@@ -2,10 +2,10 @@ from . import custom_cut_functions_common as cuts_f
 from pocket_coffea.lib.cut_definition import Cut
 from pocket_coffea.lib.cut_functions import (
     get_HLTsel,
+    get_L1sel,
     goldenJson,
     eventFlags,
     get_nPVgood,
-    get_JetVetoMap,
 )
 
 hh4b_presel = Cut(
@@ -67,6 +67,7 @@ hh4b_presel_parking = Cut(
     },
     function=cuts_f.hh4b_presel_cuts,
 )
+
 
 def get_presel(tight_cuts, pt_cut_type):
     return Cut(
@@ -216,10 +217,18 @@ blindedRun2 = Cut(
     function=cuts_f.blinding_cuts,
 )
 
+hh4b_JetVetoMap= Cut(
+    name="hh4b_JetVetoMap",
+    params={
+        "pt_type": "pt_default",
+    },
+    function=cuts_f.get_hh4b_JetVetoMap_Mask,
+)
+
 skimming_cut_list = [
     eventFlags,
     goldenJson,
     get_nPVgood(1),
     get_HLTsel(primaryDatasets=["JetMET"]),
-    get_JetVetoMap(),
+    get_L1sel(primaryDatasets=["JetMET"]),
 ]
