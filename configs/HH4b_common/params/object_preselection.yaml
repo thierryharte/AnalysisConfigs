@@ -1,4 +1,5 @@
 object_preselection:
+  ## Jet selection
   Jet:
     pt: 25
     pt_tight: 35
@@ -6,24 +7,28 @@ object_preselection:
     jetId: 6 # 6 with lepveto or 2 w/o lepveto
     btagPNetB: -2 
     #TODO: trigger matching?
+  
+  ## Lepton selection
   Electron:
-    pt: 15
-    eta: 2.4
-    id: mvaIso_WP80 #TODO mvaIso_WPL iso / no iso # loose not in nanoaodv12
-    iso: 0.15 # 0.3? #DeltaR=0.3
-    dxy_barrel: 0.05
-    dz_barrel: 0.1
-    dxy_endcap: 0.1
-    dz_endcap: 0.2
+    pt: 10
+    eta: 2.5
+    id: 
+      type: cutBased
+      working_point: 2 # cut-based ID RunIII Winter22 (0:fail, 1:veto, 2:loose, 3:medium, 4:tight)
+    iso: 999. # 0.15 # 0.3? #DeltaR=0.3
+    dxy: 0.1
+    dz: 0.2
   Muon:
     pt: 10
     eta: 2.4
     id: looseId
-    iso: 0.15 # 0.3? #DeltaR=0.3
-    dxy_barrel: 0.05
-    dz_barrel: 0.1
-    dxy_endcap: 0.1
-    dz_endcap: 0.2
+    iso: # 0.15 # 0.3? #DeltaR=0.3
+      type: pfIsoId # PFIso ID from miniAOD selector (1=PFIsoVeryLoose, 2=PFIsoLoose, 3=PFIsoMedium, 4=PFIsoTight, 5=PFIsoVeryTight, 6=PFIsoVeryVeryTight)
+      working_point: 2
+    dxy: 0.2
+    dz: 0.5
+
+  ## VBF jet selection
   JetGoodVBF:
     pt: 25
     eta_min: 2.5
