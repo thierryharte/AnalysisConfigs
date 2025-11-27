@@ -2,7 +2,7 @@ from collections.abc import Iterable
 import numpy as np
 import awkward as ak
 
-import custom_cut_functions as cuts_f
+import configs.VBF_HH4b.custom_cut_functions as cuts_f
 from pocket_coffea.lib.cut_definition import Cut
 
 vbf_hh4b_presel = Cut(
