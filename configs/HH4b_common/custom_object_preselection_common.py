@@ -1,7 +1,4 @@
 import numpy as np
-import awkward as ak
-from pocket_coffea.lib.jets import jet_selection
-import copy
 
 
 def lepton_selection(events, lepton_flavour, params):
@@ -73,55 +70,3 @@ def jet_selection_nopu(
         )
 
     return jets[mask_jets]
-
-
-def jet_selection_custom(
-    events,
-    jet_type,
-    params,
-    year,
-    leptons_collection="",
-    jet_tagger="",
-    pt_type="pt",
-    pt_cut_name="pt",
-):
-    """
-    Custom jet selection function to apply selection on different pt types.
-    Args:
-        events: awkward array with events
-        jet_type: str, type of jet to select (e.g. "Jet")
-        params: configuration parameters
-        year: int, year of the data-taking period
-        leptons_collection: str, type of leptons to consider for overlap removal
-        jet_tagger: str, jet tagger to use
-        pt_type: str, type of pt to apply the cut on (e.g. "pt", "pt_default", "pt_regressed")
-        pt_cut_name: str, name of the pt cut in the params (e.g. "pt", "pt_tight")
-    """
-    jet_type_default = "Jet"
-    params_copy = copy.copy(params)
-    params_copy.object_preselection[jet_type_default]["pt"] = (
-        params.object_preselection[jet_type][pt_cut_name]
-    )
-
-    events_copy = copy.copy(events)
-    # replace the pt with the pt_type requested to do the cut on
-    events_copy[jet_type_default] = ak.with_field(
-        events_copy[jet_type],
-        events_copy[jet_type][pt_type],
-        "pt",
-    )
-
-    _, mask = jet_selection(
-        events_copy,
-        jet_type_default,
-        params_copy,
-        year,
-        leptons_collection,
-        jet_tagger,
-    )
-
-    # remove copies
-    del params_copy
-    del events_copy
-
-    return events[jet_type][mask]

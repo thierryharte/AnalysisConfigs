@@ -7,6 +7,7 @@ from pocket_coffea.lib.cut_functions import (
     eventFlags,
     get_nPVgood,
 )
+from utils.custom_cut_functions import get_custom_JetVetoMap_Mask
 
 hh4b_presel = Cut(
     name="hh4b_presel",
@@ -203,9 +204,10 @@ blindedRun2 = Cut(
 hh4b_JetVetoMap= Cut(
     name="hh4b_JetVetoMap",
     params={
+        "jet_type": "Jet",
         "pt_type": "pt_default",
     },
-    function=cuts_f.get_hh4b_JetVetoMap_Mask,
+    function=get_custom_JetVetoMap_Mask,
 )
 
 skimming_cut_list = [

@@ -23,8 +23,8 @@ from utils.spanet_evaluation_functions import get_best_pairings, get_pairing_inf
 
 from .custom_object_preselection_common import (
     lepton_selection,
-    jet_selection_custom,
 )
+from utils.custom_cut_functions import custom_jet_selection
 
 vector.register_awkward()
 
@@ -116,7 +116,7 @@ class HH4bCommonProcessor(BaseProcessorABC):
             self.pt_cut_name = "pt"
 
         # Cut on the JEC pt (w/o regression)
-        self.events["JetGood"] = jet_selection_custom(
+        self.events["JetGood"], _ = custom_jet_selection(
             self.events,
             "Jet",
             self.params,
@@ -583,7 +583,7 @@ class HH4bCommonProcessor(BaseProcessorABC):
         )
 
         # Cut on the JEC pt (w/o regression)
-        self.events["JetNotFromHiggs"] = jet_selection_custom(
+        self.events["JetNotFromHiggs"], _ = custom_jet_selection(
             self.events,
             "JetNotFromHiggs",
             self.params,
