@@ -10,10 +10,7 @@ from pocket_coffea.lib.cut_functions import (
     get_nPVgood,
 )
 from pocket_coffea.parameters.cuts import passthrough
-from pocket_coffea.lib.calibrators.legacy.legacy_calibrators import (
-    JetsCalibrator,
-    JetsPtRegressionCalibrator,
-)
+import pocket_coffea.lib.calibrators.legacy.legacy_calibrators as legacy_cal 
 
 from workflow import HH4bbQuarkMatchingProcessor
 import configs.HH4b.custom_cuts as cuts
@@ -162,7 +159,7 @@ cfg = Configurator(
         },
         "bysample": {},
     },
-    calibrators=[JetsCalibrator, JetsPtRegressionCalibrator],
+    calibrators=[legacy_cal.JetsCalibrator, legacy_cal.JetsPtRegressionCalibrator],
     variations={
         "weights": {
             "common": {
