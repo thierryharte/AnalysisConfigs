@@ -2,7 +2,6 @@
 
 Repository containing analysis configurations for PocketCoffea
 
-
 ## Setup
 
 ### Fast installation with micromamba
@@ -31,10 +30,14 @@ pip install -e .
 
 This will install the `configs` package in editable mode.
 
-## Analysis examples
-
-- Simple **Z-> mumu** invariant mass analysis [here](./configs/zmumu)
-
 ## HH4b analysis
 
 The instruction to run the HH4b analysis are in the [HH4b README](./configs/HH4b_common/README.md).
+
+## MC Truth corrections for pT regression derivation
+
+The instruction to run the derivation of the MC Truth corrections for pT regression are in the [jme README](./configs/jme/README.md).
+
+## MET Type-1 correction analysis
+
+The instruction to run the analysis for the MET Type-1 correction are in the [MET_studies README](./configs/MET_studies/README.md).
