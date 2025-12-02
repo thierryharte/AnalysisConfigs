@@ -15,8 +15,27 @@ run_options=$3
 output=$4
 shift 4
 
-# Additional args passed directly to pocket-coffea
-extra_args=("$@")
+# All extra args initially
+raw_extra_args=("$@")
+
+# Detect and remove --test and --debug
+is_test=false
+is_debug=false
+extra_args=()
+
+for arg in "${raw_extra_args[@]}"; do
+    case "$arg" in
+        --test)
+            is_test=true
+            ;;
+        --debug)
+            is_debug=true
+            ;;
+        *)
+            extra_args+=("$arg")
+            ;;
+    esac
+done
 
 # Script location
 SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &> /dev/null && pwd)
@@ -61,7 +80,7 @@ esac
 
 echo "Using executor: $EXECUTOR"
 
-# Build base command
+# Construct command
 cmd=( pocket-coffea run
       --cfg "$new_config_template"
       --custom-run-options "$run_options"
@@ -69,46 +88,38 @@ cmd=( pocket-coffea run
       --process-separately
 )
 
-# Add executor if available
-if [[ -n "$EXECUTOR" ]]; then
-    cmd+=( -e "$EXECUTOR" )
+###################################
+# No executor in test mode
+###################################
+if ! $is_test; then
+    [[ -n "$EXECUTOR" ]] && cmd+=( -e "$EXECUTOR" )
+    [[ -n "$EXECUTOR_CUSTOM_SETUP" ]] && cmd+=( $EXECUTOR_CUSTOM_SETUP )
 fi
 
-# Add custom setup
-if [[ -n "$EXECUTOR_CUSTOM_SETUP" ]]; then
-    cmd+=( $EXECUTOR_CUSTOM_SETUP )
-fi
+###################################
+# ✔️ If test mode, add the flag
+###################################
+$is_test && cmd+=( --test )
 
-# Add extra args (e.g. --test, --debug, etc.)
+# Append cleaned extra args
 cmd+=( "${extra_args[@]}" )
 
-# Detect test mode
-is_test=false
-for arg in "${extra_args[@]}"; do
-    [[ "$arg" == "--test" ]] && is_test=true
-done
-
-# If test mode, insert --test into command (if not already included)
-if $is_test; then
-    cmd=( pocket-coffea run
-          --cfg "$new_config_template"
-          --custom-run-options "$run_options"
-          -o "$output"
-          --process-separately
-          --test
-          "${extra_args[@]}"
-    )
-fi
-
-# Print command exactly as executed
+# Print the full command exactly as executed
 echo "${cmd[@]}"
 
-# Skip execution in debug mode
-if printf '%s\n' "${extra_args[@]}" | grep -q -- '--debug'; then
-    exit 0
+###################################
+# DEBUG MODE → run without trapping
+###################################
+if $is_debug; then
+    "${cmd[@]}"
+    status=$?
+    cleanup
+    exit $status
 fi
 
-# Run
+###################################
+# NORMAL MODE → run in background
+###################################
 "${cmd[@]}" &
 pid=$!
 
