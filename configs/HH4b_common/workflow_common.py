@@ -95,7 +95,7 @@ class HH4bCommonProcessor(BaseProcessorABC):
             self.events.JetPNetPlusNeutrino.pt,
             "pt_regressed",
         )
-
+        
         if self.add_jet_spanet:
             # reorder the jets by pt regressed
             self.events["Jet"] = self.events["Jet"][

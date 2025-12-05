@@ -56,7 +56,10 @@ parameters = defaults.merge_parameters_from_files(
     f"{localdir}/../HH4b_common/params/triggers.yaml",
     f"{localdir}/../HH4b_common/params/btagging_multipleWP.yaml",
     # f"{localdir}/../HH4b_common/params/jets_calibration_legacy_Calibrator_withVariations.yaml",
-    f"{localdir}/../HH4b_common/params/jets_calibration_legacy_Calibrator_withoutVariations_withJERC.yaml",
+    # f"{localdir}/../HH4b_common/params/jets_calibration_legacy_Calibrator_withoutVariations_withJERC.yaml",
+    # f"{localdir}/../HH4b_common/params/jets_calibration_legacy_Calibrator_onlyJEC.yaml",
+    f"{localdir}/../HH4b_common/params/jets_calibration_regression_json.yaml",
+    # f"{localdir}/../HH4b_common/params/jets_calibration_regression_json_onlyJEC.yaml",
     update=True,
 )
 
@@ -297,8 +300,8 @@ cfg = Configurator(
         },
         "bysample": bysample_bycategory_weight_dict,
     },
-    calibrators=[legacy_cal.JetsCalibrator, legacy_cal.JetsPtRegressionCalibrator],
-    # calibrators=[JetsCalibrator],
+    # calibrators=[legacy_cal.JetsCalibrator, legacy_cal.JetsPtRegressionCalibrator],
+    calibrators=[JetsCalibrator],
     variations={
         "weights": {
             "common": {

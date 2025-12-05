@@ -2,7 +2,7 @@ import awkward as ak
 import sys
 import numpy as np
 
-from configs.HH4b_common.custom_object_preselection_common import jet_selection_custom
+from utils.custom_cut_functions import custom_jet_selection
 from configs.HH4b_common.workflow_common import HH4bCommonProcessor
 from utils.basic_functions import add_fields
 
@@ -20,7 +20,7 @@ class VBFHH4bProcessor(HH4bCommonProcessor):
         if self.vbf_presel:
                 
             self.events["JetVBF_matching"] = self.events.Jet
-            self.events["JetVBF_matching"] = jet_selection_custom(
+            self.events["JetVBF_matching"] = custom_jet_selection(
                 self.events,
                 "JetVBF_matching",
                 self.params,
@@ -30,7 +30,7 @@ class VBFHH4bProcessor(HH4bCommonProcessor):
             )
 
             self.events["JetGoodVBF"] = self.events.Jet
-            self.events["JetGoodVBF"] = jet_selection_custom(
+            self.events["JetGoodVBF"] = custom_jet_selection(
                 self.events,
                 "JetGoodVBF",
                 self.params,
@@ -49,7 +49,7 @@ class VBFHH4bProcessor(HH4bCommonProcessor):
                 
                 
             self.events["JetVBF_generalSelection"] = self.events.Jet
-            self.events["JetVBF_generalSelection"] = jet_selection_custom(
+            self.events["JetVBF_generalSelection"] = custom_jet_selection(
                 self.events,
                 "JetVBF_generalSelection",
                 self.params,
@@ -72,7 +72,7 @@ class VBFHH4bProcessor(HH4bCommonProcessor):
             self.events["JetVBFNotFromHiggs"] = self.get_jets_no_higgs()
             
             # apply selection to the jets not from Higgs
-            self.events["JetVBFNotFromHiggs"] = jet_selection_custom(
+            self.events["JetVBFNotFromHiggs"] = custom_jet_selection(
                 self.events,
                 "JetVBFNotFromHiggs",
                 self.params,
