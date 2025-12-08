@@ -1277,7 +1277,7 @@ def define_single_category(category_name):
 
 
 def define_categories(
-    bkg_morphing_dnn=False, blind=False, spanet=False, run2=False, vr1=False
+    bkg_morphing_dnn=False, blind=False, spanet=False, run2=False, vr1=False, btag_sf_comp=False,
 ):
     """
     Define the categories for the analysis.
@@ -1357,6 +1357,12 @@ def define_categories(
     if not spanet and not run2:
         # add the 2b control region post W for the old DNN
         categories_dict |= define_single_category("4b_region")
+
+    if btag_sf_comp:
+        btag_sf_categories = {}
+        for key, value in categories_dict.items():
+            btag_sf_categories[f"{key}_sf_btag"] = value
+        categories_dict |= btag_sf_categories
 
     return categories_dict
 

@@ -39,5 +39,6 @@ default_config_options_dict = {
     "spanet_input_name_list": ["log_pt", "eta", "phi", "btag"],
     "old_wp_def": False,
     "qt_postEE": None,
-    "qt_preEE": None
+    "qt_preEE": None,
+    "only5jetsbSF": False
 }| default_onnx_model_dict

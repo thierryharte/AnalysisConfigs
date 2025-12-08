@@ -4,6 +4,7 @@ import logging
 import os
 from utils.plot.get_era_lumi import get_era_lumi
 import numpy as np
+import mplhep as hep
 
 import matplotlib
 from coffea.util import load
@@ -12,14 +13,14 @@ from utils.plot.HEPPlotter import HEPPlotter
 matplotlib.rcParams["figure.dpi"] = 300
 
 
-def get_var(coffea_file, sample, datasets, variable, variation="nominal"):
+def get_var(coffea_file, sample, datasets, variable, category, variation="nominal"):
     """Get variable for a sample, summing over all datasets of that sample."""
     logger.debug(f"Loading histogram for sample {sample}, datasets {datasets} in variable {variable}")
     hist_nominal = []
     hist_sf_btag = []
     for dset in datasets:
-        hist_nominal.append(coffea_file["variables"][variable][sample][dset][{"cat": "inclusive", "variation": variation}])
-        hist_sf_btag.append(coffea_file["variables"][variable][sample][dset][{"cat": "inclusive_sf_btag", "variation": variation}])
+        hist_nominal.append(coffea_file["variables"][variable][sample][dset][{"cat": category, "variation": variation}])
+        hist_sf_btag.append(coffea_file["variables"][variable][sample][dset][{"cat": f"{category}_sf_btag", "variation": variation}])
     return sum(hist_nominal), sum(hist_sf_btag)
 
 
@@ -36,8 +37,18 @@ def compare_bin_by_bin(hist_collection, sample_datasets, output):
             os.makedirs(f"{output}/{sample}", exist_ok=True)
             hist_dict = {"nominal": {"data": hist_nom_sf[0], "style": {"is_reference": True, "label": "nominal"}}, "btag_sf": {"data": hist_nom_sf[1], "style": {"label": "btag_sf applied"}}}
             if all(hist.ndim == 1 for hist in hist_nom_sf):
+                ratio, err_up, err_down = hep.get_comparison(
+                    hist_nom_sf[1],
+                    hist_nom_sf[0],
+                    comparison="ratio",
+                    h1_w2method="sqrt",
+                )
+                logger.info("Using the plotting script function")
+                logger.info(", ".join(f"{bin:.4f}" for bin in ratio))
+                logger.info("Using own calculation")
                 logger.info(", ".join(f"{bin:.4f}" for bin in hist_ratio))
                 logger.info(f"maximal ratio: {max(hist_ratio[~nan_mask]):.4f}, \t minimal ratio: {min(hist_ratio[~nan_mask]):.4f}")
+                # ylim_ratio = 0.04  # (max(abs(hist_ratio[~nan_mask])) * 1.01) - 1
                 ylim_ratio = (max(abs(hist_ratio[~nan_mask])) * 1.01) - 1
                 (
                     HEPPlotter()
@@ -81,7 +92,7 @@ def compare_bin_by_bin(hist_collection, sample_datasets, output):
                 raise ValueError(f"Dimension of histograms either >2 or not the same")
 
 
-def compare_histograms(coffea_file, sample_datasets, output):
+def compare_histograms(coffea_file, sample_datasets, category, output):
     """Compare the sum over nominal vs. SF histograms as simple check.
 
     After comparison, call script to compare bin-by-bin and produce plots.
@@ -92,7 +103,7 @@ def compare_histograms(coffea_file, sample_datasets, output):
         logger.info(f"Comparing histogram sums for sample: {sample}")
         logger.info("variable \t nominal sum \t btag_sf sum \t ratio")
         for variable in coffea_file["variables"].keys():
-            hist_nom, hist_sf = get_var(coffea_file, sample, datasets, variable)
+            hist_nom, hist_sf = get_var(coffea_file, sample, datasets, variable, category)
             hist_collection[sample][variable] = [hist_nom, hist_sf]
             nom_sum = hist_nom.sum(flow=True).value
             sf_sum = hist_sf.sum(flow=True).value
@@ -111,6 +122,13 @@ if __name__ == "__main__":
         type=str,
         required=True,
         help="Input coffea file (needs to be single file)",
+    )
+    parser.add_argument(
+        "-c",
+        "--category",
+        type=str,
+        default="inclusive",
+        help="Category that is to be compared (compares <category>/<category>_sf_btag",
     )
     parser.add_argument(
         "-o", "--output", type=str, help="Output directory", default="./btag_sf_comparison"
@@ -143,4 +161,4 @@ if __name__ == "__main__":
         else:
             sample_datasets[sample] = [dset]
 
-    compare_histograms(coffea_file, sample_datasets, args.output)
+    compare_histograms(coffea_file, sample_datasets, args.category, args.output)
