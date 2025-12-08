@@ -75,11 +75,51 @@ sig_bkg_dict = {
             }
         }
 # Define the new region name
-region_name = "bbbb_signal_analysis_region"
+region_name = "ggHH"
 suffix = "Run2" if args.run2 else ""
 sig_region_name=f"4b_signal_region{suffix}"
 bkg_region_name=f"2b_signal_region_postW{suffix}"
 rescale_bkg_region_name=f"4b_control_region{suffix}"
+
+
+def get_year(pocketcoffea_year, year_type=0):
+    """Get year string for datacard from PocketCoffea version.
+
+    :param year_type: There are three different ways, how year is used.
+                      - separated by pre/post eras (year_type=0)
+                      - actual year (year_type=1)
+                      - separated by parking/no-parking (year_type=2)
+    """
+    # Different categories for how to separated years/datataking periods
+    dict_year_type = [
+            {"2022_preEE": "2022", "2022_postEE": "2022EE", "2023_preBPix": "2023", "2023_postBPix": "2023BPIX"},
+            {"2022_preEE": "2022", "2022_postEE": "2022", "2023_preBPix": "2023", "2023_postBPix": "2023"},
+            {"2022_preEE": "2022", "2022_postEE": "2022", "2023_preBPix": "2023", "2023_postBPix": "2023ParkingHH"}  # <-- Probably wrong. But used for background datadriven
+            ]
+    try:
+        return dict_year_type[year_type][pocketcoffea_year]
+    except:
+        raise ValueError(f"Wrong values for either input year: {pocketcoffea_year} or year_type: {year_type}")
+
+
+def get_uncertainty_name(pocketcoffea_name, year):
+    """Get conventional datacard name for systematic uncertainties"""
+    # Try to remove unnecessary things in front (e.g. "AK4PFPuppy")
+    if "Puppi" in pocketcoffea_name:
+        pocketcoffea_name = pocketcoffea_name.split("_", 1)[-1]
+    unc_map = {
+        "JES_Total": f"CMS_scale_j_{get_year(year, year_type=0)}",
+        "JER": f"CMS_res_j_{get_year(year, year_type=0)}",
+        "pileup": f"CMS_pileup_{get_year(year, year_type=0)}",
+        "luminosity": f"lumi_13TeV_{get_year(year, year_type=1)}",
+        }
+    if pocketcoffea_name in unc_map.keys():
+        return unc_map[pocketcoffea_name]
+    elif "btag" in pocketcoffea_name:
+        variation = pocketcoffea_name.split("_")[-1]
+        return f"CMS_btag_fixedWP_bc_{variation}_{year}"
+    else:
+        raise ValueError(f"Did not found name mapping for {pocketcoffea_name}")
 
 def add_variation_axis(histogram):
     """Return a histogram with an extra variation axis ('nominal'), preserving values+variances."""
@@ -202,12 +242,10 @@ def create_new_region(coffea_file, cat_name):
             dset_list = list(coffea_file["variables"][column][sample])
             for dataset in dset_list:
                 histogram = coffea_file["variables"][column][sample][dataset]
-                if "DATA" not in dataset:
-                    histogram_with_new = duplicate_category(histogram, sig_region_name, cat_name, axis=0, rescale_label=False)
-                    histogram_with_new = duplicate_category(histogram, sig_region_name, cat_name, axis=0, rescale_label=False)
-                else:
-                    histogram_with_new = duplicate_category(histogram, sig_region_name, cat_name, axis=0, rescale_label=False)
+                # Copy the histgam of Data and MC from the signal region.
+                histogram_with_new = duplicate_category(histogram, sig_region_name, cat_name, axis=0, rescale_label=False)
                 coffea_file["variables"][column][sample][dataset] = histogram_with_new
+                # If Data, also copy from the background region
                 if "DATA" in dataset:
                     histogram_with_new = duplicate_category(histogram, bkg_region_name, cat_name, axis=0, rescale_label=(sig_region_name if args.separate_normalisation else rescale_bkg_region_name))
                     coffea_file["variables"][column][f"{sample}_background"][f"{dataset}_background"] = histogram_with_new
@@ -325,12 +363,18 @@ if __name__ == "__main__":
                 raise ValueError(f"Variations list {variations} does not contain 'nominal'.")
             logger.info(f"Found variations: {variations}")
             for syst in variations:
-                systematics_list.append(SystematicUncertainty(name=syst, datacard_name=f"{syst}_{meta_dict[datasets[0]]['year']}", typ="shape", processes=list(sig_bkg_dict["signal"].keys()), years=[meta_dict[datasets[0]]["year"]], value=1.0))
+                systematics_list.append(SystematicUncertainty(name=syst, datacard_name=get_uncertainty_name(syst, meta_dict[datasets[0]]['year']), typ="shape", processes=list(sig_bkg_dict["signal"].keys()), years=[meta_dict[datasets[0]]["year"]], value=1.0))
             systematics = Systematics(systematics_list)
 
         _label = "run3"
         _datacard_name = f"datacard_combined_{_label}"
         _workspace_name = f"workspace_{_label}.root"
+
+        auto_mc_stats = {
+            "threshold": 10,
+            "include_signal": 0,
+            "hist_mode": 1,
+        }
 
         datacard = Datacard(
                 histograms=sob_hist,
@@ -340,6 +384,7 @@ if __name__ == "__main__":
                 # This might have to change. Right now I am binding the year to the data year...
                 years=set([meta_dict[dataset]["year"] for dataset in sig_bkg_dict["data"]["data_obs"]]),
                 mc_processes=mc_processes,
+                mcstat=auto_mc_stats,
                 data_processes=data_processes,
                 category=region_name,
                 single_year=True,
