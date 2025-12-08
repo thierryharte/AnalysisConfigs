@@ -50,7 +50,7 @@ localdir = os.path.dirname(os.path.abspath(__file__))
 # Loading default parameters
 
 default_parameters = defaults.get_default_parameters()
-defaults.register_configuration_dir("config_dir", localdir + "/params")
+defaults.register_configuration_dir("config_dir", localdir)
 
 # adding object preselection
 year = ["2022_postEE", "2022_preEE"]  # , "2023_preBPix", "2023_postBPix"]
@@ -95,9 +95,9 @@ sample_ggF_list = [
 sample_list = [
     # "GluGlutoHHto4B_spanet_skimmed",
     # "GluGlutoHHto4B_spanet_skimmed_SM",
-    # "GluGlutoHHto4B_spanet_skimmed",
+    "GluGlutoHHto4B_spanet_skimmed",
     # "GluGlutoHHto4B",
-    "GluGlutoHHto4B_spanet"
+    # "GluGlutoHHto4B_spanet"
 ] + sample_ggF_list
 
 # AKA if no model is applied
