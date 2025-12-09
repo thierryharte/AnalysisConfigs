@@ -78,18 +78,24 @@ def produceBtagEfficiencies(outputpath, inputfile, histCategoryToUse, sampleGrou
     samples_found = {k: True for k in sampleGroups.keys()}
     for jetHistVar in histCollection:  # different jet collections (btaggedJets for each wp, jetsTotal)
         for sampleGroup in sampleGroups.keys():  # groupings of samples to calculated efficiencies in
-            tempHistColl = []
+            tempHistColl = {}
             if "hists" not in sampleGroups[sampleGroup].keys():
                 sampleGroups[sampleGroup]["hists"] = {}
+            if "variation" not in sampleGroups[sampleGroup].keys():
+                sampleGroups[sampleGroup]["variations"] = []
             for sampleName in sampleGroups[sampleGroup]["sampleNames"]:
                 if sampleName not in inputFile["variables"][jetHistVar].keys() or not samples_found[sampleGroup]:
                     samples_found[sampleGroup] = False
                     continue
                 for dataset, inputHist in inputFile["variables"][jetHistVar][sampleName].items():
-                    nominalHist = inputHist[hist.loc(histCategoryToUse), hist.loc("nominal"), :, :, :]
-                    tempHistColl.append(nominalHist) # * inputFile["sum_genweights"][dataset])
+                    for variation in inputHist.axes["variation"]:
+                        if variation not in sampleGroups[sampleGroup]["variations"]:
+                            sampleGroups[sampleGroup]["variations"].append(variation)
+                        nominalHist = inputHist[hist.loc(histCategoryToUse), hist.loc(variation), :, :, :]
+                        tempHistColl.setdefault(variation, []).append(nominalHist) # * inputFile["sum_genweights"][dataset])
             if samples_found:
-                sampleGroups[sampleGroup]["hists"][jetHistVar] = sum(tempHistColl)  # sum samples in each sample group
+                for variation, histo in tempHistColl.items():
+                    sampleGroups[sampleGroup]["hists"].setdefault(jetHistVar, {})[variation] = sum(histo)  # sum samples in each sample group
     for sampleGroup, found in samples_found.items():
         if found:
             logger.info(f"Found all samples for group {sampleGroup} for algorithm {btaggingAlgorithm}")
@@ -100,36 +106,37 @@ def produceBtagEfficiencies(outputpath, inputfile, histCategoryToUse, sampleGrou
     if produceControlPlots:
         effiHistos = []
     for sampleGroup in [group for group, found in samples_found.items() if found]:
-        nJetsTotalHist = sampleGroups[sampleGroup]["hists"][jetHistName[0]]
+        for variation in sampleGroups[sampleGroup]["variations"]:
+            nJetsTotalHist = sampleGroups[sampleGroup]["hists"][jetHistName[0]][variation]
 
-        for bJetHistName in bjetHistNames:
-            nbJetsHist = sampleGroups[sampleGroup]["hists"][bJetHistName]
-            check_flow(nbJetsHist)
-            workingPoint = bJetHistName.split("_")[2]
+            for bJetHistName in bjetHistNames:
+                nbJetsHist = sampleGroups[sampleGroup]["hists"][bJetHistName][variation]
+                check_flow(nbJetsHist)
+                workingPoint = bJetHistName.split("_")[2]
 
-            # Calculating btaggin efficiency
-            btagEfficiencyArray = np.divide(
-                nbJetsHist.values(),
-                nJetsTotalHist.values(),
-                out=np.zeros_like(nbJetsHist.values(), dtype=float),
-                where=nJetsTotalHist.values() != 0,
-            )
-            btagEfficiencyHisto = hist.Hist(
-                *nJetsTotalHist.axes,
-                data=btagEfficiencyArray,
-                name=sampleGroup + "_wp_" + workingPoint,
-                label="btag_efficiency"
-            )
-            if produceControlPlots:
-                effiHistos.append(btagEfficiencyHisto)
-            # Creating Correctionset
-            view = btagEfficiencyHisto.view(flow=True)
-            view[...] = np.nan_to_num(view, nan=0.0)
-            cset = correctionlib.convert.from_histogram(btagEfficiencyHisto)
-            cset.description = "Btagging efficiencies for " + sampleGroup + " samples using " + workingPoint + " working point"
-            # For the moment let correctionlib fail evaluation in case a jet is in the under-/overflow bin of the efficiency map.
-            cset.data.flow = "error"
-            correction_set_collection.append(cset)
+                # Calculating btaggin efficiency
+                btagEfficiencyArray = np.divide(
+                    nbJetsHist.values(),
+                    nJetsTotalHist.values(),
+                    out=np.zeros_like(nbJetsHist.values(), dtype=float),
+                    where=nJetsTotalHist.values() != 0,
+                )
+                btagEfficiencyHisto = hist.Hist(
+                    *nJetsTotalHist.axes,
+                    data=btagEfficiencyArray,
+                    name=f"{sampleGroup}_{variation}_wp_{workingPoint}",
+                    label="btag_efficiency"
+                )
+                if produceControlPlots:
+                    effiHistos.append(btagEfficiencyHisto)
+                # Creating Correctionset
+                view = btagEfficiencyHisto.view(flow=True)
+                view[...] = np.nan_to_num(view, nan=0.0)
+                cset = correctionlib.convert.from_histogram(btagEfficiencyHisto)
+                cset.description = "Btagging efficiencies for " + sampleGroup + " samples using " + workingPoint + " working point"
+                # For the moment let correctionlib fail evaluation in case a jet is in the under-/overflow bin of the efficiency map.
+                cset.data.flow = "error"
+                correction_set_collection.append(cset)
 
     if produceControlPlots:
         plotBtagEffiControl([group for group, found in samples_found.items() if found], bjetHistNames, effiHistos, btaggingAlgorithm, outputpath)

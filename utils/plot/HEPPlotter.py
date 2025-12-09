@@ -96,6 +96,7 @@ class HEPPlotter:
             "legend_ratio_loc": "best",
             ## y lim
             "set_ylim": True,
+            "set_ylim_ratio": 0, # If a number is set, this will be used.
             "ylim_top_factor": 1.7,
             "ylim_bottom_factor": 1e-2,
             ## other
@@ -797,8 +798,8 @@ class HEPPlotter:
                 ax_ratio.grid()
             if self.y_log_ratio:
                 ax_ratio.set_yscale("log")
-            if not self.y_log_ratio and self.set_ylim:
-                ax_ratio.set_ylim(0.5, 1.5)
+            if not self.y_log_ratio and self.set_ylim_ratio:
+                ax_ratio.set_ylim(1 - self.set_ylim_ratio, 1 + self.set_ylim_ratio)
             if self.legend_ratio:
                 self._set_legend(ax_ratio, self.legend_ratio_loc)
         else:

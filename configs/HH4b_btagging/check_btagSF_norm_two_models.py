@@ -1,4 +1,4 @@
-# load a coffea file
+"""Currently fully hardcoded to work as a comparison between all jets and leading 5 jets (analysis jets)."""
 import argparse
 import logging
 import os
@@ -31,11 +31,11 @@ def compare_bin_by_bin(hist_collection, sample_datasets, output):
         lumi, era_string = get_era_lumi(sample_datasets[sample])
         for variable, hist_nom_sf in variables.items():
             logger.info(f"Comparing variable {variable} ratio btag_sf / nominal:")
-            hist_ratio = np.divide(hist_nom_sf[1].values(), hist_nom_sf[0].values(), out=np.zeros_like(hist_nom_sf[0].values(), dtype=float), where=hist_nom_sf[0].values() != 0)
+            hist_ratio_1 = np.divide(hist_nom_sf[1].values(), hist_nom_sf[0].values(), out=np.zeros_like(hist_nom_sf[0].values(), dtype=float), where=hist_nom_sf[0].values() != 0)
             nan_mask = (hist_nom_sf[1].values() == 0) & (hist_nom_sf[1].values() == 0)
-            hist_ratio[nan_mask] = np.nan
+            hist_ratio_1[nan_mask] = np.nan
             os.makedirs(f"{output}/{sample}", exist_ok=True)
-            hist_dict = {"nominal": {"data": hist_nom_sf[0], "style": {"is_reference": True, "label": "nominal"}}, "btag_sf": {"data": hist_nom_sf[1], "style": {"label": "btag_sf applied"}}}
+            hist_dict = {"nominal": {"data": hist_nom_sf[0], "style": {"is_reference": True, "label": "nominal"}}, "btag_sf_all_jets": {"data": hist_nom_sf[1], "style": {"label": "btag_sf applied for all jets"}}, "btag_sf_5jets": {"data": hist_nom_sf[2], "style": {"label": "btag_sf applied for 5 analysis jets"}}}
             if all(hist.ndim == 1 for hist in hist_nom_sf):
                 ratio, err_up, err_down = hep.get_comparison(
                     hist_nom_sf[1],
@@ -46,10 +46,10 @@ def compare_bin_by_bin(hist_collection, sample_datasets, output):
                 logger.info("Using the plotting script function")
                 logger.info(", ".join(f"{bin:.4f}" for bin in ratio))
                 logger.info("Using own calculation")
-                logger.info(", ".join(f"{bin:.4f}" for bin in hist_ratio))
-                logger.info(f"maximal ratio: {max(hist_ratio[~nan_mask]):.4f}, \t minimal ratio: {min(hist_ratio[~nan_mask]):.4f}")
+                logger.info(", ".join(f"{bin:.4f}" for bin in hist_ratio_1))
+                logger.info(f"maximal ratio: {max(hist_ratio_1[~nan_mask]):.4f}, \t minimal ratio: {min(hist_ratio_1[~nan_mask]):.4f}")
                 # ylim_ratio = 0.04  # (max(abs(hist_ratio[~nan_mask])) * 1.01) - 1
-                ylim_ratio = (max(abs(hist_ratio[~nan_mask])) * 1.01) - 1
+                ylim_ratio = (max(abs(hist_ratio_1[~nan_mask])) * 1.01) - 1
                 (
                     HEPPlotter()
                     .set_plot_config(
@@ -67,11 +67,11 @@ def compare_bin_by_bin(hist_collection, sample_datasets, output):
                 )
             elif all(hist.ndim == 2 for hist in hist_nom_sf):
                 # hist_ratio = hist_nom_sf[1].values() / hist_nom_sf[0].values()
-                for row in hist_ratio:
+                for row in hist_ratio_1:
                     logger.info(", ".join(f"{bin:.4f}" for bin in row))
-                logger.info(f"maximal ratio: {np.max(hist_ratio[~nan_mask]):.4f}, \t minimal ratio: {np.min(hist_ratio[~nan_mask]):.4f}")
+                logger.info(f"maximal ratio: {np.max(hist_ratio_1[~nan_mask]):.4f}, \t minimal ratio: {np.min(hist_ratio_1[~nan_mask]):.4f}")
                 for njets in range(6):
-                    hist_dict = {"nominal": {"data": hist_nom_sf[0][{"events.nJetGood": njets}], "style": {"is_reference": True, "label": "nominal"}}, "btag_sf": {"data": hist_nom_sf[1][{"events.nJetGood": njets}], "style": {"label": "btag_sf applied"}}}
+                    hist_dict = {"nominal": {"data": hist_nom_sf[0][{"events.nJetGood": njets}], "style": {"is_reference": True, "label": "nominal"}}, "btag_sf_all_jets": {"data": hist_nom_sf[1][{"events.nJetGood": njets}], "style": {"label": "btag_sf applied for all jets"}}, "btag_sf_5_jets": {"data": hist_nom_sf[1][{"events.nJetGood": njets}], "style": {"label": "btag_sf applied for 5 analysis jets"}}}
                     (
                         HEPPlotter()
                         .set_plot_config(
@@ -92,7 +92,7 @@ def compare_bin_by_bin(hist_collection, sample_datasets, output):
                 raise ValueError(f"Dimension of histograms either >2 or not the same")
 
 
-def compare_histograms(coffea_file, sample_datasets, category, output):
+def compare_histograms(coffea_files, sample_datasets, category, output):
     """Compare the sum over nominal vs. SF histograms as simple check.
 
     After comparison, call script to compare bin-by-bin and produce plots.
@@ -102,13 +102,17 @@ def compare_histograms(coffea_file, sample_datasets, category, output):
         hist_collection[sample] = {}
         logger.info(f"Comparing histogram sums for sample: {sample}")
         logger.info("variable \t nominal sum \t btag_sf sum \t ratio")
-        for variable in coffea_file["variables"].keys():
-            hist_nom, hist_sf = get_var(coffea_file, sample, datasets, variable, category)
-            hist_collection[sample][variable] = [hist_nom, hist_sf]
+        for variable in coffea_files[0]["variables"].keys():
+            hist_nom, hist_sf_1 = get_var(coffea_files[0], sample, datasets, variable, category)
+            hist_nom, hist_sf_2 = get_var(coffea_files[1], sample, datasets, variable, category)
+            hist_collection[sample][variable] = [hist_nom, hist_sf_1, hist_sf_2]
             nom_sum = hist_nom.sum(flow=True).value
-            sf_sum = hist_sf.sum(flow=True).value
-            diff = (sf_sum / nom_sum - 1) * 100
-            logger.info(f"{variable} \t {nom_sum:.4f} \t {sf_sum:.4f} \t {diff:.4f} %")
+            sf_sum_1 = hist_sf_1.sum(flow=True).value
+            sf_sum_2 = hist_sf_2.sum(flow=True).value
+            diff_1 = (sf_sum_1 / nom_sum - 1) * 100
+            diff_2 = (sf_sum_2 / nom_sum - 1) * 100
+            logger.info(f"{variable} config 1 \t {nom_sum:.4f} \t {sf_sum_1:.4f} \t {diff_1:.4f} %")
+            logger.info(f"{variable} config 2 \t {nom_sum:.4f} \t {sf_sum_2:.4f} \t {diff_2:.4f} %")
     compare_bin_by_bin(hist_collection, sample_datasets, output)
 
 
@@ -118,10 +122,11 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Compare normalisation with and without btagSF")
     parser.add_argument(
         "-i",
-        "--input-file",
+        "--input-files",
         type=str,
+        nargs=2,
         required=True,
-        help="Input coffea file (needs to be single file)",
+        help="Input coffea files. All files need the same structure.",
     )
     parser.add_argument(
         "-c",
@@ -150,15 +155,15 @@ if __name__ == "__main__":
     logger = logging.getLogger()
     logger.addHandler(logging.StreamHandler())
 
-    coffea_file = load(args.input_file)
+    coffea_files = [load(i) for i in args.input_files]
 
-    datasets = coffea_file["datasets_metadata"]["by_dataset"].keys()
+    datasets = coffea_files[0]["datasets_metadata"]["by_dataset"].keys()
     sample_datasets = {}
     for dset in datasets:
-        sample = coffea_file["datasets_metadata"]["by_dataset"][dset]["sample"]
+        sample = coffea_files[0]["datasets_metadata"]["by_dataset"][dset]["sample"]
         if sample in sample_datasets.keys():
             sample_datasets[sample].append(dset)
         else:
             sample_datasets[sample] = [dset]
 
-    compare_histograms(coffea_file, sample_datasets, args.category, args.output)
+    compare_histograms(coffea_files, sample_datasets, args.category, args.output)

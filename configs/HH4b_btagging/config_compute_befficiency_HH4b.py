@@ -17,7 +17,7 @@ from configs.HH4b_common.config_files.configurator_tools import (
     define_single_category,
     get_columns_list,
 )
-from configs.HH4b_common.config_files.spanet_ptflat_btag5WP import (
+from configs.HH4b_common.config_files.bWPeff_studies_no_model_alljets.py import (
     config_options_dict,
     onnx_model_dict,
 )

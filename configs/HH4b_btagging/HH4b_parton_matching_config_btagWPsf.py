@@ -28,6 +28,7 @@ from configs.HH4b_common.config_files.configurator_tools import (
     SPANET_TRAINING_DEFAULT_COLUMNS,
     SPANET_TRAINING_DEFAULT_COLUMNS_BTWP,
     define_single_category,
+    define_categories,
     get_columns_list,
     define_preselection,
 )
@@ -52,30 +53,32 @@ parameters = defaults.merge_parameters_from_files(
     f"{localdir}/../HH4b_common/params/object_preselection.yaml",
     f"{localdir}/../HH4b_common/params/triggers.yaml",
     f"{localdir}/../HH4b_common/params/variations.yaml",
-    f"{localdir}/../HH4b_common/params/btagging_multipleWP.yaml",
+    # f"{localdir}/../HH4b_common/params/btagging_multipleWP.yaml",
+    f"{localdir}/../HH4b_common/params/btagging_multipleWP_single_eta_bin.yaml",
+    # f"{localdir}/../HH4b_common/params/btagging_multipleWP_5jets.yaml",
     f"{localdir}/../HH4b_common/params/btagging_sampleGroups.yaml",
     f"{localdir}/../HH4b_common/params/jets_calibration_legacy_Calibrator_withoutVariations_withJERC.yaml",
     # f"{localdir}/../HH4b_common/params/jets_calibration_legacy_Calibrator_withVariations.yaml",
     update=True,
 )
-
+parameters["only5jetsbSF"] = config_options_dict["only5jetsbSF"]
 ## Define the preselection to apply
 preselection = define_preselection(config_options_dict | {"no_btag":True})
 
 # Defining the used samples
 sample_ggF_list = [
     "GluGlutoHHto4B_spanet_kl-1p00_kt-1p00_c2-0p00_skimmed",
-    "GluGlutoHHto4B_spanet_kl-m2p00_kt-1p00_c2-0p00_skimmed",
-    "GluGlutoHHto4B_spanet_kl-m1p00_kt-1p00_c2-0p00_skimmed",
-    "GluGlutoHHto4B_spanet_kl-5p00_kt-1p00_c2-0p00_skimmed",
-    "GluGlutoHHto4B_spanet_kl-2p45_kt-1p00_c2-0p00_skimmed",
-    "GluGlutoHHto4B_spanet_kl-0p00_kt-0p00_c2-0p00_skimmed",
-    "GluGlutoHHto4B_spanet_kl-3p50_kt-1p00_c2-0p00_skimmed",
-    "GluGlutoHHto4B_spanet_kl-4p00_kt-1p00_c2-0p00_skimmed",
-    "GluGlutoHHto4B_spanet_kl-3p00_kt-1p00_c2-0p00_skimmed",
-    "GluGlutoHHto4B_spanet_kl-2p00_kt-1p00_c2-0p00_skimmed",
-    "GluGlutoHHto4B_spanet_kl-1p50_kt-1p00_c2-0p00_skimmed",
-    "GluGlutoHHto4B_spanet_kl-0p50_kt-1p00_c2-0p00_skimmed",
+    # "GluGlutoHHto4B_spanet_kl-m2p00_kt-1p00_c2-0p00_skimmed",
+    # "GluGlutoHHto4B_spanet_kl-m1p00_kt-1p00_c2-0p00_skimmed",
+    # "GluGlutoHHto4B_spanet_kl-5p00_kt-1p00_c2-0p00_skimmed",
+    # "GluGlutoHHto4B_spanet_kl-2p45_kt-1p00_c2-0p00_skimmed",
+    # "GluGlutoHHto4B_spanet_kl-0p00_kt-0p00_c2-0p00_skimmed",
+    # "GluGlutoHHto4B_spanet_kl-3p50_kt-1p00_c2-0p00_skimmed",
+    # "GluGlutoHHto4B_spanet_kl-4p00_kt-1p00_c2-0p00_skimmed",
+    # "GluGlutoHHto4B_spanet_kl-3p00_kt-1p00_c2-0p00_skimmed",
+    # "GluGlutoHHto4B_spanet_kl-2p00_kt-1p00_c2-0p00_skimmed",
+    # "GluGlutoHHto4B_spanet_kl-1p50_kt-1p00_c2-0p00_skimmed",
+    # "GluGlutoHHto4B_spanet_kl-0p50_kt-1p00_c2-0p00_skimmed",
 ]
 sample_list = [
     # "DATA_JetMET_JMENano_C_skimmed",
@@ -95,8 +98,22 @@ sample_list = [
     # "DATA_ParkingHH_2023_Dv2",
 ] + sample_ggF_list
 
+
 categories_dict = define_single_category("inclusive")
 categories_dict |= define_single_category("inclusive_sf_btag")
+if not all([model == "" for model in onnx_model_dict.values()]):
+    categories_dict |= define_categories(
+        bkg_morphing_dnn=config_options_dict["bkg_morphing_dnn"],
+        blind=config_options_dict["blind"],
+        spanet=config_options_dict["spanet"],
+        run2=config_options_dict["run2"],
+        vr1=config_options_dict["vr1"],
+        btag_sf_comp=True,
+    )
+btag_sf_cats = {}
+for cat in categories_dict.keys():
+    if "sf_btag" in cat:
+        btag_sf_cats[cat] = ["sf_btag_fixed_multiple_wp"]
 
 # Define the columns to save
 total_input_variables = {}
@@ -167,8 +184,7 @@ cfg = Configurator(
             "inclusive": ["genWeight", "lumi", "XS", "pileup"],
             # "inclusive": ["genWeight", "lumi", "XS", "pileup"],
             # "inclusive": [],
-            "bycategory": {"inclusive_sf_btag": ["sf_btag_fixed_multiple_wp"]
-            },
+            "bycategory": btag_sf_cats,
         },
         "bysample": bysample_bycategory_weight_dict,
     },
@@ -177,8 +193,7 @@ cfg = Configurator(
             "common": {
                 "inclusive": ["pileup"],
                 # "inclusive": [],
-            "bycategory": {"inclusive_sf_btag": ["sf_btag_fixed_multiple_wp"]
-                }
+            "bycategory": btag_sf_cats,
             },
             "bysample": {},
         },

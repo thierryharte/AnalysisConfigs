@@ -7,13 +7,15 @@ def btag_sf_hist(colName):
             Axis(
                 coll=colName,
                 field="pt",
-                bins=[0., 20., 30., 50., 70., 100., 140., 200., 300., 600., 1000., 14000.],
+                # bins=[0., 20., 30., 50., 70., 100., 140., 200., 300., 600., 1000., 14000.],
+                bins=[0., 30., 50., 70., 100., 140., 200., 300., 600., 14000.],
                 label=colName + " pT",
                 pos=None),
             Axis(
                 coll=colName,
                 field="abseta",
-                bins=[0, 2.4, 2.5],
+                # bins=[0, 1.305, 2.5],
+                bins=[0, 2.5],
                 label=colName + " eta",
                 pos=None),
             Axis(
@@ -23,6 +25,6 @@ def btag_sf_hist(colName):
                 label=colName + " flav",
                 pos=None)
         ],
-        no_weights=True
+        no_weights=False
     )
     return btagHistConf
