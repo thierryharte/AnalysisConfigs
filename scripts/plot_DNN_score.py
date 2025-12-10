@@ -327,9 +327,7 @@ def plot_single_var_from_columns(
         print(cat_plot_name)
         print(histo)
         print(f"Total number of events: {np.sum(histo.values())}")
-        yields_dict[f"Yields {dir_cat}/{var}_{cat_plot_name}"] = np.sum(
-            histo.values()
-        )
+        yields_dict[f"Yields {dir_cat}/{var}_{cat_plot_name}"] = np.sum(histo.values())
 
         if i == 0:
             hist_1d_dict[cat_plot_name] = {
@@ -655,7 +653,7 @@ def main(cat_cols, lumi, era_string):
 
         print("col_dict", col_dict)
         print("vars_to_plot_final", vars_to_plot_final)
-        
+
         # print the length of each variable in of col_dict
         # save them to a dictionary
         for v in col_dict.keys():
@@ -664,7 +662,6 @@ def main(cat_cols, lumi, era_string):
                 print(f"{cat}: {len(col_dict[v][cat])} ", end="")
                 yields_dict[f"{v}_{cat}"] = len(col_dict[v][cat])
             print("")
-            
 
         print(f"\n\n\nCategory name: {cats_name}")
         if "SR" in cats_name and args.separate_normalisation:
@@ -720,6 +717,7 @@ def main(cat_cols, lumi, era_string):
     with open(os.path.join(outputdir, "yields.txt"), "w") as f:
         for key, value in yields_dict.items():
             f.write(f"{key}: {value}\n")
+
 
 if __name__ == "__main__":
 
