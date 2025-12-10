@@ -41,7 +41,7 @@ def weighted_quantile(values, quantiles, weights=None, values_sorted=False, old_
 
     if old_style:
         # To be consistent with numpy < 1.22
-        return float(np.interp(quantiles, weighted_cdf, values))
+        return np.interp(quantiles, weighted_cdf, values)
     else:
         # Newer definition similar to numpy >= 1.22
-        return float(np.interp(quantiles, weighted_cdf - 0.5 * weights / weights.sum(), values))
+        return np.interp(quantiles, weighted_cdf - 0.5 * weights / weights.sum(), values)
