@@ -96,12 +96,13 @@ class HEPPlotter:
             "legend_ratio_loc": "best",
             ## y lim
             "set_ylim": True,
-            "set_ylim_ratio": 0, # If a number is set, this will be used.
+            "set_ylim_ratio": 0,  # If a number is set, this will be used.
             "ylim_top_factor": 1.7,
             "ylim_bottom_factor": 1e-2,
             ## other
             "reference_to_den": True,
             "grid": True,
+            "_enable_watermark": True,
         }
 
         # expose as attributes too (so they're accessible normally)
@@ -135,7 +136,7 @@ class HEPPlotter:
         """Set the base name for output files (without extension) and optionally create the output directory."""
         # remove the extension if provided
         self.output_base = os.path.splitext(output_base)[0]
-        self.create_dir=create_dir
+        self.create_dir = create_dir
         return self
 
     def set_labels(
@@ -336,6 +337,27 @@ class HEPPlotter:
             transform=ax.transAxes,
             fontsize=self._chi_square_style.get("fontsize", 20),
             color=color_chi2,
+        )
+
+    def _draw_watermark(self, ax):
+        """Draw a small, faint watermark in a guaranteed empty area."""
+        if not self._enable_watermark:
+            return
+
+        fig = ax.figure
+
+        fig.text(
+            0.01,
+            -0.12,  # bottom-left margin of the whole figure
+            "HEPPlotter",
+            fontsize=6,  # very small
+            color="white",  # invisible on white backgrounds
+            # alpha=0.03,                # extremely faint
+            ha="left",
+            va="bottom",
+            rotation=0,
+            zorder=0,  # behind everything else
+            transform=ax.transAxes,
         )
 
     def _color_handler(self, histtype, style, kwargs, use_lists=False):
@@ -611,7 +633,7 @@ class HEPPlotter:
                 raise ValueError(
                     f"Invalid keys in series_dict for {name}. Expected only 'data' and 'style', got {list(props.keys())}. The provided key should probably be inside the 'style' dictionary."
                 )
-                
+
             hist_1d = props["data"]
             if not isinstance(hist_1d, Hist) and not isinstance(hist_1d[0], Hist):
                 raise ValueError(f"Expected hist.Hist for {name}, got {type(hist_1d)}")
@@ -828,6 +850,7 @@ class HEPPlotter:
 
         self._apply_annotations(ax)
         self._apply_lines(ax)
+        self._draw_watermark(ax)
 
         self._apply_cms_labels(ax)
 
@@ -836,7 +859,7 @@ class HEPPlotter:
 
         if self.create_dir:
             os.makedirs(os.path.dirname(self.output_base), exist_ok=True)
-            
+
         self._save(fig)
         if self.show_plot:
             plt.show()
