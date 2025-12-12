@@ -173,14 +173,17 @@ def get_columns_from_parquet(input_files, sel_var="nominal", filter_lambda=None,
                 if category not in cat_col:
                     cat_col[category] = {}
 
-                if sel_var == "all" or not sel_var:
+                if sel_var == "all":
                     variations = os.listdir(category_path)
+                elif  not sel_var:
+                    variations = [""]
                 else:
                     variations = [sel_var]
 
+                # single_var is used both when no_vars is True and when only one variation is requested
                 single_var = True if len(variations) == 1 else False
-
-                for variation in os.listdir(category_path):
+                
+                for variation in variations:
                     if not sel_var.lower() == "all" and sel_var != variation:
                         logger.debug(f"Skipping variation {variation} as not demanded")
                         continue
@@ -265,7 +268,7 @@ def get_columns_from_files_novars(inputfiles, filter_lambda=None, debug=False):
         if debug: print(f"inputfile {inputfile}")
         if accumulator["columns"] == {}:
             logger.info("Empty columns, trying to read from parquet files")
-            return get_columns_from_parquet(inputfiles, sel_var, filter_lambda, debug)
+            return get_columns_from_parquet(inputfiles, "", filter_lambda, debug)
             # return get_columns_from_parquet(inputfiles, filter_lambda, debug)
         for sample in samples:
             if debug: print(f"sample {sample}")
