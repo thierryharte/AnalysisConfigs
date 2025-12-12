@@ -18,9 +18,11 @@ shift 4
 # All extra args initially
 raw_extra_args=("$@")
 
-# Detect and remove --test and --debug
+# Detect and remove --test, --debug, and parse --copy-to
 is_test=false
 is_debug=false
+copy_destination=""
+expect_copy_path=false
 extra_args=()
 
 for arg in "${raw_extra_args[@]}"; do
@@ -31,8 +33,16 @@ for arg in "${raw_extra_args[@]}"; do
         --debug)
             is_debug=true
             ;;
+        --copy-to)
+            expect_copy_path=true
+            ;;
         *)
-            extra_args+=("$arg")
+            if [[ "$expect_copy_path" == true ]]; then
+                copy_destination="$arg"
+                expect_copy_path=false
+            else
+                extra_args+=("$arg")
+            fi
             ;;
     esac
 done
@@ -113,7 +123,7 @@ echo "${cmd[@]}"
 if $is_debug; then
     "${cmd[@]}"
     status=$?
-    cleanup
+    # cleanup
     exit $status
 fi
 
@@ -125,6 +135,47 @@ pid=$!
 
 wait $pid
 status=$?
+
+
+###################################
+# OPTIONAL: COPY OUTPUT DIRECTORY
+###################################
+if [[ -n "$copy_destination" ]]; then
+    echo "Copying output directory with rsync to: $copy_destination"
+
+    mkdir -p "$copy_destination"
+
+    # Actual copy
+    rsync -avh --delete "$output"/ "$copy_destination"/
+    rsync_status=$?
+
+    if [[ $rsync_status -ne 0 ]]; then
+        echo "ERROR: rsync failed. Not deleting original output."
+        cleanup
+        exit 1
+    fi
+
+    echo "Verifying copy using rsync checksum dry-run..."
+
+    rsync -avhc --dry-run "$output"/ "$copy_destination"/ > /tmp/rsync_check_${i}.log
+    verify_status=$?
+
+    if [[ $verify_status -ne 0 ]]; then
+        echo "ERROR: rsync checksum verification failed!"
+        cleanup
+        exit 1
+    fi
+
+    # Check differences
+    if grep -q -v "^sending incremental file list" /tmp/rsync_check_${i}.log; then
+        echo "ERROR: Differences detected after checksum!"
+        cleanup
+        exit 1
+    fi
+
+    echo "Checksum OK. Removing original output directory."
+    rm -rf "$output"
+fi
 
 cleanup
 exit $status
