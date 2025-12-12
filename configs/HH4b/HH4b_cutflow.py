@@ -20,7 +20,6 @@ from configs.HH4b_common.config_files.__config_file__ import (
     onnx_model_dict,
 )
 from configs.HH4b_common.config_files.configurator_tools import (
-    SPANET_TRAINING_DEFAULT_COLUMNS_BTWP,
     get_columns_list,
 )
 
@@ -77,6 +76,13 @@ cfg = Configurator(
         "MET_filter": [eventFlags],
         "Lepton_veto": [eventFlags, cuts.lepton_veto],
         "Jet_Veto_map": [eventFlags, cuts.lepton_veto, hh4b_JetVetoMap],
+        # "HLT_selection": [
+        #     eventFlags,
+        #     cuts.lepton_veto,
+        #     hh4b_JetVetoMap,
+        #     get_HLTsel(primaryDatasets=["JetMET"]),
+        #     # get_L1sel(primaryDatasets=["JetMET"]),
+        # ],
         "L1+HLT_selection": [
             eventFlags,
             cuts.lepton_veto,
