@@ -43,8 +43,8 @@ parameters = defaults.merge_parameters_from_files(
 )
 column_list = get_columns_list(
     {
-        "JetGood": ["pt_regressed", "pt_default", "eta"],
-        "Jet": ["pt_regressed", "pt_default", "eta"],
+        # "JetGood": ["pt_regressed", "pt_default", "eta"],
+        # "Jet": ["pt_regressed", "pt_default", "eta"],
     }
 )
 
@@ -54,12 +54,16 @@ cfg = Configurator(
         "jsons": [
             f"{localdir}/../HH4b_common/datasets/signal_ggF_HH4b_SM_local_redirector.json",
             f"{localdir}/../HH4b_common/datasets/GluGlutoHHto4B_spanet_skimmed_separateSamples.json",
+            f"{localdir}/../HH4b_common/datasets/DATA_JetMET_skimmed.json",
         ],
         "filter": {
             "samples": (
                 [
                     "GluGlutoHHto4B",
-                    # "GluGlutoHHto4B_spanet_kl-1p00_kt-1p00_c2-0p00_skimmed",
+                    ## 2022 postEE
+                    "DATA_JetMET_JMENano_E_skimmed",
+                    "DATA_JetMET_JMENano_F_skimmed",
+                    "DATA_JetMET_JMENano_G_skimmed",
                 ]
             ),
             "samples_exclude": [],
@@ -81,7 +85,6 @@ cfg = Configurator(
         #     cuts.lepton_veto,
         #     hh4b_JetVetoMap,
         #     get_HLTsel(primaryDatasets=["JetMET"]),
-        #     # get_L1sel(primaryDatasets=["JetMET"]),
         # ],
         "L1+HLT_selection": [
             eventFlags,
