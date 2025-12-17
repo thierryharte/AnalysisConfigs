@@ -10,11 +10,11 @@ from configs.HH4b_common.config_files.default_config import default_config_optio
 
 onnx_model_dict  |= {
     # New skim + New L1 cuts    
-    "bkg_morphing_dnn": "/work/mmalucch/out_ML_pytorch/hh4b_bkg_morphing/DNN_AN_1e-3_e20drop75_minDelta1em5_run2_newUpdates_JECRegression_newLeptonVeto_L1Cut_UpdateJetVetoMap_postEE/best_models/average_model_from_onnx.onnx", 
-    "sig_bkg_dnn": "/work/mmalucch/out_ML_pytorch/hh4b_sig_bkg_classifier/DNN_AN_1e-3_e20drop75_minDelta1em5_run2_L1cut_newUpdates_postEE/run100/state_dict/model_best_epoch_26.onnx",
+    # "bkg_morphing_dnn": "/work/mmalucch/out_ML_pytorch/hh4b_bkg_morphing/DNN_AN_1e-3_e20drop75_minDelta1em5_run2_newUpdates_JECRegression_newLeptonVeto_L1Cut_UpdateJetVetoMap_postEE/best_models/average_model_from_onnx.onnx", 
+    # "sig_bkg_dnn": "/work/mmalucch/out_ML_pytorch/hh4b_sig_bkg_classifier/DNN_AN_1e-3_e20drop75_minDelta1em5_run2_L1cut_newUpdates_postEE/run100/state_dict/model_best_epoch_26.onnx",
     # New skim  
-    # "bkg_morphing_dnn": "/work/mmalucch/out_ML_pytorch/hh4b_bkg_morphing/DNN_AN_1e-3_e20drop75_minDelta1em5_run2_newUpdates_postEE/best_models/average_model_from_onnx.onnx", 
-    # "sig_bkg_dnn": "/work/mmalucch/out_ML_pytorch/hh4b_sig_bkg_classifier/DNN_AN_1e-3_e20drop75_minDelta1em5_run2_newUpdates_postEE/run100/state_dict/model_best_epoch_28.onnx",
+    "bkg_morphing_dnn": "/work/mmalucch/out_ML_pytorch/hh4b_bkg_morphing/DNN_AN_1e-3_e20drop75_minDelta1em5_run2_newUpdates_postEE/best_models/average_model_from_onnx.onnx", 
+    "sig_bkg_dnn": "/work/mmalucch/out_ML_pytorch/hh4b_sig_bkg_classifier/DNN_AN_1e-3_e20drop75_minDelta1em5_run2_newUpdates_postEE/run100/state_dict/model_best_epoch_28.onnx",
 }
 
 
@@ -27,7 +27,7 @@ config_options_dict |= {
     "pad_value": -999.0,
     "add_jet_spanet": True,
     # New skim + New L1 cuts  
-    "qt_postEE": "/work/mmalucch/out_hh4b/bkg_morphing_studies/out_MC_DATA_DHH_newUpdates_JECRegression_newLeptonVeto_L1Cut_UpdateJetVetoMap_BkgMorphing/quantile_transformer/SRRun2_qt/qt_events_sig_bkg_dnn_score_DHH_kl_1.00.pkl",
+    # "qt_postEE": "/work/mmalucch/out_hh4b/bkg_morphing_studies/out_MC_DATA_DHH_newUpdates_JECRegression_newLeptonVeto_L1Cut_UpdateJetVetoMap_BkgMorphing/quantile_transformer/SRRun2_qt/qt_events_sig_bkg_dnn_score_DHH_kl_1.00.pkl",
     # New skim  
-    # "qt_postEE": "/work/mmalucch/out_hh4b/bkg_morphing_studies/out_DATA_MC_DHH_newUpdates_JECRegression_BkgMorphing/quantile_transformer/SRRun2_qt/qt_events_sig_bkg_dnn_score_DHH_kl_1.00.pkl",
+    "qt_postEE": "/work/mmalucch/out_hh4b/bkg_morphing_studies/out_DATA_MC_DHH_newUpdates_JECRegression_BkgMorphing/quantile_transformer/SRRun2_qt/qt_events_sig_bkg_dnn_score_DHH_kl_1.00.pkl",
 }| onnx_model_dict
