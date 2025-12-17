@@ -22,11 +22,13 @@ L1_triggers:
   "2022_preEE":
     JetMET:
        - HTT360er
-      #  - Mu6_HTT240er
+       - Mu6_HTT240er
+       - HTT320er_QuadJet_80_60_er2p1_45_40_er2p3
   "2022_postEE":
     JetMET:
        - HTT360er
-      #  - Mu6_HTT240er
+       - Mu6_HTT240er
+       - HTT320er_QuadJet_80_60_er2p1_45_40_er2p3
 
 ## TRIGGERS FOR 2023 PARKING OR PRE PARKING STILL TO BE UNDERSTOOD
 #   "2023_preBPix":
