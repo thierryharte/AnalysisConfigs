@@ -531,6 +531,7 @@ def plot_single_var_from_columns(
                 reference_to_den=False,
                 legend_ratio=True,
                 set_ylim=False,
+                set_ylim_ratio= 0.5
             )
             .set_data(hist_1d_dict, plot_type="1d")
             .add_ratio_hists(hist_1d_ratio_dict)
@@ -552,6 +553,7 @@ def plot_single_var_from_columns(
             .set_options(
                 y_log=log_scale,
                 reference_to_den=False,
+                set_ylim_ratio= 0.5
             )
             .set_data(hist_1d_dict, plot_type="1d")
         )

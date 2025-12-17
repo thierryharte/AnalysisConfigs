@@ -428,6 +428,7 @@ def plot_single_var_from_columns(
         .set_options(
             y_log=log_scale,
             reference_to_den=False,
+            set_ylim_ratio= 0.5
         )
         .add_annotation(x=0.05, y=0.95 - 0.15, s=sob_string, fontsize=20)
         .set_data(hist_1d_dict, plot_type="1d")
