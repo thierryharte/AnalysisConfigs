@@ -12,8 +12,8 @@ from pocket_coffea.lib.cut_functions import (
 from pocket_coffea.parameters.cuts import passthrough
 import pocket_coffea.lib.calibrators.legacy.legacy_calibrators as legacy_cal 
 
-from workflow import HH4bbQuarkMatchingProcessor
-import configs.HH4b.custom_cuts as cuts
+from workflow_cutflow import HH4bCutflowProcessor
+import configs.HH4b.custom_cuts_cutflow as cuts
 from configs.HH4b_common.custom_cuts_common import hh4b_JetVetoMap
 from configs.HH4b_common.config_files.__config_file__ import (
     config_options_dict,
@@ -43,8 +43,8 @@ parameters = defaults.merge_parameters_from_files(
 )
 column_list = get_columns_list(
     {
-        # "JetGood": ["pt_regressed", "pt_default", "eta"],
-        # "Jet": ["pt_regressed", "pt_default", "eta"],
+        "JetGood": ["pt_regressed", "pt_default", "eta"],
+        "Jet": ["pt_regressed", "pt_default", "eta"],
     }
 )
 
@@ -61,9 +61,9 @@ cfg = Configurator(
                 [
                     "GluGlutoHHto4B",
                     ## 2022 postEE
-                    "DATA_JetMET_JMENano_E_skimmed",
-                    "DATA_JetMET_JMENano_F_skimmed",
-                    "DATA_JetMET_JMENano_G_skimmed",
+                    # "DATA_JetMET_JMENano_E_skimmed",
+                    # "DATA_JetMET_JMENano_F_skimmed",
+                    # "DATA_JetMET_JMENano_G_skimmed",
                 ]
             ),
             "samples_exclude": [],
@@ -71,31 +71,33 @@ cfg = Configurator(
         },
         "subsamples": {},
     },
-    workflow=HH4bbQuarkMatchingProcessor,
+    workflow=HH4bCutflowProcessor,
     workflow_options=config_options_dict,
     skim=[],
-    preselections=[cuts.four_jets_cut, goldenJson, get_nPVgood(1)],
+    # preselections=[cuts.four_jets_cut, goldenJson, get_nPVgood(1)],
+    preselections=[],
     categories={
-        "four_jets_presel": [passthrough],
+        "total": [passthrough],
+        # "four_jets_presel": [passthrough],
         "MET_filter": [eventFlags],
-        "Lepton_veto": [eventFlags, cuts.lepton_veto],
-        "Jet_Veto_map": [eventFlags, cuts.lepton_veto, hh4b_JetVetoMap],
+        "Lepton_veto": [eventFlags, cuts.lepton_veto_cut],
+        "Jet_Veto_map": [eventFlags, cuts.lepton_veto_cut, hh4b_JetVetoMap],
         # "HLT_selection": [
         #     eventFlags,
-        #     cuts.lepton_veto,
+        #     cuts.lepton_veto_cut,
         #     hh4b_JetVetoMap,
         #     get_HLTsel(primaryDatasets=["JetMET"]),
         # ],
         "L1+HLT_selection": [
             eventFlags,
-            cuts.lepton_veto,
+            cuts.lepton_veto_cut,
             hh4b_JetVetoMap,
             get_HLTsel(primaryDatasets=["JetMET"]),
             get_L1sel(primaryDatasets=["JetMET"]),
         ],
         "jet_pT_selection": [
             eventFlags,
-            cuts.lepton_veto,
+            cuts.lepton_veto_cut,
             hh4b_JetVetoMap,
             get_HLTsel(primaryDatasets=["JetMET"]),
             get_L1sel(primaryDatasets=["JetMET"]),
@@ -104,7 +106,7 @@ cfg = Configurator(
         # HLT_matching: Missing in NanoAOD,
         "2b_selection": [
             eventFlags,
-            cuts.lepton_veto,
+            cuts.lepton_veto_cut,
             hh4b_JetVetoMap,
             get_HLTsel(primaryDatasets=["JetMET"]),
             get_L1sel(primaryDatasets=["JetMET"]),
@@ -113,7 +115,7 @@ cfg = Configurator(
         ],
         "third_btag_selection": [
             eventFlags,
-            cuts.lepton_veto,
+            cuts.lepton_veto_cut,
             hh4b_JetVetoMap,
             get_HLTsel(primaryDatasets=["JetMET"]),
             get_L1sel(primaryDatasets=["JetMET"]),
@@ -123,7 +125,7 @@ cfg = Configurator(
         ],
         "fourth_btag_selection": [
             eventFlags,
-            cuts.lepton_veto,
+            cuts.lepton_veto_cut,
             hh4b_JetVetoMap,
             get_HLTsel(primaryDatasets=["JetMET"]),
             get_L1sel(primaryDatasets=["JetMET"]),
@@ -132,21 +134,21 @@ cfg = Configurator(
             cuts.third_btag_cut,
             cuts.fourth_btag_cut,
         ],
-        "signal_region_Run2_selection": [
-            eventFlags,
-            cuts.lepton_veto,
-            hh4b_JetVetoMap,
-            get_HLTsel(primaryDatasets=["JetMET"]),
-            get_L1sel(primaryDatasets=["JetMET"]),
-            cuts.jet_pt_cut,
-            cuts.two_b_cut,
-            cuts.third_btag_cut,
-            cuts.fourth_btag_cut,
-            cuts.signal_region_Run2_cut,
-        ],
+        # "signal_region_Run2_selection": [
+        #     eventFlags,
+        #     cuts.lepton_veto_cut,
+        #     hh4b_JetVetoMap,
+        #     get_HLTsel(primaryDatasets=["JetMET"]),
+        #     get_L1sel(primaryDatasets=["JetMET"]),
+        #     cuts.jet_pt_cut,
+        #     cuts.two_b_cut,
+        #     cuts.third_btag_cut,
+        #     cuts.fourth_btag_cut,
+        #     cuts.signal_region_Run2_cut,
+        # ],
         # "signal_region_selection": [
         #     eventFlags,
-        #     cuts.lepton_veto,
+        #     cuts.lepton_veto_cut,
         #     hh4b_JetVetoMap,
         #     get_HLTsel(primaryDatasets=["JetMET"]),
         #     get_L1sel(primaryDatasets=["JetMET"]),
@@ -185,7 +187,8 @@ cfg = Configurator(
         "common": {
             "inclusive": [],
             "bycategory": {
-                "four_jets_presel": column_list,
+                "total": column_list,
+                # "four_jets_presel": column_list,
             },
         },
     },

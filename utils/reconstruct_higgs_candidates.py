@@ -14,13 +14,13 @@ def reconstruct_higgs_from_provenance(matched_jets_higgs):
 
     jet_higgs1 = matched_jets_higgs[mask_h1]
     jet_higgs2 = matched_jets_higgs[mask_h2]
-    
+
     jet_higgs2 = jet_higgs2[ak.argsort(jet_higgs2.pt, axis=1, ascending=False)]
     jet_higgs1 = jet_higgs1[ak.argsort(jet_higgs1.pt, axis=1, ascending=False)]
 
-    # NOTE: if an event is not fully macthed, it means that the mactched_jets_higgs 
+    # NOTE: if an event is not fully macthed, it means that the mactched_jets_higgs
     # has less than 4 jets != None. In any case it has >= 4 jets because we preselected
-    # events with >=4 jets. So if the event is not fully matched, some of the jets are None and 
+    # events with >=4 jets. So if the event is not fully matched, some of the jets are None and
     # the higgs candidate associated is set to None so it doesn't crash.
     higgs_lead = add_fields(jet_higgs1[:, 0] + jet_higgs1[:, 1])
     higgs_sub = add_fields(jet_higgs2[:, 0] + jet_higgs2[:, 1])
@@ -29,15 +29,19 @@ def reconstruct_higgs_from_provenance(matched_jets_higgs):
         ak.concatenate([jet_higgs1[:, :2], jet_higgs2[:, :2]], axis=1),
         name="PtEtaPhiMCandidate",
     )
-    
+
     # get the indices of the jets matched to the higgs candidates
     idx_higgs1 = ak.local_index(matched_jets_higgs.pt)[mask_h1]
     idx_higgs2 = ak.local_index(matched_jets_higgs.pt)[mask_h2]
     # put the None jets at the end of the array
     idx_higgs1 = idx_higgs1[ak.argsort(idx_higgs1, axis=1)]
     idx_higgs2 = idx_higgs2[ak.argsort(idx_higgs2, axis=1)]
-    idx_higgs1 = ak.fill_none(ak.pad_none(idx_higgs1, 2, axis=1, clip=True), -1)  # shape: (n_events, 2)
-    idx_higgs2 = ak.fill_none(ak.pad_none(idx_higgs2, 2, axis=1, clip=True), -1)  # shape: (n_events, 2)
+    idx_higgs1 = ak.fill_none(
+        ak.pad_none(idx_higgs1, 2, axis=1, clip=True), -1
+    )  # shape: (n_events, 2)
+    idx_higgs2 = ak.fill_none(
+        ak.pad_none(idx_higgs2, 2, axis=1, clip=True), -1
+    )  # shape: (n_events, 2)
     # Combine to final structure: shape (n_events, 2, 2)
     idx_pairing = np.stack([idx_higgs1, idx_higgs2], axis=1)
 

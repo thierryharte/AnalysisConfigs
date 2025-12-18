@@ -8,26 +8,14 @@ import configs.HH4b_common.custom_cut_functions_common as cuts_f
 ## Cuts to build the full cutflow for HH->4b analysis up to the signal region
 four_jets_cut = Cut(
     name="four_jets_cut",
-    params={
-        "njet": 4,
-        "jet_collection":"JetGood"
-    },
+    params={"njet": 4},
     function=cuts_f.four_jets,
 )
 
-lepton_veto = Cut(
-    name="lepton_veto",
-    params={
-        "njet": -999,
-        "pt_jet0": -999,
-        "pt_jet1": -999,
-        "pt_jet2": -999,
-        "pt_jet3": -999,
-        "mean_pnet_jet": -999,
-        "tight_cuts": False,
-        "pt_type": "pt_default",
-    },
-    function=cuts_f.hh4b_presel_cuts,
+lepton_veto_cut = Cut(
+    name="lepton_veto_cut",
+    params={},
+    function=cuts_f.lepton_veto,
 )
 
 jet_pt_cut = Cut(
