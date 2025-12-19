@@ -3,6 +3,7 @@ from coffea.util import load
 import os
 import awkward as ak
 import numpy as np
+import logging
 import matplotlib.pyplot as plt
 import mplhep as hep
 import matplotlib
@@ -14,7 +15,7 @@ from collections import OrderedDict
 hep.style.use("CMS")
 
 
-EFF_WRT_4JETS_PRESEL = False
+
 
 parser = argparse.ArgumentParser(description="Plot 2b morphed vs 4b data")
 parser.add_argument(
@@ -27,14 +28,33 @@ parser.add_argument(
 parser.add_argument(
     "-o", "--output", type=str, help="Output directory", default="plots_cutflow"
 )
-
+parser.add_argument(
+    "-p",
+    "--four-jet-presel",
+    action="store_true",
+    help="If true, the effiiencies are computed w.r.t. the 4 jets, pT>25 GeV, |eta|<2.5 preselection",
+    default=False,
+)
 args = parser.parse_args()
+
+EFF_WRT_4JETS_PRESEL = args.four_jet_presel
 
 # make output directory if it does not exist
 if not os.path.exists(args.output):
     os.makedirs(args.output)
 
-cumulative_eff_AN = [0, 100, 94, 86, 29, 23, 22, 18, 7]  # , 4.7]
+# Logger
+logging.basicConfig(format='%(asctime)s,%(msecs)03d %(name)s %(levelname)s %(message)s',
+                    datefmt='%Y-%m-%d %H:%M:%S',
+                    level=logging.INFO)
+logger = logging.getLogger()
+formatter = logging.Formatter("%(asctime)s  - %(levelname)s - %(message)s")
+file_handler = logging.FileHandler(f"{args.output}/compare_cutflow.log")
+file_handler.setFormatter(formatter)
+file_handler.setLevel(logging.INFO)
+logger.addHandler(file_handler)
+
+cumulative_eff_AN = [0, 100, 94, 86, 29, 23, 22, 18, 7, 4.7] if EFF_WRT_4JETS_PRESEL  else [0, 100, 94, 86, 29, 23, 22, 18, 7]
 cumulative_eff_AN = [x / 100 for x in cumulative_eff_AN]
 
 
@@ -66,7 +86,7 @@ def plot_efficiencies(list_cuts, efficiencies, efficiencies_names, title, output
     width = 0.25
     bars1 = ax.bar(x - width, eff_vals, width, label=efficiencies_names[0])
     bars2 = ax.bar(x, total_eff_vals, width, label=efficiencies_names[1])
-    # print also the values on top of the bars
+    # logger.info also the values on top of the bars
     autolabel(ax, bars1)
     autolabel(ax, bars2)
 
@@ -221,19 +241,19 @@ def compute_cutflow():
 if __name__ == "__main__":
     # Load coffea file
     input_file = args.input_file
-    print(f"Loading coffea file: {input_file}")
+    logger.info(f"Loading coffea file: {input_file}")
     o = load(input_file)
 
-    print(o["cutflow"])
+    logger.info(o["cutflow"])
     for k in o["cutflow"].keys():
-        print(k)
+        logger.info(k)
         for kk in o["cutflow"][k].keys():
-            print(f"\t{kk} {o['cutflow'][k][kk]}")
+            logger.info(f"\t{kk} {o['cutflow'][k][kk]}")
     dataset = list(o["cutflow"]["initial"].keys())[0]
-    print(f"Dataset: {dataset}")
+    logger.info(f"Dataset: {dataset}")
     # sample=list(o["columns"].keys())[0]
     sample = "GluGlutoHHto4B"
-    print(f"Sample: {sample}")
+    logger.info(f"Sample: {sample}")
 
     num_events_dict = OrderedDict()
     for k in o["cutflow"].keys():
@@ -243,8 +263,20 @@ if __name__ == "__main__":
             if type(o["cutflow"][k][kk]) == int or "no_selections" in k:
                 continue
             new_value = o["cutflow"][k][kk][sample]
-            print(k)
-            print(f"\t{new_value}")
+            logger.info(k)
+            logger.info(f"\t{new_value}")
             num_events_dict[k] = new_value
+
+    # Compute the total yield for MC
+    if o["columns"] and o["sum_genweights"]:
+        for category in o["columns"][sample][dataset].keys():
+            logger.info(f"Category: {category}")
+            total_yield = (
+                sum(o["columns"][sample][dataset][category]["weight"].value)
+                / o["sum_genweights"][dataset]
+            )
+            logger.info(
+                f"Total yield for MC sample {sample} in category {category}: {total_yield}"
+            )
 
     compute_cutflow()
