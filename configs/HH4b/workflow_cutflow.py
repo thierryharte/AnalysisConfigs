@@ -246,6 +246,12 @@ class HH4bCutflowProcessor(HH4bCommonProcessor):
 
 
     def process_extra_after_presel(self, variation):  # -> ak.Array
+        super().process_extra_after_presel(variation=variation)
+        # pass
+        
+        
+        
+        
         # reconstruct the higgs candidates for Run2 method
         # if self.run2:
         #     (
@@ -268,4 +274,3 @@ class HH4bCutflowProcessor(HH4bCommonProcessor):
         #         ak.flatten(pairing_predictions, axis=-1) > 3, axis=-1
         #     )
         
-        pass
