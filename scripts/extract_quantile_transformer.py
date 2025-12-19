@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import os
 import numpy as np
 from hist import Hist
-
+import awkward as ak
 
 import configs.HH4b_common.dnn_input_variables as dnn_input_variables
 from utils.get_DNN_input_list import get_DNN_input_list
@@ -56,6 +56,17 @@ def extract_quantile_transformer(cat_col, outputdir):
                     col_dict[f"{v}_{idx}"][cat_mc] = cat_col[category][v][np.arange(len(cat_col[category][v])) % N == idx]
                 except KeyError:
                     col_dict[f"{v}_{idx}"][cat_mc] = cat_col[category][v.replace("Run2", "")][np.arange(len(cat_col[category][v.replace("Run2", "")])) % N == idx]
+        
+        # elif cat_col[category][v].ndim ==2:
+        #     N=len(cat_col[category][v][0])
+        #     try:
+        #         assert (ak.num(cat_col[category][v]) == N).all()
+        #     except AssertionError:
+        #         logger.warn(f"Variables {v_pref} have different N values: {cat_col[category][v_pref + '_N']}. Skipping...")
+        #         continue
+        #     for pos in range(N + 1):
+        #         col_dict[v + ":" + str(pos)] = cat_col[v][:, int(pos)]
+            
         else:
             if v not in col_dict.keys():
                 col_dict[v] = {}
