@@ -1,10 +1,12 @@
 import json
 import logging
 import os
-
 import numpy as np
 import pyarrow.dataset as ds
 from coffea.util import load
+
+import gc
+from collections import defaultdict
 
 logging.basicConfig(
     format="%(asctime)s,%(msecs)03d %(name)s %(levelname)s %(message)s",
@@ -191,26 +193,48 @@ def fill_category(
 
 
 def get_columns_from_parquet(
-    input_files, sel_var="nominal", filter_lambda=None, debug=False, sum_genweights=None
+    input_files,
+    sel_var="nominal",
+    filter_lambda=None,
+    debug=False,
+    sum_genweights=None,
+    batch_size=200_000,
 ):
-    cat_col = {}
+    """
+    Memory-safe Parquet loader.
+
+    Returns:
+      cat_col[category][(variation)][column] -> numpy array
+      total_datasets_list
+    """
+
+    if sum_genweights is None:
+        sum_genweights = {}
+
+    cat_col = {}  # final output
     total_datasets_list = []
     dirs_datasets = {}
 
+    # ------------------------------------------------------------
+    # Resolve directories / datasets
+    # ------------------------------------------------------------
     for input_file in input_files:
-        dir, dset = get_parquet_save_directory(input_file)
-        dirs_datasets[dir] = dset
+        rootdir, dset = get_parquet_save_directory(input_file)
+        dirs_datasets[rootdir] = dset
 
+    # ------------------------------------------------------------
+    # Main loop
+    # ------------------------------------------------------------
     for rootdir, sel_dataset in dirs_datasets.items():
         if debug:
             logger.debug(f"Scanning {rootdir}")
-        datasets = os.listdir(rootdir) if sel_dataset == "all" else [sel_dataset]
-        logger.debug(datasets)
 
-        # structure: root/dataset/category/variation/*.parquet
+        datasets = (
+            os.listdir(rootdir) if sel_dataset == "all" else [sel_dataset]
+        )
+
         for dataset in datasets:
             dataset_path = os.path.join(rootdir, dataset)
-            logger.debug(dataset_path)
             if not os.path.isdir(dataset_path):
                 continue
 
@@ -225,9 +249,11 @@ def get_columns_from_parquet(
                 if debug:
                     logger.debug(f"dataset {dataset}, category {category}")
 
+                # Initialize category container
                 if category not in cat_col:
                     cat_col[category] = {}
 
+                # Variations handling
                 if sel_var == "all":
                     variations = os.listdir(category_path)
                 elif not sel_var:
@@ -235,71 +261,91 @@ def get_columns_from_parquet(
                 else:
                     variations = [sel_var]
 
-                # single_var is used both when no_vars is True and when only one variation is requested
-                single_var = True if len(variations) == 1 else False
+                single_var = (len(variations) == 1)
 
                 for variation in variations:
-                    if not sel_var.lower() == "all" and sel_var != variation:
-                        logger.debug(f"Skipping variation {variation} as not demanded")
+                    if sel_var.lower() != "all" and sel_var != variation:
                         continue
+
                     variation_path = os.path.join(category_path, variation)
                     if not os.path.isdir(variation_path):
                         continue
 
-                    if variation not in cat_col[category] and not single_var:
-                        cat_col[category][variation] = {}
-                        coldict = cat_col[category][variation]
-                    elif single_var:
-                        coldict = cat_col[category]
-
                     if debug:
-                        logger.debug(
-                            f"  variation {variation}, files: {len(parquet_files)}"
-                        )
+                        logger.debug(f"Loading {variation_path}")
 
-                    logger.info(f"Loading datasets in {variation_path}")
-                    parquet_files = ds.dataset(variation_path, format="parquet")
-                    table = parquet_files.to_table()
-                    df = table.to_pandas()
-                    logger.info(f"Loaded datasets in {variation_path}")
-                    logger.info(df)
-                    for i, column in enumerate(df.columns):
-                        # filter with lambda function
-                        if filter_lambda is not None:
-                            if not filter_lambda(column):
-                                if debug:
-                                    logger.debug(
-                                        f"Skipping column {column} due to filter"
-                                    )
-                                continue
+                    # Select destination dictionary
+                    if single_var:
+                        coldict = cat_col[category]
+                    else:
+                        if variation not in cat_col[category]:
+                            cat_col[category][variation] = {}
+                        coldict = cat_col[category][variation]
 
-                        column_array = df[column].to_numpy()
+                    # Temporary storage: column -> list of arrays
+                    tmp_arrays = defaultdict(list)
 
-                        # normalize weights (if sum_genweights exists somewhere you may pass it separately)
-                        if column == "weight" and dataset in sum_genweights:
-                            sum_w = sum_genweights[dataset]
-                            logger.debug(sum_w)
-                            if sum_w != 0:
-                                column_array = column_array / sum_w
+                    # ------------------------------------------------
+                    # Arrow streaming read
+                    # ------------------------------------------------
+                    dataset_arrow = ds.dataset(
+                        variation_path, format="parquet"
+                    )
+                    logger.info(f"Loaded parquet files from {variation_path}")
+
+                    scanner = dataset_arrow.scanner(
+                        batch_size=batch_size
+                    )
+                    print("number of files in dataset:", len(dataset_arrow.files))
+
+                    for idx, batch in enumerate(scanner.to_batches()):
+                        df = batch.to_pandas()
+                        logger.debug(f"Processing batch {idx} with {len(df)} rows")
+
+                        for column in df.columns:
+                            if filter_lambda is not None:
+                                if not filter_lambda(column):
+                                    continue
+
+                            arr = df[column].to_numpy()
+
+                            # Normalize weights if requested
+                            if (
+                                column == "weight"
+                                and dataset in sum_genweights
+                            ):
+                                sum_w = sum_genweights[dataset]
+                                if sum_w != 0:
+                                    arr = arr / sum_w
+
+                            tmp_arrays[column].append(arr)
+
+                        # Explicit cleanup per batch
+                        del df, batch
+                        gc.collect()
+
+                    # ------------------------------------------------
+                    # Concatenate once per column
+                    # ------------------------------------------------
+                    for column, chunks in tmp_arrays.items():
+                        logger.debug(f"Stacking category {category}, variation {variation}, column {column}")
+                        merged = np.concatenate(chunks)
 
                         if column not in coldict:
-                            coldict[column] = column_array
+                            coldict[column] = merged
                         else:
                             coldict[column] = np.concatenate(
-                                (coldict[column], column_array)
+                                (coldict[column], merged)
                             )
 
-                        if i == 0 and debug:
-                            logger.debug(
-                                f"column {column}",
-                                column_array.shape,
-                                coldict[column].shape,
-                            )
-    for category in cat_col:
-        for column in cat_col[category]:
-            print(f"Stacking category {category}, column {column}")
-            cat_col[category][column] = np.stack(cat_col[category][column])
-            
+                        # free chunk lists
+                        del chunks, merged
+
+                    del tmp_arrays, scanner, dataset_arrow
+                    gc.collect()
+    
+    logger.info("Final stacking of arrays completed.")
+    logger.debug(cat_col)
     return cat_col, total_datasets_list
 
 
