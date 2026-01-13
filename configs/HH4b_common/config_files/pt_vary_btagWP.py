@@ -2,16 +2,12 @@ import os
 
 localdir = os.path.dirname(os.path.abspath(__file__))
 
-onnx_model_dict = {
-    "spanet": "",
-    "vbf_ggf_dnn": "",
-    "bkg_morphing_dnn": "",
-    "sig_bkg_dnn": "",
-    "bkg_morphing_spread_dnn": "",
-}
+from configs.HH4b_common.config_files.default_config import default_onnx_model_dict as onnx_model_dict
+
+from configs.HH4b_common.config_files.default_config import default_config_options_dict as config_options_dict
 
 
-config_options_dict = {
+config_options_dict |= {
     "higgs_parton_matching": False,
     "vbf_parton_matching": False,
     "tight_cuts": False,

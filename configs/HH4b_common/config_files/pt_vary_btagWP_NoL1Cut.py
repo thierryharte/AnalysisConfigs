@@ -6,6 +6,7 @@ from configs.HH4b_common.config_files.default_config import default_onnx_model_d
 
 from configs.HH4b_common.config_files.default_config import default_config_options_dict as config_options_dict
 
+
 config_options_dict |= {
     "higgs_parton_matching": False,
     "vbf_parton_matching": False,
@@ -17,7 +18,7 @@ config_options_dict |= {
     "dnn_variables": False,
     "run2": False,
     "vr1": False,
-    "random_pt": False,
+    "random_pt": True,
     "rand_type": 0.3,
     "blind": True if onnx_model_dict["sig_bkg_dnn"] else False,
     "sig_bkg_dnn_input_variables": None,
@@ -32,4 +33,5 @@ config_options_dict |= {
     "arctanh_delta_prob_pad_limit": 2.,
     "add_jet_spanet": True,
     "spanet_input_name_list": ["log_pt", "eta", "phi", "btagPNetB_wp"],
+    "noL1": True
 } | onnx_model_dict

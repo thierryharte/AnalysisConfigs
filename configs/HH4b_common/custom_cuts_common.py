@@ -210,10 +210,13 @@ hh4b_JetVetoMap= Cut(
     function=get_custom_JetVetoMap_Mask,
 )
 
-skimming_cut_list = [
-    eventFlags,
-    goldenJson,
-    get_nPVgood(1),
-    get_HLTsel(primaryDatasets=["JetMET"]),
-    get_L1sel(primaryDatasets=["JetMET"]),
-]
+def skimming_cut_list(configs):
+    skimlist = [
+        eventFlags,
+        goldenJson,
+        get_nPVgood(1),
+        get_HLTsel(primaryDatasets=["JetMET"]),
+    ]
+    if not configs["noL1"]:
+        skimlist.append(get_L1sel(primaryDatasets=["JetMET"]))
+    return skimlist
