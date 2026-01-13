@@ -40,5 +40,6 @@ default_config_options_dict = {
     "old_wp_def": False,
     "qt_postEE": None,
     "qt_preEE": None,
-    "only5jetsbSF": False
+    "only5jetsbSF": False,
+    "noL1": False
 }| default_onnx_model_dict

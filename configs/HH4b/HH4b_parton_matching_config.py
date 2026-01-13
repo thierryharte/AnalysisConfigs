@@ -6,10 +6,8 @@ from configs.HH4b_common.config_files.__config_file__ import (
     config_options_dict,
     onnx_model_dict,
 )
-from pocket_coffea.lib.calibrators.legacy.legacy_calibrators import (
-    JetsCalibrator,
-    JetsPtRegressionCalibrator,
-)
+import pocket_coffea.lib.calibrators.legacy.legacy_calibrators as legacy_cal
+from pocket_coffea.lib.calibrators.common.common import JetsCalibrator
 
 
 from pocket_coffea.lib.weights.common.common import common_weights
@@ -51,7 +49,7 @@ localdir = os.path.dirname(os.path.abspath(__file__))
 # Loading default parameters
 
 default_parameters = defaults.get_default_parameters()
-defaults.register_configuration_dir("config_dir", localdir + "/params")
+defaults.register_configuration_dir("config_dir", localdir)
 
 # adding object preselection
 year = ["2022_postEE", "2022_preEE"]  # , "2023_preBPix", "2023_postBPix"]
@@ -59,9 +57,12 @@ parameters = defaults.merge_parameters_from_files(
     default_parameters,
     f"{localdir}/../HH4b_common/params/object_preselection.yaml",
     f"{localdir}/../HH4b_common/params/triggers.yaml",
+    f"{localdir}/../HH4b_common/params/variations.yaml",
     f"{localdir}/../HH4b_common/params/btagging_multipleWP.yaml",
-    f"{localdir}/../HH4b_common/params/jets_calibration_legacy_Calibrator_withoutVariations_withJERC.yaml",
+    f"{localdir}/../HH4b_common/params/btagging_sampleGroups.yaml",
+    # f"{localdir}/../HH4b_common/params/jets_calibration_legacy_Calibrator_withoutVariations_withJERC.yaml",
     # f"{localdir}/../HH4b_common/params/jets_calibration_legacy_Calibrator_withVariations.yaml",
+    f"{localdir}/../HH4b_common/params/jets_calibration_regression_json.yaml",
     update=True,
 )
 
@@ -92,18 +93,18 @@ preselection = define_preselection(config_options_dict)
 
 # Defining the used samples
 sample_ggF_list = [
-     "GluGlutoHHto4B_spanet_kl-1p00_kt-1p00_c2-0p00_skimmed",
-     "GluGlutoHHto4B_spanet_kl-m2p00_kt-1p00_c2-0p00_skimmed",
-     "GluGlutoHHto4B_spanet_kl-m1p00_kt-1p00_c2-0p00_skimmed",
-     "GluGlutoHHto4B_spanet_kl-5p00_kt-1p00_c2-0p00_skimmed",
-     "GluGlutoHHto4B_spanet_kl-2p45_kt-1p00_c2-0p00_skimmed",
-     "GluGlutoHHto4B_spanet_kl-0p00_kt-0p00_c2-0p00_skimmed",
-     "GluGlutoHHto4B_spanet_kl-3p50_kt-1p00_c2-0p00_skimmed",
-     "GluGlutoHHto4B_spanet_kl-4p00_kt-1p00_c2-0p00_skimmed",
-     "GluGlutoHHto4B_spanet_kl-3p00_kt-1p00_c2-0p00_skimmed",
-     "GluGlutoHHto4B_spanet_kl-2p00_kt-1p00_c2-0p00_skimmed",
-     "GluGlutoHHto4B_spanet_kl-1p50_kt-1p00_c2-0p00_skimmed",
-     "GluGlutoHHto4B_spanet_kl-0p50_kt-1p00_c2-0p00_skimmed",
+      "GluGlutoHHto4B_spanet_kl-1p00_kt-1p00_c2-0p00_skimmed",
+      "GluGlutoHHto4B_spanet_kl-5p00_kt-1p00_c2-0p00_skimmed",
+      "GluGlutoHHto4B_spanet_kl-2p45_kt-1p00_c2-0p00_skimmed",
+      "GluGlutoHHto4B_spanet_kl-m2p00_kt-1p00_c2-0p00_skimmed",
+      "GluGlutoHHto4B_spanet_kl-m1p00_kt-1p00_c2-0p00_skimmed",
+      "GluGlutoHHto4B_spanet_kl-0p00_kt-0p00_c2-0p00_skimmed",
+      "GluGlutoHHto4B_spanet_kl-3p50_kt-1p00_c2-0p00_skimmed",
+      "GluGlutoHHto4B_spanet_kl-4p00_kt-1p00_c2-0p00_skimmed",
+      "GluGlutoHHto4B_spanet_kl-3p00_kt-1p00_c2-0p00_skimmed",
+      "GluGlutoHHto4B_spanet_kl-2p00_kt-1p00_c2-0p00_skimmed",
+      "GluGlutoHHto4B_spanet_kl-1p50_kt-1p00_c2-0p00_skimmed",
+      "GluGlutoHHto4B_spanet_kl-0p50_kt-1p00_c2-0p00_skimmed",
 ]
 sample_list = [
     # "DATA_JetMET_JMENano_C_skimmed",
@@ -314,17 +315,18 @@ cfg = Configurator(
     },
     workflow=HH4bbQuarkMatchingProcessor,
     workflow_options=config_options_dict,
-    skim=cuts.skimming_cut_list,
+    skim=cuts.skimming_cut_list(config_options_dict),
     preselections=preselection,
     categories=categories_dict,
     weights_classes=common_weights
     + [bkg_morphing_dnn_weight, bkg_morphing_dnn_weightRun2, SF_btag_fixed_multiple_wp],
-    calibrators=[JetsCalibrator, JetsPtRegressionCalibrator],
+    # calibrators=[legacy_cal.JetsCalibrator, legacy_cal.JetsPtRegressionCalibrator],
+    calibrators=[JetsCalibrator],
     weights={
         "common": {
-            # "inclusive": ["genWeight", "lumi", "XS", "sf_btag_fixed_multiple_wp"],
-            # "inclusive": ["genWeight", "lumi", "XS", "pileup"],
-            "inclusive": ["genWeight", "lumi", "XS"],
+            # "inclusive": ["genWeight", "lumi", "XS", "pileup", "sf_btag_fixed_multiple_wp"],
+            "inclusive": ["genWeight", "lumi", "XS", "pileup"],
+            # "inclusive": ["genWeight", "lumi", "XS"],
             # "inclusive": [],
             "bycategory": {
             },
@@ -334,7 +336,7 @@ cfg = Configurator(
     variations={
         "weights": {
             "common": {
-                # "inclusive": ["pileup"],  # , "sf_btag_fixed_multiple_wp"],
+                # "inclusive": ["pileup", "sf_btag_fixed_multiple_wp"],
                 "inclusive": [],
                 "bycategory": {},
             },

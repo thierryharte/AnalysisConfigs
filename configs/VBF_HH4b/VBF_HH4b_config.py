@@ -1,43 +1,31 @@
 import os
+
 import cloudpickle
-import utils.quantile_transformer as quantile_transformer
-from collections import defaultdict
-
-from pocket_coffea.utils.configurator import Configurator
-from pocket_coffea.lib.cut_functions import (
-    get_HLTsel,
+from configs.HH4b_common.config_files.__config_file__ import (
+    config_options_dict,
 )
-from pocket_coffea.parameters.histograms import *
-from pocket_coffea.parameters.cuts import passthrough
-from pocket_coffea.lib.columns_manager import ColOut
-from pocket_coffea.parameters import defaults
-from pocket_coffea.lib.weights.common.common import common_weights
-import pocket_coffea.lib.calibrators.legacy.legacy_calibrators as legacy_cal 
 from pocket_coffea.lib.calibrators.common.common import JetsCalibrator
+from pocket_coffea.lib.weights.common.common import common_weights
+from pocket_coffea.parameters import defaults
+from pocket_coffea.parameters.cuts import passthrough
+from pocket_coffea.parameters.histograms import *
+from pocket_coffea.utils.configurator import Configurator
 
-
-from configs.VBF_HH4b.workflow import VBFHH4bProcessor
-from configs.VBF_HH4b.custom_cuts import vbf_hh4b_presel, vbf_hh4b_presel_tight
-
+import configs.HH4b_common.custom_cuts_common as cuts
+import utils.quantile_transformer as quantile_transformer
+from configs.HH4b_common.config_files.configurator_tools import (
+    DEFAULT_JET_COLUMNS_DICT,
+    create_DNN_columns_list,
+    define_categories,
+    define_preselection,
+    get_columns_list,
+    get_variables_dict,
+)
 from configs.HH4b_common.custom_weights import (
     bkg_morphing_dnn_weight,
     bkg_morphing_dnn_weightRun2,
 )
-from configs.HH4b_common.config_files.configurator_tools import (
-    get_variables_dict,
-    get_columns_list,
-    DEFAULT_JET_COLUMNS_DICT,
-    create_DNN_columns_list,
-    define_single_category,
-    define_categories,
-    define_preselection,
-)
-
-from configs.HH4b_common.config_files.__config_file__ import (
-    config_options_dict,
-)
-
-import configs.HH4b_common.custom_cuts_common as cuts
+from configs.VBF_HH4b.workflow import VBFHH4bProcessor
 
 BASELINE = False
 
@@ -46,7 +34,7 @@ localdir = os.path.dirname(os.path.abspath(__file__))
 
 # Loading default parameters
 default_parameters = defaults.get_default_parameters()
-defaults.register_configuration_dir("config_dir", localdir + "/params")
+defaults.register_configuration_dir("config_dir", localdir)
 
 # adding object preselection
 year = ["2022_postEE"]
@@ -54,7 +42,9 @@ parameters = defaults.merge_parameters_from_files(
     default_parameters,
     f"{localdir}/../HH4b_common/params/object_preselection.yaml",
     f"{localdir}/../HH4b_common/params/triggers.yaml",
+    f"{localdir}/../HH4b_common/params/variations.yaml",
     f"{localdir}/../HH4b_common/params/btagging_multipleWP.yaml",
+    f"{localdir}/../HH4b_common/params/btagging_sampleGroups.yaml",
     # f"{localdir}/../HH4b_common/params/jets_calibration_legacy_Calibrator_withVariations.yaml",
     # f"{localdir}/../HH4b_common/params/jets_calibration_legacy_Calibrator_withoutVariations_withJERC.yaml",
     # f"{localdir}/../HH4b_common/params/jets_calibration_legacy_Calibrator_onlyJEC.yaml",
@@ -81,7 +71,7 @@ variables_dict = get_variables_dict(
 )
 # variables_dict = {}
 
-## Define the preselection to apply
+# Define the preselection to apply
 preselection = define_preselection(config_options_dict)
 
 
@@ -100,13 +90,13 @@ sample_ggF_list = [
     "GluGlutoHHto4B_spanet_kl-0p50_kt-1p00_c2-0p00_skimmed",
 ]
 
-## Define the samples to process
+# Define the samples to process
 sample_list = (
     [
-        ## 2022 preEE
+        # 2022 preEE
         # "DATA_JetMET_JMENano_C_skimmed",
         # "DATA_JetMET_JMENano_D_skimmed",
-        ## 2022 postEE
+        # 2022 postEE
         "DATA_JetMET_JMENano_E_skimmed",
         "DATA_JetMET_JMENano_F_skimmed",
         "DATA_JetMET_JMENano_G_skimmed",
@@ -123,7 +113,7 @@ sample_list = (
 )
 
 
-## Define the categories to save
+# Define the categories to save
 categories_dict = define_categories(
     bkg_morphing_dnn=config_options_dict["bkg_morphing_dnn"],
     blind=config_options_dict["blind"],
@@ -139,7 +129,7 @@ if BASELINE:
 
 # print("categories_dict", categories_dict)
 
-### VBF SPECIFIC REGIONS ###
+# VBF SPECIFIC REGIONS ###
 # **{f"4b_semiTight_LeadingPt_region": [hh4b_4b_region, semiTight_leadingPt]},
 # **{f"4b_semiTight_LeadingMjj_region": [hh4b_4b_region, semiTight_leadingMjj]},
 # **{f"4b_semiTight_LeadingMjj_region": [hh4b_4b_region, semiTight_leadingMjj]}
@@ -160,7 +150,7 @@ if BASELINE:
 # **{f"4b_VBF_0{i}qvg_generalSelection_region": [hh4b_4b_region, VBF_generalSelection_region, qvg_regions[f"qvg_0{i}_region"]] for i in range(5, 10)},
 
 
-## Define the columns to save
+# Define the columns to save
 total_input_variables = {}
 
 if config_options_dict["spanet"]:
@@ -208,7 +198,6 @@ if config_options_dict["sig_bkg_dnn"] and config_options_dict["run2"]:
     column_listRun2 += get_columns_list({"events": ["sig_bkg_dnn_scoreRun2"]})
 
 
-
 bysample_bycategory_column_dict = {}
 for sample in sample_list:
     bysample_bycategory_column_dict[sample] = {
@@ -242,7 +231,7 @@ for sample in sample_list:
             )
 # print("bysample_bycategory_column_dict", bysample_bycategory_column_dict)
 
-## Define the weights to apply
+# Define the weights to apply
 bysample_bycategory_weight_dict = {}
 for sample in sample_list:
     if "DATA" in sample:
@@ -284,7 +273,7 @@ cfg = Configurator(
     },
     workflow=VBFHH4bProcessor,
     workflow_options=config_options_dict,
-    skim=cuts.skimming_cut_list,
+    skim=cuts.skimming_cut_list(config_options_dict),
     preselections=preselection,
     categories=categories_dict,
     weights_classes=common_weights
