@@ -172,7 +172,7 @@ cfg = Configurator(
     },
     workflow=HH4bbtagWPefficiencyProcessor,
     workflow_options=config_options_dict,
-    skim=cuts.skimming_cut_list,
+    skim=cuts.skimming_cut_list(config_options_dict),
     preselections=preselection,
     categories=categories_dict,
     weights_classes=common_weights
