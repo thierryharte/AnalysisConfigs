@@ -5,12 +5,12 @@ from utils.prediction_selection import extract_predictions
 
 PAD_VALUE_SPANET = 9999.0
 
-
-def define_spanet_inputs(events, max_num_jets, spanet_input_name_list):
-
+def define_spanet_sequential_inputs(events, max_num_jets, spanet_input_name_list):
+    """
+    Define the sequential (2D arrays) input features for the SPANet model.
+    """
     input_dict = {}
     
-    # for variable_name in ["eta", "phi", "btag", "btagPNetB_5wp","btagPNetB_3wp", "btagPNetB_delta5wp", "btagPNetB_delta3wp"]:
     for variable_name in spanet_input_name_list: 
         if variable_name not in ["log_pt", "btag12_ratioSubLead", "btag_ratioAll"]:
             input_dict[variable_name] = np.array(
@@ -103,6 +103,19 @@ def define_spanet_inputs(events, max_num_jets, spanet_input_name_list):
         )
         input_dict["btag_ratioAll"] = btag_ratioAll
         
+    return input_dict
+
+
+def define_spanet_pairing_inputs(events, max_num_jets, spanet_input_name_list):    
+    """
+    Define the input features for the SPANet model used for jet pairing.
+    """
+    
+    input_dict = define_spanet_sequential_inputs(
+        events, max_num_jets, spanet_input_name_list
+    )
+    # TODO: add global inputs for the pairing as well
+    
     try:
         assert len(input_dict) == len(spanet_input_name_list)
     except AssertionError:
@@ -111,7 +124,7 @@ def define_spanet_inputs(events, max_num_jets, spanet_input_name_list):
         # find the missing inputs
         missing_inputs = set(spanet_input_name_list) - set(input_dict.keys())
         print(f"Missing inputs: {missing_inputs}")
-        print(f"New inputs can be defined in define_spanet_inputs function.")
+        print(f"New inputs can be defined in define_spanet_pairing_inputs function.")
         raise AssertionError
 
     # order the inputs according to the spanet_input_name_list
@@ -128,7 +141,7 @@ def get_pairing_information(
     session, input_name, output_name, events, max_num_jets, spanet_input_name_list
 ):
 
-    inputs = define_spanet_inputs(events, max_num_jets, spanet_input_name_list)
+    inputs = define_spanet_pairing_inputs(events, max_num_jets, spanet_input_name_list)
 
     mask = np.array(
         ak.to_numpy(
