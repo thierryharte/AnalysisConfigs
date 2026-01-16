@@ -196,11 +196,7 @@ if config_options_dict["dnn_variables"]:
         True, not config_options_dict["save_chunk"], total_input_variables, btag=False
     )
 elif all([model == "" for model in onnx_model_dict.values()]):
-    if "wp" in config_options_dict["spanet_input_name_list"][-1]:
-        print("Taking btag Working Points")
-        column_list = get_columns_list(SPANET_TRAINING_DEFAULT_COLUMNS_BTWP, not config_options_dict["save_chunk"])
-    else:
-        column_list = get_columns_list(SPANET_TRAINING_DEFAULT_COLUMNS, not config_options_dict["save_chunk"])
+    column_list = get_columns_list(SPANET_TRAINING_DEFAULT_COLUMNS_BTWP, not config_options_dict["save_chunk"])
     if config_options_dict["random_pt"]:
         column_list += get_columns_list({"events": ["random_pt_weights"]})
 else:
