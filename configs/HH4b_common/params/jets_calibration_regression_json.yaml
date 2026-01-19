@@ -64,104 +64,104 @@ default_jets_calibration:
 
       2023_preBPix:
         json_path: ${cvmfs:Run3-23CSep23-Summer23-NanoAODv12,JME,jet_jerc.json.gz}
-        jec_mc: Summer23Prompt23_V4_MC
-        jec_data: Summer23Prompt23_V4_DATA
-        jer: Summer23Prompt23_RunCv1234_JRV1_MC
-        level: L1L2L3Res
-      
-      2023_postBPix:
-        json_path: ${cvmfs:Run3-23DSep23-Summer23BPix-NanoAODv12,JME,jet_jerc.json.gz}
-        jec_mc: Summer23BPixPrompt23_V4_MC
-        jec_data: Summer23BPixPrompt23_V4_DATA
-        jer: Summer23BPixPrompt23_RunD_JRV1_MC
-        level: L1L2L3Res
-
-      "2024":
-        json_path: ${cvmfs:Run3-24CDEReprocessingFGHIPrompt-Summer24-NanoAODv15,JME,jet_jerc.json.gz}
-        jec_mc: Summer24Prompt24_V1_MC
-        jec_data: Summer24Prompt24_V1_DATA
-        jer: Summer23BPixPrompt23_RunD_JRV1_MC  # For the time being the 2023 jers shall be used https://cms-jerc.web.cern.ch/Recommendations/#2024_1
-        level: L1L2L3Res
-    
-
-    AK4PFPuppiPNetRegression:
-      2022_preEE:
-        json_path: "${path_to_JERC_regression_files}/Run3Summer22_22Sep2023/jet_jerc.json.gz"
-        jec_mc: Summer22_22Sep2023_V4_MC
-        jec_data: Summer22_22Sep2023_RunCD_V4_DATA
-        jer: Summer22_22Sep2023_JRV1_MC
-        level: L1L2L3Res
-      
-      2022_postEE:
-        json_path: "${path_to_JERC_regression_files}/Run3Summer22EE_22Sep2023/jet_jerc.json.gz"
-        jec_mc: Summer22EE_22Sep2023_V4_MC
-        jec_data:
-          E: Summer22EE_22Sep2023_RunE_V4_DATA
-          F: Summer22EE_22Sep2023_RunF_V4_DATA
-          G: Summer22EE_22Sep2023_RunG_V4_DATA
-        jer: Summer22EE_22Sep2023_JRV1_MC
-        level: L1L2L3Res
-
-      2023_preBPix:
-        json_path: "${path_to_JERC_regression_files}/Run3Summer23Prompt23/jet_jerc.json.gz"
-        jec_mc: Summer23Prompt23_V4_MC
-        jec_data: Summer23Prompt23_V4_DATA
-        jer: Summer23Prompt23_RunCv1234_JRV1_MC
-        level: L1L2L3Res
-      
-      2023_postBPix:
-        json_path: "${path_to_JERC_regression_files}/Run3Summer23BPixPrompt23/jet_jerc.json.gz"
-        jec_mc: Summer23BPixPrompt23_V4_MC
-        jec_data: Summer23BPixPrompt23_V4_DATA
-        jer: Summer23BPixPrompt23_RunD_JRV1_MC
-        level: L1L2L3Res
-
-      "2024":
-        json_path: "${path_to_JERC_regression_files}/Run3Summer24Prompt24/jet_jerc.json.gz"
-        jec_mc: Summer24Prompt24_V1_MC
-        jec_data: Summer24Prompt24_V1_DATA
-        jer: Summer23BPixPrompt23_RunD_JRV1_MC  # For the time being the 2023 jers shall be used https://cms-jerc.web.cern.ch/Recommendations/#2024_1
-        level: L1L2L3Res
-
-
-    AK4PFPuppiPNetRegressionPlusNeutrino:
-      2022_preEE:
-        json_path: "${path_to_JERC_regression_files}/Run3Summer22_22Sep2023/jet_jerc.json.gz"
-        jec_mc: Summer22_22Sep2023_V4_MC
-        jec_data: Summer22_22Sep2023_RunCD_V4_DATA
-        jer: Summer22_22Sep2023_JRV1_MC
-        level: L1L2L3Res
-      
-      2022_postEE:
-        json_path: "${path_to_JERC_regression_files}/Run3Summer22EE_22Sep2023/jet_jerc.json.gz"
-        jec_mc: Summer22EE_22Sep2023_V4_MC
-        jec_data:
-          E: Summer22EE_22Sep2023_RunE_V4_DATA
-          F: Summer22EE_22Sep2023_RunF_V4_DATA
-          G: Summer22EE_22Sep2023_RunG_V4_DATA
-        jer: Summer22EE_22Sep2023_JRV1_MC
-        level: L1L2L3Res
-
-      2023_preBPix:
-        json_path: "${path_to_JERC_regression_files}/Run3Summer23Prompt23/jet_jerc.json.gz"
         jec_mc: Summer23Prompt23_V2_MC
         jec_data: Summer23Prompt23_V2_DATA
         jer: Summer23Prompt23_RunCv1234_JRV1_MC
         level: L1L2L3Res
       
       2023_postBPix:
-        json_path: "${path_to_JERC_regression_files}/Run3Summer23BPixPrompt23/jet_jerc.json.gz"
+        json_path: ${cvmfs:Run3-23DSep23-Summer23BPix-NanoAODv12,JME,jet_jerc.json.gz}
         jec_mc: Summer23BPixPrompt23_V3_MC
         jec_data: Summer23BPixPrompt23_V3_DATA
         jer: Summer23BPixPrompt23_RunD_JRV1_MC
         level: L1L2L3Res
 
       "2024":
-        json_path: "${path_to_JERC_regression_files}/Run3Summer24Prompt24/jet_jerc.json.gz"
-        jec_mc: Summer24Prompt24_V1_MC
-        jec_data: Summer24Prompt24_V1_DATA
+        json_path: ${cvmfs:Run3-24CDEReprocessingFGHIPrompt-Summer24-NanoAODv15,JME,jet_jerc.json.gz}
+        jec_mc: Summer24Prompt24_V2_MC
+        jec_data: Summer24Prompt24_V2_DATA
         jer: Summer23BPixPrompt23_RunD_JRV1_MC  # For the time being the 2023 jers shall be used https://cms-jerc.web.cern.ch/Recommendations/#2024_1
         level: L1L2L3Res
+    
+
+    AK4PFPuppiPNetRegression:
+      2022_preEE:
+        json_path: "${path_to_JERC_regression_files}/CopyJERToPNet/Run3Summer22_22Sep2023/jet_jerc.json.gz"
+        jec_mc: Summer22_22Sep2023_V4_MC
+        jec_data: Summer22_22Sep2023_RunCD_V4_DATA
+        jer: Summer22_22Sep2023_JRV1_MC
+        level: L1L2L3Res
+      
+      2022_postEE:
+        json_path: "${path_to_JERC_regression_files}/CopyJERToPNet/Run3Summer22EE_22Sep2023/jet_jerc.json.gz"
+        jec_mc: Summer22EE_22Sep2023_V4_MC
+        jec_data:
+          E: Summer22EE_22Sep2023_RunE_V4_DATA
+          F: Summer22EE_22Sep2023_RunF_V4_DATA
+          G: Summer22EE_22Sep2023_RunG_V4_DATA
+        jer: Summer22EE_22Sep2023_JRV1_MC
+        level: L1L2L3Res
+
+      2023_preBPix:
+        json_path: "${path_to_JERC_regression_files}/CopyJERToPNet/Run3Summer23Prompt23/jet_jerc.json.gz"
+        jec_mc: Summer23Prompt23_V4_MC
+        jec_data: Summer23Prompt23_V4_DATA
+        jer: Summer23Prompt23_RunCv1234_JRV1_MC
+        level: L1L2L3Res
+      
+      2023_postBPix:
+        json_path: "${path_to_JERC_regression_files}/CopyJERToPNet/Run3Summer23BPixPrompt23/jet_jerc.json.gz"
+        jec_mc: Summer23BPixPrompt23_V4_MC
+        jec_data: Summer23BPixPrompt23_V4_DATA
+        jer: Summer23BPixPrompt23_RunD_JRV1_MC
+        level: L1L2L3Res
+
+      "2024":
+        json_path: "${path_to_JERC_regression_files}/Run3Summer24Prompt24/jet_jerc.json.gz"
+        jec_mc: Summer24Prompt24_V2_MC
+        # jec_data: Summer24Prompt24_V1_DATA
+        jer: Summer23BPixPrompt23_RunD_JRV1_MC  # For the time being the 2023 jers shall be used https://cms-jerc.web.cern.ch/Recommendations/#2024_1
+        level: L2Relative
+
+
+    AK4PFPuppiPNetRegressionPlusNeutrino:
+      2022_preEE:
+        json_path: "${path_to_JERC_regression_files}/CopyJERToPNet/Run3Summer22_22Sep2023/jet_jerc.json.gz"
+        jec_mc: Summer22_22Sep2023_V4_MC
+        jec_data: Summer22_22Sep2023_RunCD_V4_DATA
+        jer: Summer22_22Sep2023_JRV1_MC
+        level: L1L2L3Res
+      
+      2022_postEE:
+        json_path: "${path_to_JERC_regression_files}/CopyJERToPNet/Run3Summer22EE_22Sep2023/jet_jerc.json.gz"
+        jec_mc: Summer22EE_22Sep2023_V4_MC
+        jec_data:
+          E: Summer22EE_22Sep2023_RunE_V4_DATA
+          F: Summer22EE_22Sep2023_RunF_V4_DATA
+          G: Summer22EE_22Sep2023_RunG_V4_DATA
+        jer: Summer22EE_22Sep2023_JRV1_MC
+        level: L1L2L3Res
+
+      2023_preBPix:
+        json_path: "${path_to_JERC_regression_files}/CopyJERToPNet/Run3Summer23Prompt23/jet_jerc.json.gz"
+        jec_mc: Summer23Prompt23_V4_MC
+        jec_data: Summer23Prompt23_V4_DATA
+        jer: Summer23Prompt23_RunCv1234_JRV1_MC
+        level: L1L2L3Res
+      
+      2023_postBPix:
+        json_path: "${path_to_JERC_regression_files}/CopyJERToPNet/Run3Summer23BPixPrompt23/jet_jerc.json.gz"
+        jec_mc: Summer23BPixPrompt23_V4_MC
+        jec_data: Summer23BPixPrompt23_V4_DATA
+        jer: Summer23BPixPrompt23_RunD_JRV1_MC
+        level: L1L2L3Res
+
+      "2024":
+        json_path: "${path_to_JERC_regression_files}/Run3Summer24Prompt24/jet_jerc.json.gz"
+        jec_mc: Summer24Prompt24_V2_MC
+        # jec_data: Summer24Prompt24_V1_DATA
+        jer: Summer23BPixPrompt23_RunD_JRV1_MC  # For the time being the 2023 jers shall be used https://cms-jerc.web.cern.ch/Recommendations/#2024_1
+        level: L2Relative
 
 
     AK8PFPuppi:
@@ -449,45 +449,67 @@ jets_calibration:
       AK4PFPuppiPNetRegression: "JetPNet"
       AK4PFPuppiPNetRegressionPlusNeutrino: "JetPNetPlusNeutrino"
       AK8PFPuppi: "FatJet"
+      
+  merge_collections_for_variations:
+    2022_preEE:
+      AK4Jet: 
+        - AK4PFPuppi
+        # - AK4PFPuppiPNetRegression
+        - AK4PFPuppiPNetRegressionPlusNeutrino
+    2022_postEE:
+      AK4Jet: 
+        - AK4PFPuppi
+        # - AK4PFPuppiPNetRegression
+        - AK4PFPuppiPNetRegressionPlusNeutrino
+    2023_preBPix:
+      AK4Jet: 
+        - AK4PFPuppi
+        # - AK4PFPuppiPNetRegression
+        - AK4PFPuppiPNetRegressionPlusNeutrino
+    2023_postBPix:
+      AK4Jet: 
+        - AK4PFPuppi
+        # - AK4PFPuppiPNetRegression
+        - AK4PFPuppiPNetRegressionPlusNeutrino
      
   sort_by_pt:
     2016_PreVFP:
-      AK4PFchs: True
-      AK8PFPuppi: True
+      AK4PFchs: False
+      AK8PFPuppi: False
     2016_PostVFP:
-      AK4PFchs: True
-      AK8PFPuppi: True  
+      AK4PFchs: False
+      AK8PFPuppi: False  
     "2017":
-      AK4PFchs: True
-      AK8PFPuppi: True
+      AK4PFchs: False
+      AK8PFPuppi: False
     "2018":
-      AK4PFchs: True
-      AK8PFPuppi: True    
+      AK4PFchs: False
+      AK8PFPuppi: False    
     2022_preEE:
-      AK4PFPuppi: True
-      AK8PFPuppi: True
-      AK4PFPuppiPNetRegression: True
-      AK4PFPuppiPNetRegressionPlusNeutrino: True
+      AK4PFPuppi: False
+      AK8PFPuppi: False
+      AK4PFPuppiPNetRegression: False
+      AK4PFPuppiPNetRegressionPlusNeutrino: False
     2022_postEE:
-      AK4PFPuppi: True
-      AK8PFPuppi: True
-      AK4PFPuppiPNetRegression: True
-      AK4PFPuppiPNetRegressionPlusNeutrino: True
+      AK4PFPuppi: False
+      AK8PFPuppi: False
+      AK4PFPuppiPNetRegression: False
+      AK4PFPuppiPNetRegressionPlusNeutrino: False
     2023_preBPix:
-      AK4PFPuppi: True
-      AK8PFPuppi: True
-      AK4PFPuppiPNetRegression: True
-      AK4PFPuppiPNetRegressionPlusNeutrino: True
+      AK4PFPuppi: False
+      AK8PFPuppi: False
+      AK4PFPuppiPNetRegression: False
+      AK4PFPuppiPNetRegressionPlusNeutrino: False
     2023_postBPix:
-      AK4PFPuppi: True
-      AK8PFPuppi: True
-      AK4PFPuppiPNetRegression: True
-      AK4PFPuppiPNetRegressionPlusNeutrino: True
+      AK4PFPuppi: False
+      AK8PFPuppi: False
+      AK4PFPuppiPNetRegression: False
+      AK4PFPuppiPNetRegressionPlusNeutrino: False
     "2024":
-      AK4PFPuppi: True
-      AK8PFPuppi: True
-      AK4PFPuppiPNetRegression: True
-      AK4PFPuppiPNetRegressionPlusNeutrino: True
+      AK4PFPuppi: False
+      AK8PFPuppi: False
+      AK4PFPuppiPNetRegression: False
+      AK4PFPuppiPNetRegressionPlusNeutrino: False
 
   
   apply_jec_MC:  # this is needed to know which collection is corrected with which jet factory
@@ -774,4 +796,4 @@ jets_calibration:
   # variations: "${default_jets_calibration.variations.full_variations}"
   variations: "${default_jets_calibration.variations.total_variation}"
 
-path_to_JERC_regression_files: "/pnfs/psi.ch/cms/trivcat/store/user/mmalucch/JERC_json/JERC_json_forPNetUParT_WithJER/CopyJERToPNet/"
+path_to_JERC_regression_files: "/pnfs/psi.ch/cms/trivcat/store/user/mmalucch/JERC_json/JERC_json_forPNetUParT_WithJER/"
