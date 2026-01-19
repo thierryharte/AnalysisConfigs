@@ -1,5 +1,5 @@
 import awkward as ak
-import sys
+import copy
 import numpy as np
 
 from utils.custom_cut_functions import custom_jet_selection
@@ -19,7 +19,7 @@ class VBFHH4bProcessor(HH4bCommonProcessor):
         super().apply_object_preselection(variation=variation)
         if self.vbf_presel:
                 
-            self.events["JetVBF_matching"] = self.events.Jet
+            self.events["JetVBF_matching"] = copy.copy(self.events["Jet"])
             self.events["JetVBF_matching"] = custom_jet_selection(
                 self.events,
                 "JetVBF_matching",
@@ -29,7 +29,7 @@ class VBFHH4bProcessor(HH4bCommonProcessor):
                 pt_cut_name=self.pt_cut_name,
             )
 
-            self.events["JetGoodVBF"] = self.events.Jet
+            self.events["JetGoodVBF"] = copy.copy(self.events["Jet"])
             self.events["JetGoodVBF"] = custom_jet_selection(
                 self.events,
                 "JetGoodVBF",
@@ -48,7 +48,7 @@ class VBFHH4bProcessor(HH4bCommonProcessor):
                 self.pt_cut_name_vbf = self.pt_cut_name
                 
                 
-            self.events["JetVBF_generalSelection"] = self.events.Jet
+            self.events["JetVBF_generalSelection"] = copy.copy(self.events["Jet"])
             self.events["JetVBF_generalSelection"] = custom_jet_selection(
                 self.events,
                 "JetVBF_generalSelection",

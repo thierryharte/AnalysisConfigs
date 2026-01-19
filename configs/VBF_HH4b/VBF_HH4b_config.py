@@ -299,12 +299,12 @@ cfg = Configurator(
             },
             "bysample": {},
         },
-        # "shape": {
-        #     "common": {
-        #         "inclusive": ["jet_calibration_with_pt_regression_legacy"],
-        #         # "inclusive": [],
-        #         },
-        #     }
+        "shape": {
+            "common": {
+                # "inclusive": ["jet_calibration_with_pt_regression_legacy"],
+                # "inclusive": ["jet_calibration"]
+                },
+            }
     },
     variables=variables_dict,
     columns={
