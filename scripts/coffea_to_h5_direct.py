@@ -1,27 +1,23 @@
-import numpy as np
-import h5py
-import coffea.util
 import awkward as ak
+import coffea.util
+import h5py
+import numpy as np
 
 MAX_JETS = 4
 
 # collections that contain underscores and must NOT be split at first underscore
-KEEP_TOGETHER_COLLECTIONS = {
-    "add_jet1pt",
-}
+KEEP_TOGETHER_COLLECTIONS = {"add_jet1pt"}
 
 # collections that are jet-like and should be padded/clipped to (N, MAX_JETS, ...)
-JET_COLLECTIONS = {
-    "JetGoodFromHiggsOrdered",
-}
+JET_COLLECTIONS = ["JetGoodFromHiggsOrdered"]
 
 
 def is_awkward(x):
     return isinstance(x, (ak.Array, ak.Record))
 
+
 def unflatten_to_jagged(flat, counts):
-    """
-    flat: 1D array of length sum(counts)
+    """flat: 1D array of length sum(counts)
     counts: 1D int array of length Nevents
     returns: awkward jagged array (Nevents, Nj)
     """
@@ -41,14 +37,9 @@ def unflatten_to_jagged(flat, counts):
 
     return ak.unflatten(flat, counts)
 
-def mask_from_counts(counts, max_jets=MAX_JETS):
-    counts = np.asarray(unwrap_accumulator(counts)).astype(np.int64)
-    idx = np.arange(max_jets)[None, :]
-    return (idx < counts[:, None])
 
 def unwrap_accumulator(x):
-    """
-    Unwrap common coffea accumulator wrappers (e.g. column_accumulator).
+    """Unwrap common coffea accumulator wrappers (e.g. column_accumulator).
     We avoid importing private coffea classes by using duck-typing.
     """
     if hasattr(x, "value"):
@@ -74,8 +65,7 @@ def unwrap_accumulator(x):
 
 
 def to_numpy_event_vector(x):
-    """
-    Convert event-level data to a strict 1D numeric numpy array.
+    """Convert event-level data to a strict 1D numeric numpy array.
     Handles column_accumulator + awkward + object-scalars.
     """
     x = unwrap_accumulator(x)
@@ -95,29 +85,8 @@ def to_numpy_event_vector(x):
     return arr
 
 
-def is_jet_array(x) -> bool:
-    """
-    True if x looks like per-event jets:
-    - awkward jagged with axis=1, OR
-    - dense numpy/awkward-numpy with ndim >= 2 (N, Nj, ...)
-    """
-    x = unwrap_accumulator(x)
-
-    if is_awkward(x):
-        # jagged?
-        try:
-            _ = ak.num(x, axis=1)
-            return True
-        except Exception:
-            # could still be regular (non-jagged) awkward with ndim>=2 after to_numpy
-            x_np = ak.to_numpy(x)
-            return np.asarray(x_np).ndim >= 2
-
-    return np.asarray(x).ndim >= 2
-
-def pad_clip_jets_with_mask(jets, max_jets=5, fill_value=-9999):
-    """
-    jets can be:
+def pad_clip_jets_with_mask(jets, max_jets, fill_value=-9999):
+    """Jets can be:
       - awkward jagged: (N, Nj, ...)
       - dense numpy:    (N, Nj, ...)
       - numpy object:   (N,) each element is list/array of length Nj
@@ -175,10 +144,8 @@ def pad_clip_jets_with_mask(jets, max_jets=5, fill_value=-9999):
     return out, mask
 
 
-
 def infer_collection_and_var(name: str):
-    """
-    Rules:
+    """Rules:
     - if name starts with "events_", treat as Event-level collection "Event"
     - else split into (collection, var) by first underscore, EXCEPT keep-together collections
       e.g. "HH_pt" -> ("HH", "pt")
@@ -209,8 +176,7 @@ def pick_region(is_signal: bool):
 
 
 def ensure_resizable_dataset(group, path_parts, data, compression="gzip"):
-    """
-    Create or append to a resizable dataset located at group/<path_parts...>.
+    """Create or append to a resizable dataset located at group/<path_parts...>.
     data: numpy array, first dimension is N (events)
     """
     g = group
@@ -252,12 +218,21 @@ def ensure_resizable_dataset(group, path_parts, data, compression="gzip"):
     return dset
 
 
-def convert_nested_coffea_to_h5(
+def write_targets(collection, length):
+    """Build targets for SPANet pairing interpretation."""
+    ensure_resizable_dataset(collection, ["h1", "b1"], np.zeros(length, dtype=np.int16))
+    ensure_resizable_dataset(collection, ["h1", "b2"], np.ones(length, dtype=np.int16))
+    ensure_resizable_dataset(collection, ["h2", "b3"], np.full(length, 2, dtype=np.int16))
+    ensure_resizable_dataset(collection, ["h2", "b4"], np.full(length, 3, dtype=np.int16))
+
+
+def coffea_to_h5(
     coffea_path,
     h5_path,
     columns_key="columns",
     weight_name="weight",
 ):
+    """Convert the columns from coffea to h5 format to use as SPANet inputs."""
     myfile = coffea.util.load(coffea_path)
     cols = myfile[columns_key]
 
@@ -281,14 +256,11 @@ def convert_nested_coffea_to_h5(
                 if weight_name not in payload:
                     raise KeyError(f'Missing "{weight_name}" in {dataset_key}/{era_key}/{region_key}')
                 w = to_numpy_event_vector(payload[weight_name])
+
                 # TODO make better. Currently just a placeholder basically
                 # --- TARGETS: fixed pairing indices (event-level) ---
                 N = w.shape[0]
-                ensure_resizable_dataset(g_targets, ["h1", "b1"], np.zeros(N, dtype=np.int16))
-                ensure_resizable_dataset(g_targets, ["h1", "b2"], np.ones(N, dtype=np.int16))
-                ensure_resizable_dataset(g_targets, ["h2", "b1"], np.full(N, 2, dtype=np.int16))
-                ensure_resizable_dataset(g_targets, ["h2", "b2"], np.full(N, 3, dtype=np.int16))
-
+                write_targets(g_targets, N)
 
                 signal_arr = np.full_like(w, 1 if sig else 0, dtype=np.int8)
 
@@ -296,7 +268,7 @@ def convert_nested_coffea_to_h5(
                 ensure_resizable_dataset(g_class, ["Event", "signal"], signal_arr)
 
                 jet_counts = None
-                jetN_key = "JetGoodFromHiggsOrdered_N"
+                jetN_key = f"{JET_COLLECTIONS[0]}_N"
                 if jetN_key in payload:
                     jet_counts = to_numpy_event_vector(payload[jetN_key]).astype(np.int64)
 
@@ -313,43 +285,31 @@ def convert_nested_coffea_to_h5(
                     arr_u = unwrap_accumulator(arr)
 
                     # FORCE JetGoodFromHiggsOrdered_* (except N) into Jet
-                    is_candidate_jet = (collection in JET_COLLECTIONS and var != "N")
+                    is_jet = (collection in JET_COLLECTIONS and var != "N")
 
-                    if is_candidate_jet:
-                        arr_u = unwrap_accumulator(arr)
-
+                    if is_jet:
                         # Case 1: flattened jets (1D of length sum(N))
-                        if np.asarray(arr_u).ndim == 1 and jet_counts is not None and var != "N":
-                            jagged = unflatten_to_jagged(arr_u, jet_counts)
-                            dense, mask = pad_clip_jets_with_mask(jagged, max_jets=MAX_JETS, fill_value=-9999)
-
-                            ensure_resizable_dataset(g_inputs, ["Jet", var], dense)
-
-                            if not jet_mask_written:
-                                # mask based on counts is equivalent; but using padded jagged is fine too
-                                ensure_resizable_dataset(g_inputs, ["Jet", "MASK"], mask.astype(np.bool_))
-                                jet_mask_written = True
-
-                        # Case 2: already jagged/dense jets (your existing pad function can handle it)
+                        arr_np = np.asarray(arr_u)
+                        if arr_np.ndim == 1 and jet_counts is not None:
+                            jets = unflatten_to_jagged(arr_u, jet_counts)
                         else:
-                            dense, mask = pad_clip_jets_with_mask(arr_u, max_jets=MAX_JETS, fill_value=-9999)
+                            jets = arr_u
 
-                            ensure_resizable_dataset(g_inputs, ["Jet", var], dense)
+                        dense, mask = pad_clip_jets_with_mask(jets, max_jets=MAX_JETS, fill_value=-9999)
+                        ensure_resizable_dataset(g_inputs, ["Jet", var], dense)
 
-                            if not jet_mask_written:
-                                ensure_resizable_dataset(g_inputs, ["Jet", "MASK"], mask.astype(np.bool_))
-                                jet_mask_written = True
+                        if not jet_mask_written:
+                            # mask based on counts is equivalent; but using padded jagged is fine too
+                            ensure_resizable_dataset(g_inputs, ["Jet", "MASK"], mask.astype(np.bool_))
+                            jet_mask_written = True
 
                     else:
                         # event-level
                         arr_np = to_numpy_event_vector(arr_u)
                         ensure_resizable_dataset(g_inputs, [collection, var], arr_np)
 
-
-
     print(f"Wrote merged HDF5: {h5_path}")
 
 
 if __name__ == "__main__":
-    convert_nested_coffea_to_h5("output_all.coffea", "columns_for_classifier.h5")
-
+    coffea_to_h5("output_all.coffea", "columns_for_classifier.h5")
