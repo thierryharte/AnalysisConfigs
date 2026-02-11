@@ -1127,6 +1127,7 @@ SPANET_TRAINING_DEFAULT_COLUMN_PARAMS_BTWP = [
     "phi",
     "mass",
     "btagPNetB_3wp",
+    "btagPNetB_5wp",
     "btagPNetB",
 ]
 SPANET_TRAINING_DEFAULT_COLUMNS_BTWP = {
@@ -1165,6 +1166,7 @@ DEFAULT_JET_COLUMN_PARAMS = [
     "mass",
     "btagPNetB",
     "btagPNetB_5wp",
+    "btagPNetB_3wp",
 ]
 DEFAULT_JET_COLUMNS = {
     "JetGood": DEFAULT_JET_COLUMN_PARAMS,

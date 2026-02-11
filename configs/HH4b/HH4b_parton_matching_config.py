@@ -26,10 +26,10 @@ from configs.HH4b_common.config_files.configurator_tools import (
     SPANET_TRAINING_DEFAULT_COLUMNS_BTWP,
     create_DNN_columns_list,
     define_categories,
-    define_single_category,
+    define_preselection,
     get_columns_list,
     get_variables_dict,
-    define_preselection
+    define_single_category,
 )
 from configs.HH4b_common.custom_weights import (
     bkg_morphing_dnn_weight,
