@@ -137,7 +137,6 @@ if not config_options_dict["spanet"] and not config_options_dict["run2"]:
         column_list += get_columns_list(SPANET_TRAINING_DEFAULT_COLUMNS_BTWP, not config_options_dict["save_chunk"])
     else:
         column_list += get_columns_list(SPANET_VBF_TRAINING_DEFAULT_COLUMNS_BTWP, not config_options_dict["save_chunk"])
-    
 else:
     # Define the other columns to save
     total_input_columns = {}

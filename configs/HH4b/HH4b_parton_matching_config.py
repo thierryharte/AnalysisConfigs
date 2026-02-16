@@ -94,8 +94,8 @@ preselection = define_preselection(config_options_dict)
 # Defining the used samples
 sample_ggF_list = [
       "GluGlutoHHto4B_spanet_kl-1p00_kt-1p00_c2-0p00_skimmed",
-      # "GluGlutoHHto4B_spanet_kl-5p00_kt-1p00_c2-0p00_skimmed",
-      # "GluGlutoHHto4B_spanet_kl-2p45_kt-1p00_c2-0p00_skimmed",
+      "GluGlutoHHto4B_spanet_kl-5p00_kt-1p00_c2-0p00_skimmed",
+      "GluGlutoHHto4B_spanet_kl-2p45_kt-1p00_c2-0p00_skimmed",
       # "GluGlutoHHto4B_spanet_kl-m2p00_kt-1p00_c2-0p00_skimmed",
       # "GluGlutoHHto4B_spanet_kl-m1p00_kt-1p00_c2-0p00_skimmed",
       # "GluGlutoHHto4B_spanet_kl-0p00_kt-0p00_c2-0p00_skimmed",
@@ -320,8 +320,8 @@ cfg = Configurator(
     calibrators=[JetsCalibrator],
     weights={
         "common": {
-            # "inclusive": ["genWeight", "lumi", "XS", "pileup", "sf_btag_fixed_multiple_wp"],
-            "inclusive": ["genWeight", "lumi", "XS", "pileup"],
+            "inclusive": ["genWeight", "lumi", "XS", "pileup", "sf_btag_fixed_multiple_wp"],
+            # "inclusive": ["genWeight", "lumi", "XS", "pileup"],
             # "inclusive": ["genWeight", "lumi", "XS"],
             # "inclusive": [],
             "bycategory": {
@@ -332,8 +332,8 @@ cfg = Configurator(
     variations={
         "weights": {
             "common": {
-                # "inclusive": ["pileup", "sf_btag_fixed_multiple_wp"],
-                "inclusive": [],
+                "inclusive": ["pileup", "sf_btag_fixed_multiple_wp"],
+                # "inclusive": [],
                 "bycategory": {},
             },
             "bysample": {},
