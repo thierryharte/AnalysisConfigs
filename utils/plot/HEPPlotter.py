@@ -102,6 +102,12 @@ class HEPPlotter:
             "ylim_bottom_factor": 1e-2,
             "ylim_top_value": None,
             "ylim_bottom_value": None,
+            ## x lim
+            "set_xlim": False,
+            "xlim_top_factor": 1,
+            "xlim_bottom_factor": 1,
+            "xlim_top_value": None,
+            "xlim_bottom_value": None,
             ## other
             "reference_to_den": True,
             "grid": True,
@@ -123,7 +129,7 @@ class HEPPlotter:
 
         # special for categorical plots
         self._xticklabels = []
-        self._label_pos=[]
+        self._label_pos = []
 
     # ----------------------------
     # CONFIGURATION METHODS
@@ -643,7 +649,7 @@ class HEPPlotter:
 
         x = np.arange(n_cats)
         width = 0.8 / n_series
-        self._label_pos=x + width * (n_series - 1) / 2
+        self._label_pos = x + width * (n_series - 1) / 2
 
         offset = 0
         for name in series_names:
@@ -958,6 +964,27 @@ class HEPPlotter:
             )
 
             ax.set_ylim(top=top_value, bottom=bottom_value)
+
+        # ----------------------------
+        # AUTO X-LIMITS (NON-CATEGORICAL)
+        # ----------------------------
+        if self.set_xlim and self.plot_type != "2d":
+            top_value = (
+                self.xlim_top_value
+                if self.xlim_top_value is not None
+                else (
+                    self.xlim_top_factor * ax.get_xlim()[1]
+                    if not self.y_log
+                    else ax.get_xlim()[1] ** self.xlim_top_factor
+                )
+            )
+            bottom_value = (
+                self.xlim_bottom_value
+                if self.xlim_bottom_value is not None
+                else self.xlim_bottom_factor * ax.get_xlim()[0]
+            )
+
+            ax.set_xlim(top=top_value, bottom=bottom_value)
 
         # ----------------------------
         # 2D COLORBAR
