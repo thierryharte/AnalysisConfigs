@@ -29,7 +29,6 @@ classifiers = [
     "Typing :: Typed"]
 dynamic = ["version"] #, "dependencies"]
 requires-python = ">=3.7"
-dependencies=["scikit-learn"]
 
 [project.urls]
 Repository = "https://github.com/PocketCoffea/AnalysisConfigs"
