@@ -104,10 +104,10 @@ class HEPPlotter:
             "ylim_bottom_value": None,
             ## x lim
             "set_xlim": False,
-            "xlim_top_factor": 1,
-            "xlim_bottom_factor": 1,
-            "xlim_top_value": None,
-            "xlim_bottom_value": None,
+            "xlim_right_factor": 1,
+            "xlim_left_factor": 1,
+            "xlim_right_value": None,
+            "xlim_left_value": None,
             ## other
             "reference_to_den": True,
             "grid": True,
@@ -969,22 +969,22 @@ class HEPPlotter:
         # AUTO X-LIMITS (NON-CATEGORICAL)
         # ----------------------------
         if self.set_xlim and self.plot_type != "2d":
-            top_value = (
-                self.xlim_top_value
-                if self.xlim_top_value is not None
+            right_value = (
+                self.xlim_right_value
+                if self.xlim_right_value is not None
                 else (
-                    self.xlim_top_factor * ax.get_xlim()[1]
+                    self.xlim_right_factor * ax.get_xlim()[1]
                     if not self.y_log
-                    else ax.get_xlim()[1] ** self.xlim_top_factor
+                    else ax.get_xlim()[1] ** self.xlim_right_factor
                 )
             )
-            bottom_value = (
-                self.xlim_bottom_value
-                if self.xlim_bottom_value is not None
-                else self.xlim_bottom_factor * ax.get_xlim()[0]
+            left_value = (
+                self.xlim_left_value
+                if self.xlim_left_value is not None
+                else self.xlim_left_factor * ax.get_xlim()[0]
             )
 
-            ax.set_xlim(top=top_value, bottom=bottom_value)
+            ax.set_xlim(left=left_value, right=right_value)
 
         # ----------------------------
         # 2D COLORBAR
