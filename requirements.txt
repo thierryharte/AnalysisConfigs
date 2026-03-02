@@ -1,0 +1,5 @@
+matplotlib
+hist
+scipy
+numpy
+mplhep
