@@ -41,7 +41,7 @@ def lepton_selection(events, lepton_flavour, params):
 
 
 def jet_selection_nopu(
-    events, jet_type, params, tight_cuts=False, semi_tight_vbf=False, 
+    events, jet_type, params, tight_cuts=False, semi_tight_vbf=False,
 ):
     jets = events[jet_type]
     cuts = params.object_preselection[jet_type]
@@ -51,8 +51,6 @@ def jet_selection_nopu(
     pt_cut = "pt"
     if tight_cuts and "pt_tight" in cuts.keys():
         pt_cut = "pt_tight"
-    if semi_tight_vbf and "ptSemiTight" in cuts.keys():
-        pt_cut = "ptSemiTight"
 
     if "eta_min" in cuts.keys() and "eta_max" in cuts.keys():
         mask_jets = (
@@ -73,6 +71,7 @@ def jet_selection_nopu(
     return jets[mask_jets]
 
 
+<<<<<<< HEAD
 def object_cleaning(object, cleaning_collection, dr_min=0.4):
     # here I create a deltaR matrix between jets and cleaning collection the output shape is (njets, ncleaning)
     dR = object[:, :, None].delta_r(cleaning_collection[:, None, :])
@@ -85,3 +84,5 @@ def object_cleaning(object, cleaning_collection, dr_min=0.4):
     cleaned_object = object[~dR_mask_jets]
     
     return cleaned_object
+=======
+>>>>>>> main

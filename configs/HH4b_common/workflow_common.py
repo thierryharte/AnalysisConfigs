@@ -7,19 +7,20 @@ import copy
 from pocket_coffea.lib.deltaR_matching import object_matching
 from pocket_coffea.workflows.base import BaseProcessorABC
 
-from utils.basic_functions import add_fields, align_by_eta
-from utils.dnn_evaluation_functions import get_dnn_prediction
+from utils.basic_functions import add_fields
+from utils.dnn_evaluation_functions import get_dnn_prediction, get_onnx_prediction
+
 
 # from utils.inference_session_onnx_slurm import get_model_session
 from utils.inference_session_onnx import get_model_session
 from utils.parton_matching_function import get_parton_last_copy
 from utils.reconstruct_higgs_candidates import (
-    get_jets_no_higgs_from_idx,
-    reconstruct_higgs_from_idx,
+    get_jets_idx_not_from_idx,
+    reconstruct_resonances_from_idx,
     reconstruct_higgs_from_provenance,
     run2_matching_algorithm,
 )
-from utils.spanet_evaluation_functions import get_best_pairings, get_pairing_information
+from utils.spanet_evaluation_functions import get_best_pairings, clean_assignment_prob
 
 from .custom_object_preselection_common import (
     lepton_selection,
@@ -74,6 +75,57 @@ class HH4bCommonProcessor(BaseProcessorABC):
             setattr(self, key, value)
 
     def process_extra_after_skim(self):
+        if self._isMC:
+            # do truth matching to get b-jet from Higgs
+            self.get_jet_higgs_provenance(
+                which_bquark=self.which_bquark, jet_collection="Jet"
+            )
+        else:
+            self.dummy_provenance_higgs()
+
+        # Add btag WP
+        self.events["Jet"] = self.generate_btag_workingpoints(self.events["Jet"], 5)
+        self.events["Jet"] = self.generate_btag_workingpoints(self.events["Jet"], 3)
+
+    def def_provenance_field(self, jet_collection="Jet"):
+        provenance_higgs = self.events[jet_collection].provenance_higgs
+
+        if "provenance_vbf" in self.events[jet_collection].fields:
+            provenance_vbf = self.events[jet_collection].provenance_vbf
+            # if a Jet is matched to both Higgs and VBF, give priority to the Higgs
+            provenance = ak.where(
+                ak.is_none(provenance_higgs, axis=1),
+                provenance_vbf,
+                provenance_higgs,
+            )
+
+            if self._isMC:
+                # check that provenance fields are orthogonal
+                mask_both_not_none = ~ak.is_none(
+                    provenance_higgs, axis=1
+                ) & ~ak.is_none(provenance_vbf, axis=1)
+                n_jets_both_not_none = ak.sum(mask_both_not_none, axis=1)
+                n_events_with_jets_both_not_none = ak.sum(n_jets_both_not_none > 0)
+
+                if n_events_with_jets_both_not_none > 0:
+                    # raise ValueError(
+                    #     f"Some jets are matched to both Higgs and VBF quarks in {n_events_with_jets_both_not_none} events!"
+                    # )
+                    print(
+                        f"WARNING: Some jets are matched to both Higgs and VBF quarks in {n_events_with_jets_both_not_none} events!",
+                        f"This happens {(n_events_with_jets_both_not_none/len(self.events)):.2f} % of the times",
+                    )
+        else:
+            provenance = provenance_higgs
+
+        self.events[jet_collection] = ak.with_field(
+            self.events[jet_collection],
+            provenance,
+            "provenance",
+        )
+
+    def define_jet_collections(self):
+        # create copies of the different pt definitions
         self.events["JetDefault"] = copy.copy(self.events["Jet"])
         self.events["JetPNet"] = copy.copy(self.events["Jet"])
         self.events["JetPNetPlusNeutrino"] = copy.copy(self.events["Jet"])
@@ -100,7 +152,7 @@ class HH4bCommonProcessor(BaseProcessorABC):
             self.events.JetPNetPlusNeutrino.pt,
             "pt_regressed",
         )
-        
+
         if self.add_jet_spanet:
             # reorder the jets by pt regressed
             self.events["Jet"] = self.events["Jet"][
@@ -121,21 +173,13 @@ class HH4bCommonProcessor(BaseProcessorABC):
             self.pt_cut_name = "pt"
 
         # Cut on the JEC pt (w/o regression)
-        self.events["JetGood"], _ = custom_jet_selection(
+        self.events["JetGood"], mask_jet_good = custom_jet_selection(
             self.events,
             "Jet",
             self.params,
             year=self._year,
             pt_type="pt_default",
             pt_cut_name=self.pt_cut_name,
-        )
-
-        # Add btag WP
-        self.events["JetGood"] = self.generate_btag_workingpoints(
-            self.events["JetGood"], 5
-        )
-        self.events["JetGood"] = self.generate_btag_workingpoints(
-            self.events["JetGood"], 3
         )
 
         self.events["Electron"] = ak.with_field(
@@ -303,7 +347,16 @@ class HH4bCommonProcessor(BaseProcessorABC):
                 False,
             )
             self.events["DiJetVBFCandidates"] = dijets[good_pairs_mask]
-        
+
+        # Define the Matched collections
+        self.events["JetGoodMatched"] = ak.mask(
+            self.events["JetGood"],
+            ~ak.is_none(self.events["JetGood"].provenance_higgs, axis=1),
+        )
+        self.events["JetGoodHiggsMatched"] = ak.mask(
+            self.events["JetGoodHiggs"],
+            ~ak.is_none(self.events["JetGoodHiggs"].provenance_higgs, axis=1),
+        )
 
     # def apply_preselection(self, variation):
     #     """
@@ -316,6 +369,49 @@ class HH4bCommonProcessor(BaseProcessorABC):
     #         self._preselections = self._preselections_temp[self._sample]
     #     super().apply_preselection(self, variation)
     #     self._preselections = self._preselections_temp
+
+    def flatten_pt(self, rand_type, jet_collection):
+        if rand_type == 0.5:
+            random_weights = ak.Array(
+                np.random.rand((len(self.events[jet_collection].pt))) + 0.5
+            )  # [0.5,1.5]
+        elif rand_type == 0.3:
+            random_weights = ak.Array(
+                np.random.rand((len(self.events[jet_collection].pt))) * 1.4 + 0.3
+            )  # [0.3,1.7]
+        elif rand_type == 0.1:
+            random_weights = ak.Array(
+                np.random.rand((len(self.events[jet_collection].pt))) * 9.9 + 0.1
+            )  # [0.1,10.0]
+        else:
+            raise ValueError(f"Invalid input. rand_type {rand_type} not known.")
+
+        self.events = ak.with_field(
+            self.events,
+            random_weights,
+            "random_pt_weights",
+        )
+
+        self.events[jet_collection] = ak.with_field(
+            self.events[jet_collection],
+            self.events[jet_collection].pt,
+            "pt_orig",
+        )
+        self.events[jet_collection] = ak.with_field(
+            self.events[jet_collection],
+            self.events[jet_collection].pt * random_weights,
+            "pt",
+        )
+        self.events[jet_collection] = ak.with_field(
+            self.events[jet_collection],
+            self.events[jet_collection].mass,
+            "mass_orig",
+        )
+        self.events[jet_collection] = ak.with_field(
+            self.events[jet_collection],
+            self.events[jet_collection].mass * random_weights,
+            "mass",
+        )
 
     def generate_btag_workingpoints(self, jets, num_wp):
         if hasattr(jets, "btagBB"):
@@ -372,7 +468,7 @@ class HH4bCommonProcessor(BaseProcessorABC):
         )
         return ak.with_field(jets, deltaWP, f"btagPNetB_delta{num_wp}wp")
 
-    def get_jet_higgs_provenance(self, which_bquark):  # -> ak.Array:
+    def get_jet_higgs_provenance(self, which_bquark, jet_collection):  # -> ak.Array:
         # Select b-quarks at Gen level, coming from H->bb decay
         self.events["GenPart"] = ak.with_field(
             self.events.GenPart, ak.local_index(self.events.GenPart, axis=1), "index"
@@ -389,14 +485,18 @@ class HH4bCommonProcessor(BaseProcessorABC):
         higgs = higgs[ak.num(higgs.childrenIdxG, axis=2) == 2]
         higgs = higgs[ak.argsort(higgs.pt, ascending=False)]
 
-        if which_bquark == "last_numba":
-            bquarks_first = genpart[isB & isHard & isFirst]
-            mother_bquarks = genpart[bquarks_first.genPartIdxMother]
-            bquarks_from_higgs = bquarks_first[mother_bquarks.pdgId == 25]
-            provenance = ak.where(
+        if which_bquark == "last_numba" or which_bquark == "last_numba_with_status":
+            if which_bquark == "last_numba":
+                bquarks_first = genpart[isB & isHard & isFirst]
+                mother_bquarks = genpart[bquarks_first.genPartIdxMother]
+                bquarks_from_higgs = bquarks_first[mother_bquarks.pdgId == 25]
+            else:
+                outgoing_part = genpart[genpart.status == 23]
+                bquarks_from_higgs = outgoing_part[abs(outgoing_part.pdgId) == 5]
+
+            provenance_higgs = ak.where(
                 bquarks_from_higgs.genPartIdxMother == higgs.index[:, 0], 1, 2
             )
-
             # define variables to get the last copy
             children_idxG = ak.without_parameters(genpart.childrenIdxG, behavior={})
             children_idxG_flat = ak.flatten(children_idxG, axis=1)
@@ -454,94 +554,90 @@ class HH4bCommonProcessor(BaseProcessorABC):
                 bquarks_first = ak.where(
                     abs(b_mother.pdgId) == 5, b_mother, bquarks_first
                 )
-            provenance = ak.where(
+            provenance_higgs = ak.where(
                 bquarks_first.genPartIdxMother == higgs.index[:, 0], 1, 2
             )
         elif which_bquark == "first":
-            bquarks = ak.flatten(higgs.children, axis=2)
-            provenance = ak.where(bquarks.genPartIdxMother == higgs.index[:, 0], 1, 2)
+            bquarks_first = ak.flatten(higgs.children, axis=2)
+            provenance_higgs = ak.where(
+                bquarks_first.genPartIdxMother == higgs.index[:, 0], 1, 2
+            )
+            bquarks = bquarks_first
         else:
             raise ValueError(
-                "which_bquark for the parton matching must be 'first' or 'last' or 'last_numba'"
+                "which_bquark for the parton matching must be 'first', 'last', 'last_numba' or 'last_numba_with_status'"
             )
 
-        # Adding the provenance to the quark object
-        bquarks = ak.with_field(bquarks, provenance, "provenance")
+        bquarks = ak.with_field(bquarks, provenance_higgs, "provenance_higgs")
+        # Adding the provenance_higgs to the quark object
         self.events["bQuark"] = bquarks
+        self.events["bQuarkFirst"] = bquarks_first
 
         # Calling our general object_matching function.
         # The output is an awkward array with the shape of the second argument and None where there is no matching.
-        # So, calling like this, we will get out an array of matched_quarks with the dimension of the JetGood.
-        matched_bquarks_higgs, matched_jets_higgs, deltaR_matched_higgs = (
-            object_matching(
-                bquarks,
-                self.events.JetGoodHiggs,
-                dr_min=self.parton_jet_min_dR,
-            )
-        )
-        # matched all jetgood
+        # So, calling like this, we will get out an array of matched_quarks with the dimension of the jet_collection.
         matched_bquarks, matched_jets, deltaR_matched = object_matching(
             bquarks,
-            self.events.JetGood,
+            self.events[jet_collection],
             dr_min=self.parton_jet_min_dR,
         )
 
-        matched_jets_higgs = ak.with_field(
-            matched_jets_higgs, matched_bquarks_higgs.provenance, "provenance"
-        )
-        self.events["JetGoodHiggs"] = ak.with_field(
-            self.events.JetGoodHiggs, matched_bquarks_higgs.provenance, "provenance"
-        )
-        matched_jets = ak.with_field(
-            matched_jets, matched_bquarks.provenance, "provenance"
-        )
-        self.events["JetGood"] = ak.with_field(
-            self.events.JetGood, matched_bquarks.provenance, "provenance"
+        # add provenance_higgs
+        self.events[jet_collection] = ak.with_field(
+            self.events[jet_collection],
+            matched_bquarks.provenance_higgs,
+            "provenance_higgs",
         )
 
-        self.events["bQuarkHiggsMatched"] = ak.with_field(
-            matched_bquarks_higgs, deltaR_matched_higgs, "dRMatchedJet"
+        # add deltaR information
+        self.events[jet_collection] = ak.with_field(
+            self.events[jet_collection], deltaR_matched, "dRMatchedJet"
         )
-        self.events["JetGoodHiggsMatched"] = ak.with_field(
-            matched_jets_higgs, deltaR_matched_higgs, "dRMatchedJet"
-        )
-        self.events["bQuarkMatched"] = ak.with_field(
-            matched_bquarks, deltaR_matched, "dRMatchedJet"
-        )
-        self.events["JetGoodMatched"] = ak.with_field(
-            matched_jets, deltaR_matched, "dRMatchedJet"
-        )
-        self.events["JetGoodHiggsMatched"] = ak.with_field(
-            self.events.JetGoodHiggsMatched,
-            self.events.bQuarkHiggsMatched.pdgId,
-            "pdgId",
-        )
-        self.events["JetGoodMatched"] = ak.with_field(
-            self.events.JetGoodMatched,
-            self.events.bQuarkMatched.pdgId,
+
+        # add pdgId information
+        self.events[jet_collection] = ak.with_field(
+            self.events[jet_collection],
+            matched_bquarks.pdgId,
             "pdgId",
         )
 
-    def do_vbf_parton_matching(self, which_bquark):  # -> ak.Array:
+        self.events["bQuarkMatched"] = matched_bquarks
+        self.events["nbQuarkMatched"] = ak.num(self.events.bQuarkMatched, axis=1)
+
+    def do_vbf_parton_matching(self, which_vbf_quark, jet_collection):  # -> ak.Array:
         # Select vbf quarks
         self.events.GenPart = ak.with_field(
             self.events.GenPart, ak.local_index(self.events.GenPart, axis=1), "index"
         )
         genpart = self.events.GenPart
 
-        isQuark = abs(genpart.pdgId) < 7
-        isHard = genpart.hasFlags(["fromHardProcess"])
+        if self.which_vbf_quark == "with_status":
+            # find the vbf looking at the status
+            outgoing_part = genpart[genpart.status == 23]
+            # WARNING: can it be that the VBF jets have pdgId ==5? I didn't see any
+            vbf_quarks = outgoing_part[abs(outgoing_part.pdgId) != 5]
 
-        quarks = genpart[isQuark & isHard]
-        quarks = quarks[quarks.genPartIdxMother != -1]
+        elif self.which_vbf_quark == "with_mothers_children":
+            # find the vbf looking if the children of the mother are Higgs
+            # for samples which are not vbf this one creates issues
+            isQuark = abs(genpart.pdgId) < 7
+            isHard = genpart.hasFlags(["fromHardProcess"])
 
-        quarks_mother = genpart[quarks.genPartIdxMother]
-        quarks_mother_children = quarks_mother.children
-        quarks_mother_children_isH = (
-            ak.sum((quarks_mother_children.pdgId == 25), axis=-1) == 2
-        )
-        vbf_quarks = quarks[quarks_mother_children_isH]
+            quarks = genpart[isQuark & isHard]
+            quarks = quarks[quarks.genPartIdxMother != -1]
 
+            quarks_mother = genpart[quarks.genPartIdxMother]
+            quarks_mother_children = quarks_mother.children
+            quarks_mother_children_isH = (
+                ak.sum((quarks_mother_children.pdgId == 25), axis=-1) == 2
+            )
+            vbf_quarks = quarks[quarks_mother_children_isH]
+        else:
+            raise ValueError(
+                "which_vbf_quark for the parton matching must be 'with_status' or 'with_mothers_children'"
+            )
+
+        # define variables to get the last copy
         children_idxG = ak.without_parameters(genpart.childrenIdxG, behavior={})
         children_idxG_flat = ak.flatten(children_idxG, axis=1)
         genpart_pdgId_flat = ak.flatten(
@@ -565,6 +661,7 @@ class HH4bCommonProcessor(BaseProcessorABC):
         firstgenpart_idxG = ak.firsts(genpart[:, 0].children).genPartIdxMotherG
         firstgenpart_idxG_numpy = ak.to_numpy(firstgenpart_idxG, allow_missing=False)
 
+        # find the quark last copy
         vbf_quark_last_idx = get_parton_last_copy(
             vbf_quark_idx,
             vbf_quarks_pdgId,
@@ -576,65 +673,72 @@ class HH4bCommonProcessor(BaseProcessorABC):
             nevents,
             firstgenpart_idxG_numpy,
         )
+        vbf_quarks_last = genparts_flat[vbf_quark_last_idx]
 
-        vbf_quark_last = genparts_flat[vbf_quark_last_idx]
-
+        # match quarks with the VBF jet candidates
         matched_vbf_quarks, matched_vbf_jets, deltaR_matched_vbf = object_matching(
-            vbf_quark_last,
-            self.events.JetVBF_matching,
+            vbf_quarks_last,
+            self.events[jet_collection],
             dr_min=self.parton_jet_min_dR,
         )
 
-        maskNotNone = ~ak.is_none(matched_vbf_jets, axis=1)
-        self.events["JetVBF_matched"] = matched_vbf_jets[maskNotNone]
-
-        self.events["JetVBF_matched"] = ak.with_field(
-            self.events.JetVBF_matched,
-            ak.where(
-                self.events.JetVBF_matched.PNetRegPtRawCorr > 0,
-                self.events.JetVBF_matched.pt
-                / self.events.JetVBF_matched.PNetRegPtRawCorrNeutrino,
-                self.events.JetVBF_matched.pt,
+        provenance_vbf = ak.values_astype(
+            ak.mask(
+                ak.ones_like(self.events[jet_collection].pt) * 3,
+                ~ak.is_none(matched_vbf_jets.pt, axis=1),
             ),
-            "pt",
+            np.int64,
         )
 
-        self.events["quarkVBF_matched"] = matched_vbf_quarks[maskNotNone]
-
-        self.events["quarkVBF"] = vbf_quark_last
-
-        # general Selection
-        (
-            matched_vbf_quarks_generalSelection,
-            matched_vbf_jets_generalSelection,
-            deltaR_matched_vbf,
-        ) = object_matching(
-            vbf_quark_last,
-            self.events.JetVBF_generalSelection,
-            dr_min=self.parton_jet_min_dR,
-        )
-        maskNotNone_genSel = ~ak.is_none(matched_vbf_jets_generalSelection, axis=1)
-
-        self.events["JetVBF_generalSelection_matched"] = (
-            matched_vbf_jets_generalSelection[maskNotNone_genSel]
+        self.events[jet_collection] = ak.with_field(
+            self.events[jet_collection],
+            provenance_vbf,
+            "provenance_vbf",
         )
 
-        self.events["quarkVBF_generalSelection_matched"] = (
-            matched_vbf_quarks_generalSelection[maskNotNone_genSel]
+        self.events["quarkVBFMatched"] = ak.with_field(
+            matched_vbf_quarks,
+            provenance_vbf,
+            "provenance_vbf",
         )
 
-    def dummy_provenance(self):
-        self.events["JetGoodHiggs"] = ak.with_field(
-            self.events.JetGoodHiggs,
-            ak.ones_like(self.events.JetGoodHiggs.pt) * -1,
-            "provenance",
-        )
-        self.events["JetGoodHiggsMatched"] = self.events.JetGoodHiggs
+        self.events["quarkVBF"] = vbf_quarks_last
+        self.events["quarkVBFFirst"] = vbf_quarks
 
-        self.events["JetGood"] = ak.with_field(
-            self.events.JetGood, ak.ones_like(self.events.JetGood.pt) * -1, "provenance"
+        # matched_vbf_jets = ak.with_field(
+        #     matched_vbf_jets, ak.ones_like(matched_vbf_jets.pt) * 3, "provenance_vbf"
+        # )
+        # matched_vbf_quarks = ak.with_field(
+        #     matched_vbf_quarks, matched_vbf_jets.provenance_vbf, "provenance_vbf"
+        # )
+
+        # self.events[f"{jet_collection}Matched"] = matched_vbf_jets
+
+    def dummy_provenance_higgs(self, jet_collection="Jet"):
+        self.events[jet_collection] = ak.with_field(
+            self.events[jet_collection],
+            ak.mask(
+                ak.ones_like(self.events[jet_collection].pt),
+                ak.zeros_like(self.events[jet_collection].pt, dtype=bool),
+            ),
+            # ak.values_astype(
+            #     ak.ones_like(self.events[jet_collection].pt) * -1, np.int64
+            # ),
+            "provenance_higgs",
         )
-        self.events["JetGoodMatched"] = self.events.JetGood
+
+    def dummy_provenance_vbf(self, jet_collection="Jet"):
+        self.events[jet_collection] = ak.with_field(
+            self.events[jet_collection],
+            ak.mask(
+                ak.ones_like(self.events[jet_collection].pt),
+                ak.zeros_like(self.events[jet_collection].pt, dtype=bool),
+            ),
+            # ak.values_astype(
+            #     ak.ones_like(self.events[jet_collection].pt) * -1, np.int64
+            # ),
+            "provenance_vbf",
+        )
 
     def count_objects(self, variation):
         # NOTE:  ak.num counts even the None values, while ak.count counts only the non-None values
@@ -687,7 +791,7 @@ class HH4bCommonProcessor(BaseProcessorABC):
 
         return ak.flatten(np.sqrt(sigma_hbbCand_A**2 + sigma_hbbCand_B**2), axis=None)
 
-    def get_jets_no_higgs(self, jet_higgs_idx_per_event):
+    def get_jets_not_from_idx(self, jet_idx_to_remove_per_event):
         jet_offsets = np.concatenate(
             [
                 [0],
@@ -700,18 +804,19 @@ class HH4bCommonProcessor(BaseProcessorABC):
         jets_index_all = ak.to_numpy(
             ak.flatten(local_index_all + jet_offsets[:-1]), allow_missing=True
         )
-        jets_from_higgs_idx = ak.to_numpy(
-            ak.flatten(jet_higgs_idx_per_event + jet_offsets[:-1]),
+        jets_to_remove_idx = ak.to_numpy(
+            ak.flatten(jet_idx_to_remove_per_event + jet_offsets[:-1]),
             allow_missing=False,
         )
-        jets_no_higgs_idx = get_jets_no_higgs_from_idx(
-            jets_index_all, jets_from_higgs_idx
+        jets_idx_not_from_idx = get_jets_idx_not_from_idx(
+            jets_index_all, jets_to_remove_idx
         )
-        jets_no_higgs_idx_unflat = (
-            ak.unflatten(jets_no_higgs_idx, ak.num(self.events.Jet, axis=1))
+        jets_idx_not_from_idx_unflat = (
+            ak.unflatten(jets_idx_not_from_idx, ak.num(self.events.Jet, axis=1))
             - jet_offsets[:-1]
         )
-        jets_not_from_higgs = self.events.Jet[jets_no_higgs_idx_unflat >= 0]
+        jets_not_from_higgs = self.events.Jet[jets_idx_not_from_idx_unflat >= 0]
+
         return jets_not_from_higgs
 
     def define_dnn_variables(
@@ -729,7 +834,9 @@ class HH4bCommonProcessor(BaseProcessorABC):
         )
         self.events["year"] = ak.full_like(self.events.HT, year_dict[f"{self._year}"])
 
-        self.events["JetNotFromHiggs"] = self.get_jets_no_higgs(jet_higgs_idx_per_event)
+        self.events["JetNotFromHiggs"] = self.get_jets_not_from_idx(
+            jet_higgs_idx_per_event
+        )
 
         self.params.object_preselection.update(
             {"JetNotFromHiggs": self.params.object_preselection["Jet"]}
@@ -1069,13 +1176,6 @@ class HH4bCommonProcessor(BaseProcessorABC):
     def get_true_pairing_and_compare(
         self, suffix="", pairing_predictions=None, pairing_suffix=""
     ):
-        # do truth matching to get b-jet from Higgs
-        self.get_jet_higgs_provenance(which_bquark=self.which_bquark)
-        self.events["nbQuarkHiggsMatched"] = ak.num(
-            self.events.bQuarkHiggsMatched, axis=1
-        )
-        self.events["nbQuarkMatched"] = ak.num(self.events.bQuarkMatched, axis=1)
-
         # reconstruct the higgs candidates
         (
             self.events[f"HiggsLeading{suffix}"],
@@ -1108,7 +1208,7 @@ class HH4bCommonProcessor(BaseProcessorABC):
             else:
                 # keep up to 5 jets
                 pairing_true = ak.where(
-                    pairing_true < self.max_num_jets,
+                    pairing_true < self.max_num_jets_spanet,
                     pairing_true,
                     -1,
                 )
@@ -1158,24 +1258,34 @@ class HH4bCommonProcessor(BaseProcessorABC):
                 )
 
                 # compute the pairing information using the SPANET model
-                pairing_outputs = get_pairing_information(
+                spanet_output, _ = get_onnx_prediction(
                     model_session_spanet,
                     input_name_spanet,
                     output_name_spanet,
                     self.events,
-                    self.max_num_jets,
-                    self.spanet_input_name_list,
+                    self.spanet_input_name,
+                    self.pad_value,
+                    self.max_num_jets_spanet,
                 )
                 # Not needed anymore
                 del model_session_spanet
                 del input_name_spanet
                 del output_name_spanet
 
+                jet_coll_pairing = [
+                    x[0] for x in self.spanet_input_name["sequential"].values()
+                ][0]
+
+                # if an event has less than 6 jets, than remove the vbf prob matrix
+                cleaned_assignment_prob = clean_assignment_prob(
+                    spanet_output["assignment_prob"], self.events[jet_coll_pairing]
+                )
+
                 (
                     pairing_predictions,
                     self.events["best_pairing_probability"],
                     self.events["second_best_pairing_probability"],
-                ) = get_best_pairings(pairing_outputs)
+                ) = get_best_pairings(cleaned_assignment_prob)
 
                 # get the probabilities difference between the best and second best jet assignment
                 self.events["Delta_pairing_probabilities"] = (
@@ -1216,12 +1326,23 @@ class HH4bCommonProcessor(BaseProcessorABC):
                     self.pad_value,
                     self.events.Arctanh_Delta_pairing_probabilities,
                 )
+                if self._isMC:
+                    matched_jet_higgs_idx_not_noneTrue = self.get_true_pairing_and_compare(
+                        suffix="True",
+                        pairing_predictions=pairing_predictions,
+                        pairing_suffix="",
+                    )
+                else:
+                    self.dummy_provenance()
 
                 (
                     self.events["HiggsLeading"],
                     self.events["HiggsSubLeading"],
                     self.events["JetGoodFromHiggsOrdered"],
-                ) = reconstruct_higgs_from_idx(self.events.JetGood, pairing_predictions)
+                    self.events["JetGoodFromVBFEnergyOrdered"],
+                ) = reconstruct_resonances_from_idx(
+                    self.events[jet_coll_pairing], pairing_predictions
+                )
 
                 matched_jet_higgs_idx_not_none = self.events.JetGoodFromHiggsOrdered.index
                 # Define distance parameter for selection:
@@ -1229,18 +1350,18 @@ class HH4bCommonProcessor(BaseProcessorABC):
                     (self.events.HiggsLeading.mass - 125) ** 2
                     + (self.events.HiggsSubLeading.mass - 120) ** 2
                 )
-                if self._isMC:
-                    matched_jet_higgs_idx_not_noneTrue = self.get_true_pairing_and_compare(
-                        suffix="True",
-                        pairing_predictions=pairing_predictions,
-                        pairing_suffix="",
-                    )
-
                 # if the 5th jet is matched, then the add jet should be order by btag
                 # because we want to consider the leading in btag which the pairing discarded
                 self.events["btag_order_add_jet"] = ak.any(
                     ak.flatten(pairing_predictions, axis=-1) > 3, axis=-1
                 )
+
+                # Get classification probability if present
+                if len(spanet_output["class_prob"]) > 0 and self.vbf_discriminator == self.spanet:
+                    if self.vbf_analysis:
+                        self.events["VBF_ggF_score"] = spanet_output["class_prob"][0][:, -1]
+                    else:
+                        raise ValueError("This case was not implemented")
 
             # reconstruct the higgs candidates for Run2 method
             if self.run2:
@@ -1251,7 +1372,7 @@ class HH4bCommonProcessor(BaseProcessorABC):
                     self.events["HiggsSubLeadingRun2"],
                     self.events["JetGoodFromHiggsOrderedRun2"],
                 ) = run2_matching_algorithm(self.events["JetGoodHiggs"])
-    
+
                 matched_jet_higgs_idx_not_noneRun2 = (
                     self.events.JetGoodFromHiggsOrderedRun2.index
                 )
@@ -1265,33 +1386,36 @@ class HH4bCommonProcessor(BaseProcessorABC):
                         pairing_predictions=pairing_predictions,
                         pairing_suffix="Run2",
                     )
-    
+
                 # if the 5th jet is matched, then the add jet should be order by btag
                 # because we want to consider the leading in btag which the pairing discarded
                 # (useless for Run2 pairing because it's always 4 jets)
                 self.events["btag_order_add_jet"] = ak.any(
                     ak.flatten(pairing_predictions, axis=-1) > 3, axis=-1
                 )
-    
+
             if not (self._isMC and not self.spanet):
                 self.dummy_provenance()
-    
+
             self.events["nJetGoodHiggsMatched"] = ak.num(
                 self.events.JetGoodHiggsMatched, axis=1
             )
-            self.events["nJetGoodMatched"] = ak.num(self.events.JetGoodMatched, axis=1)
-        else:
-            print("Skipping jet pairing for boosted category")
-            
-        if self.vbf_ggf_dnn:
+
+        self.events["nJetGoodHiggsMatched"] = ak.num(
+            self.events.JetGoodHiggsMatched, axis=1
+        )
+        self.events["nJetGoodMatched"] = ak.num(self.events.JetGoodMatched, axis=1)
+
+        if self.vbf_discriminator and self.vbf_discriminator != self.spanet:
             (
-                model_session_vbf_ggf_dnn,
-                input_name_vbf_ggf_dnn,
-                output_name_vbf_ggf_dnn,
-            ) = get_model_session(self.vbf_ggf_dnn, "vbf_ggf_dnn")
-            del model_session_vbf_ggf_dnn
-            del input_name_vbf_ggf_dnn
-            del output_name_vbf_ggf_dnn
+                model_session_vbf_discriminator,
+                input_name_vbf_discriminator,
+                output_name_vbf_discriminator,
+            ) = get_model_session(self.vbf_discriminator, "vbf_discriminator")
+
+            del model_session_vbf_discriminator
+            del input_name_vbf_discriminator
+            del output_name_vbf_discriminator
 
         if self.dnn_variables and self.spanet and not self.boosted:
             (
@@ -1424,37 +1548,45 @@ class HH4bCommonProcessor(BaseProcessorABC):
             ) = get_model_session(self.sig_bkg_dnn, "sig_bkg_dnn")
 
             if self.spanet:
-                sig_bkg_dnn_score = get_dnn_prediction(
+                onnx_output, out_type = get_onnx_prediction(
                     model_session_SIG_BKG_DNN,
                     input_name_SIG_BKG_DNN,
                     output_name_SIG_BKG_DNN,
                     self.events,
                     self.sig_bkg_dnn_input_variables,
                     pad_value=self.pad_value,
-                )[0]
-                # if array is 1 dim just take it
-                if sig_bkg_dnn_score.ndim == 1:
-                    self.events["sig_bkg_dnn_score"] = sig_bkg_dnn_score
+                    max_num_jets_spanet=self.max_num_jets_spanet_class,
+                )
+                if out_type == "spanet":
+                    sig_bkg_dnn_score = onnx_output["class_prob"][0][:, 1]
                 else:
-                    # if array is 2 dim take the last column
-                    self.events["sig_bkg_dnn_score"] = sig_bkg_dnn_score[:, -1]
+                    # if array is 1 dim just take it
+                    if sig_bkg_dnn_score.ndim == 1:
+                        self.events["sig_bkg_dnn_score"] = sig_bkg_dnn_score
+                    else:
+                        # if array is 2 dim take the last column
+                        self.events["sig_bkg_dnn_score"] = sig_bkg_dnn_score[:, -1]
 
             if self.run2:
-                sig_bkg_dnn_score = get_dnn_prediction(
+                onnx_output, out_type = get_onnx_prediction(
                     model_session_SIG_BKG_DNN,
                     input_name_SIG_BKG_DNN,
                     output_name_SIG_BKG_DNN,
                     self.events,
                     self.sig_bkg_dnn_input_variables,
                     pad_value=self.pad_value,
+                    max_num_jets_spanet=self.max_num_jets_spanet_class,
                     run2=True,
-                )[0]
-                # if array is 1 dim just take it
-                if sig_bkg_dnn_score.ndim == 1:
-                    self.events["sig_bkg_dnn_scoreRun2"] = sig_bkg_dnn_score
+                )
+                if out_type == "spanet":
+                    sig_bkg_dnn_score = onnx_output["class_prob"][0][:, 1]
                 else:
-                    # if array is 2 dim take the last column
-                    self.events["sig_bkg_dnn_scoreRun2"] = sig_bkg_dnn_score[:, -1]
+                    # if array is 1 dim just take it
+                    if sig_bkg_dnn_score.ndim == 1:
+                        self.events["sig_bkg_dnn_scoreRun2"] = sig_bkg_dnn_score
+                    else:
+                        # if array is 2 dim take the last column
+                        self.events["sig_bkg_dnn_scoreRun2"] = sig_bkg_dnn_score[:, -1]
 
                 del model_session_SIG_BKG_DNN
                 del input_name_SIG_BKG_DNN

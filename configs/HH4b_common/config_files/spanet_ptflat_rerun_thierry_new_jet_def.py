@@ -1,8 +1,6 @@
 """Config file for spanet_pT model with the correct definition for the 5th jet."""
-from configs.HH4b_common.dnn_input_variables import (
-    bkg_morphing_dnn_input_variables,
-    sig_bkg_dnn_input_variables,
-)
+import configs.HH4b_common.dnn_input_variables as dnn_vars
+
 
 from configs.HH4b_common.config_files.default_config import default_onnx_model_dict as onnx_model_dict
 
@@ -11,30 +9,27 @@ from configs.HH4b_common.config_files.default_config import default_config_optio
 
 onnx_model_dict |= {
     "spanet": "/work/tharte/datasets/onnx_spanet_models_for_pairing_and_mass_sculpting_studies/hh4b_5jets_e300_s100_ptvary_wide_loose_btag.onnx",
-    "vbf_ggf_dnn": "",
+    "vbf_discriminator": "",
     "bkg_morphing_dnn": "/work/tharte/datasets/ML_pytorch/out/bkg_reweighting/SPANET_ptFlat_20_runs_postEE_new_jet5_def/best_models/ratio/average_model_from_onnx.onnx",  # --> trained on postEE only
     "sig_bkg_dnn": "/work/tharte/datasets/ML_pytorch/out/sig_bkg_classifier/DNN_spanet_ptflat_e5drop75_postEE_allklambda_new_jet_def/state_dict/model_best_epoch_21.onnx",
 }
 
 
 config_options_dict |= {
-    "higgs_parton_matching": False,
     "vbf_parton_matching": False,
     "tight_cuts": False,
-    "classification": False,
     "save_chunk": False,
     "vbf_presel": False,
-    "semi_tight_vbf": True,
     "dnn_variables": True,
     "run2": False,
     "vr1": False,
     "random_pt": False,
     "rand_type": 0.3,
     "blind": True if onnx_model_dict["sig_bkg_dnn"] else False,
-    "sig_bkg_dnn_input_variables": sig_bkg_dnn_input_variables,
-    "bkg_morphing_dnn_input_variables": bkg_morphing_dnn_input_variables,
+    "sig_bkg_dnn_input_variables": dnn_vars.sig_bkg_dnn_input_variables,
+    "bkg_morphing_dnn_input_variables": dnn_vars.bkg_morphing_dnn_input_variables,
     "parton_jet_min_dR": 0.4,
-    "max_num_jets": 5,
+    "max_num_jets_good": 5,
     "which_bquark": "last",
     "fifth_jet": "pt",
     "donotscale_sumgenweights": False,
@@ -42,5 +37,5 @@ config_options_dict |= {
     "arctanh_delta_prob_bin_edge": 2.44,
     "arctanh_delta_prob_pad_limit": 2.,
     "add_jet_spanet": True,
-    "spanet_input_name_list": ["log_pt", "eta", "phi", "btag"],
+    "spanet_input_name": dnn_vars.pairing_spanet_btag,
 } | onnx_model_dict

@@ -12,9 +12,11 @@ from utils.plot.args_plot import args
 from utils.plot.get_columns_from_files import get_columns_from_files
 from utils.quantile_transformer import WeightedQuantileTransformer
 
-logging.basicConfig(format='%(asctime)s,%(msecs)03d %(name)s %(levelname)s %(message)s',
-                    datefmt='%Y-%m-%d %H:%M:%S',
-                    level=logging.DEBUG)
+logging.basicConfig(
+    format="%(asctime)s,%(msecs)03d %(name)s %(levelname)s %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+    level=logging.DEBUG,
+)
 logger = logging.getLogger()
 
 
@@ -44,7 +46,9 @@ def extract_quantile_transformer(cat_col, outputdir):
             try:
                 assert (cat_col[category][v_pref + "_N"] == N).all()
             except AssertionError:
-                logger.warn(f"Variables {v_pref} have different N values: {cat_col[category][v_pref + '_N']}. Skipping...")
+                logger.warn(
+                    f"Variables {v_pref} have different N values: {cat_col[category][v_pref + '_N']}. Skipping..."
+                )
                 continue
 
             for idx in range(N):
@@ -53,20 +57,29 @@ def extract_quantile_transformer(cat_col, outputdir):
                 vars_coll.append(f"{v}_{idx}")
                 cat_mc = f"{category}_MC"
                 try:
-                    col_dict[f"{v}_{idx}"][cat_mc] = cat_col[category][v][np.arange(len(cat_col[category][v])) % N == idx]
+                    col_dict[f"{v}_{idx}"][cat_mc] = cat_col[category][v][
+                        np.arange(len(cat_col[category][v])) % N == idx
+                    ]
                 except KeyError:
-                    col_dict[f"{v}_{idx}"][cat_mc] = cat_col[category][v.replace("Run2", "")][np.arange(len(cat_col[category][v.replace("Run2", "")])) % N == idx]
-        
-        # elif cat_col[category][v].ndim ==2:
-        #     N=len(cat_col[category][v][0])
-        #     try:
-        #         assert (ak.num(cat_col[category][v]) == N).all()
-        #     except AssertionError:
-        #         logger.warn(f"Variables {v_pref} have different N values: {cat_col[category][v_pref + '_N']}. Skipping...")
-        #         continue
-        #     for pos in range(N + 1):
-        #         col_dict[v + ":" + str(pos)] = cat_col[v][:, int(pos)]
-            
+                    col_dict[f"{v}_{idx}"][cat_mc] = cat_col[category][
+                        v.replace("Run2", "")
+                    ][
+                        np.arange(len(cat_col[category][v.replace("Run2", "")])) % N
+                        == idx
+                    ]
+
+        elif cat_col[category][v].ndim == 2:
+            N = len(cat_col[category][v][0])
+            for idx in range(N):
+                if f"{v}_{idx}" not in col_dict.keys():
+                    col_dict[f"{v}_{idx}"] = {}
+                try:
+                    col_dict[f"{v}_{idx}"][cat_mc] = cat_col[category][v][:, int(idx)]
+                except KeyError:
+                    col_dict[f"{v}_{idx}"][cat_mc] = cat_col[category][
+                        v.replace("Run2", "")
+                    ][:, int(idx)]
+
         else:
             if v not in col_dict.keys():
                 col_dict[v] = {}
@@ -105,10 +118,14 @@ def extract_quantile_transformer(cat_col, outputdir):
         cat_mc = f"{category}_MC"
         input_variables_array = []
         for input_var in dnn_input_list:
-            input_variables_array.append(np.array(col_dict[input_var][cat_mc], dtype=np.float32))
+            input_variables_array.append(
+                np.array(col_dict[input_var][cat_mc], dtype=np.float32)
+            )
         input_variables_array = np.stack(input_variables_array, axis=-1)
         inputs_complete = {input_name_SIG_BKG_DNN[0]: input_variables_array}
-        outputs = model_session_SIG_BKG_DNN.run(output_name_SIG_BKG_DNN, inputs_complete)
+        outputs = model_session_SIG_BKG_DNN.run(
+            output_name_SIG_BKG_DNN, inputs_complete
+        )
         col_dict[v][cat_mc] = outputs[0][:, -1]
         del input_variables_array, inputs_complete, outputs
 
@@ -119,18 +136,39 @@ def extract_quantile_transformer(cat_col, outputdir):
     for var in vars_to_transform:
         var_plot_name = var
         logger.debug(f"Variable: {var}")
-        kl = os.path.basename(inputfiles[0]).split("kl-")[-1].split("_")[0].replace("p", ".")
+        kl = (
+            os.path.basename(inputfiles[0])
+            .split("kl-")[-1]
+            .split("_")[0]
+            .replace("p", ".")
+        )
         savesuffix = f"kl_{kl}"
         if kl == "1.00" and "score" in var:
             # The quantiles are transformed here
-            transformer = WeightedQuantileTransformer(output_distribution="uniform", n_quantiles=21)  # 1000000)
-            transformer.fit(col_dict[var][cat_mc], sample_weight=col_dict["weight"][cat_mc])
-            transformer.save(os.path.join(dir_cat, f"qt_{var_plot_name}_{savesuffix}.pkl".replace("Run2", "_DHH")))
+            transformer = WeightedQuantileTransformer(
+                output_distribution="uniform", n_quantiles=21
+            )  # 1000000)
+            transformer.fit(
+                col_dict[var][cat_mc], sample_weight=col_dict["weight"][cat_mc]
+            )
+            transformer.save(
+                os.path.join(
+                    dir_cat,
+                    f"qt_{var_plot_name}_{savesuffix}.pkl".replace("Run2", "_DHH"),
+                )
+            )
             logger.debug("Printing the first 100 scores")
             logger.debug(col_dict[var][cat_mc][:100])
             # This is just for confirmation, that the quantiles are fine.
-            transformer2 = WeightedQuantileTransformer(output_distribution="uniform", n_quantiles=0)  # 1000000)
-            transformer2.load(os.path.join(dir_cat, f"qt_{var_plot_name}_{savesuffix}.pkl".replace("Run2", "_DHH")))
+            transformer2 = WeightedQuantileTransformer(
+                output_distribution="uniform", n_quantiles=0
+            )  # 1000000)
+            transformer2.load(
+                os.path.join(
+                    dir_cat,
+                    f"qt_{var_plot_name}_{savesuffix}.pkl".replace("Run2", "_DHH"),
+                )
+            )
             logger.info("Saving transformed plot")
             col_den_transformed = transformer2.transform(col_dict[var][cat_mc])
             bins = transformer2.get_quantiles()
@@ -145,17 +183,36 @@ def extract_quantile_transformer(cat_col, outputdir):
             histo = Hist.new.Var(bins_final, name=var_plot_name, flow=False).Weight()
             histo.fill(col_dict[var][cat_mc], weight=col_dict["weight"][cat_mc])
             print(histo)
-            plt.hist(col_den_transformed, weights=col_dict["weight"][cat_mc], bins=20, label="transformed")
-            plt.savefig(os.path.join(dir_cat, f"check_tranformation_{var_plot_name}_{savesuffix}.png"))
+            plt.hist(
+                col_den_transformed,
+                weights=col_dict["weight"][cat_mc],
+                bins=20,
+                label="transformed",
+            )
+            plt.savefig(
+                os.path.join(
+                    dir_cat, f"check_tranformation_{var_plot_name}_{savesuffix}.png"
+                )
+            )
 
             logger.debug("Printing transformed column")
-            hist, bins = np.histogram(col_den_transformed, weights=col_dict["weight"][cat_mc], bins=20)
+            hist, bins = np.histogram(
+                col_den_transformed, weights=col_dict["weight"][cat_mc], bins=20
+            )
             logger.debug(hist)
-            logger.debug(f"Mean: {np.mean(hist)} Std: {np.std(hist)} Rel. Std: {np.std(hist) / np.mean(hist)}")
+            logger.debug(
+                f"Mean: {np.mean(hist)} Std: {np.std(hist)} Rel. Std: {np.std(hist) / np.mean(hist)}"
+            )
             logger.debug("Printing normal column with transformed bins")
-            hist, bins = np.histogram(col_dict[var][cat_mc], weights=col_dict["weight"][cat_mc], bins=bins_final)
+            hist, bins = np.histogram(
+                col_dict[var][cat_mc],
+                weights=col_dict["weight"][cat_mc],
+                bins=bins_final,
+            )
             logger.debug(hist)
-            logger.debug(f"Mean: {np.mean(hist)} Std: {np.std(hist)} Rel. Std {np.std(hist) / np.mean(hist)}")
+            logger.debug(
+                f"Mean: {np.mean(hist)} Std: {np.std(hist)} Rel. Std {np.std(hist) / np.mean(hist)}"
+            )
     del col_dict
 
 
@@ -198,7 +255,11 @@ if __name__ == "__main__":
 
     # == Collecting MC dataset ==
     cat_col_mc, total_datasets_list_mc = get_columns_from_files(
-        inputfiles, sel_var="nominal", filter_lambda=filter_lambda, debug=False, novars=args.novars
+        inputfiles,
+        sel_var="nominal",
+        filter_lambda=filter_lambda,
+        debug=False,
+        novars=args.novars,
     )
     logger.info(total_datasets_list_mc)
 
@@ -207,4 +268,4 @@ if __name__ == "__main__":
         logger.info(f"{key}: {value.keys()}")
 
     # === Actual plotting command. ===
-    extract_quantile_transformer(cat_col_mc,outputdir)
+    extract_quantile_transformer(cat_col_mc, outputdir)

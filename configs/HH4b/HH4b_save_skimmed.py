@@ -1,7 +1,9 @@
 import os
 
 
-
+from configs.HH4b_common.config_files.__config_file__ import (
+    config_options_dict,
+)
 # from pocket_coffea.parameters.cuts import passthrough
 from pocket_coffea.parameters import defaults
 from pocket_coffea.utils.configurator import Configurator
@@ -77,7 +79,7 @@ cfg = Configurator(
     workflow_options={
     },
     # skim=cuts.skimming_cut_list,
-    skim=cuts.skimming_cut_list_boosted,
+    skim=cuts.skimming_cut_list(config_options_dict),
     # skim=[
     #     get_HLTsel(primaryDatasets=["JetMET"]),
     #     # get_HLTsel(primaryDatasets=["ParkingHH"]),

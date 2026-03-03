@@ -25,7 +25,6 @@ from workflow_btagSF_HH4b import HH4bbtagWPefficiencyProcessor
 import configs.HH4b_common.custom_cuts_common as cuts
 import utils.quantile_transformer as quantile_transformer
 from configs.HH4b_common.config_files.configurator_tools import (
-    SPANET_TRAINING_DEFAULT_COLUMNS,
     SPANET_TRAINING_DEFAULT_COLUMNS_BTWP,
     define_single_category,
     define_categories,
@@ -53,8 +52,8 @@ parameters = defaults.merge_parameters_from_files(
     f"{localdir}/../HH4b_common/params/object_preselection.yaml",
     f"{localdir}/../HH4b_common/params/triggers.yaml",
     f"{localdir}/../HH4b_common/params/variations.yaml",
-    # f"{localdir}/../HH4b_common/params/btagging_multipleWP.yaml",
-    f"{localdir}/../HH4b_common/params/btagging_multipleWP_single_eta_bin.yaml",
+    f"{localdir}/../HH4b_common/params/btagging_multipleWP.yaml",
+    # f"{localdir}/../HH4b_common/params/btagging_multipleWP_single_eta_bin.yaml",
     # f"{localdir}/../HH4b_common/params/btagging_multipleWP_5jets.yaml",
     f"{localdir}/../HH4b_common/params/btagging_sampleGroups.yaml",
     f"{localdir}/../HH4b_common/params/jets_calibration_legacy_Calibrator_withoutVariations_withJERC.yaml",
@@ -172,7 +171,7 @@ cfg = Configurator(
     },
     workflow=HH4bbtagWPefficiencyProcessor,
     workflow_options=config_options_dict,
-    skim=cuts.skimming_cut_list,
+    skim=cuts.skimming_cut_list(config_options_dict),
     preselections=preselection,
     categories=categories_dict,
     weights_classes=common_weights

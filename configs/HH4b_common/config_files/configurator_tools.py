@@ -1,12 +1,10 @@
-import sys
 from collections import defaultdict
 
 from pocket_coffea.lib.columns_manager import ColOut
-from pocket_coffea.parameters.histograms import jet_hists, count_hist, parton_hists
+from pocket_coffea.parameters.histograms import jet_hists, count_hist
 from pocket_coffea.lib.hist_manager import HistConf, Axis
 from pocket_coffea.parameters.cuts import passthrough
 from utils.quantile_transformer import WeightedQuantileTransformer
-import numpy as np
 
 from utils.variables_helpers import jet_hists_dict, create_HistConf
 from utils.variables_helpers import jet_hists_dict, create_HistConf
@@ -1260,29 +1258,14 @@ def get_variables_dict(
     return variables_dict
 
 
-SPANET_TRAINING_DEFAULT_COLUMN_PARAMS = [
-    "provenance",
-    "pt",
-    "eta",
-    "phi",
-    "mass",
-    "btagPNetB",
-]
-SPANET_TRAINING_DEFAULT_COLUMNS = {
-    "JetGoodMatched": SPANET_TRAINING_DEFAULT_COLUMN_PARAMS,
-    "JetGoodHiggsMatched": SPANET_TRAINING_DEFAULT_COLUMN_PARAMS,
-    "JetGood": SPANET_TRAINING_DEFAULT_COLUMN_PARAMS,
-    "JetGoodHiggs": SPANET_TRAINING_DEFAULT_COLUMN_PARAMS,
-}
-
 SPANET_TRAINING_DEFAULT_COLUMN_PARAMS_BTWP = [
     "provenance",
     "pt",
     "eta",
     "phi",
     "mass",
-    "btagPNetB_5wp",
     "btagPNetB_3wp",
+    "btagPNetB_5wp",
     "btagPNetB",
 ]
 SPANET_TRAINING_DEFAULT_COLUMNS_BTWP = {
@@ -1292,12 +1275,37 @@ SPANET_TRAINING_DEFAULT_COLUMNS_BTWP = {
     "JetGoodHiggs": SPANET_TRAINING_DEFAULT_COLUMN_PARAMS_BTWP,
 }
 
+SPANET_VBF_TRAINING_DEFAULT_COLUMN_PARAMS_BTWP = [
+    "provenance",
+    "provenance_higgs",
+    "provenance_vbf",
+    "pt",
+    "eta",
+    "phi",
+    "mass",
+    "btagPNetB_5wp",
+    "btagPNetB_3wp",
+    "btagPNetB",
+]
+
+SPANET_VBF_TRAINING_DEFAULT_COLUMNS_BTWP = {
+    "JetTotalSPANetPadded": SPANET_VBF_TRAINING_DEFAULT_COLUMN_PARAMS_BTWP,
+    "JetTotalSPANetPtFlattenPadded": SPANET_VBF_TRAINING_DEFAULT_COLUMN_PARAMS_BTWP,
+    "JetGoodPadded": SPANET_VBF_TRAINING_DEFAULT_COLUMN_PARAMS_BTWP,
+    "JetGoodVBFMergedPadded": SPANET_VBF_TRAINING_DEFAULT_COLUMN_PARAMS_BTWP,
+    "JetGoodHiggsPlusVBF1mjj": SPANET_VBF_TRAINING_DEFAULT_COLUMN_PARAMS_BTWP,
+    "Jet": SPANET_VBF_TRAINING_DEFAULT_COLUMN_PARAMS_BTWP,
+}
+
+
 DEFAULT_JET_COLUMN_PARAMS = [
     "pt",
     "eta",
     "phi",
     "mass",
     "btagPNetB",
+    "btagPNetB_5wp",
+    "btagPNetB_3wp",
 ]
 DEFAULT_JET_COLUMNS = {
     "JetGood": DEFAULT_JET_COLUMN_PARAMS,
@@ -1339,7 +1347,7 @@ def get_columns_list(
     columns = []
     for collection, attributes in columns_dict.items():
         columns.append(ColOut(collection, attributes, flatten))
-        
+
     # add the event number if not present in the columns
     add_event_number = True
     for col in columns:
@@ -1348,14 +1356,27 @@ def get_columns_list(
                 add_event_number = False
     if add_event_number:
         columns.append(ColOut("events", ["event"], flatten))
-    
+
     return columns
 
 
-def create_DNN_columns_list(run2, flatten, columns_dict, btag=False):
+def unpack_dict(d):
+    out = []
+    for v in d.values():
+        if isinstance(v, dict):
+            out.extend(unpack_dict(v))
+        else:
+            out.append(v[:2])  # keep only first 2 elements
+    return out
+
+
+def create_DNN_columns_list(run2, flatten, columns_dict, btag=True):
     """Create the columns of the DNN input variables"""
     column_dict = defaultdict(set)
-    for x, y in columns_dict.values():
+    
+    unpacked_columns=unpack_dict(columns_dict)
+    
+    for x,y in unpacked_columns:
         if run2:
             if x != "events":
                 column_dict[x.split(":")[0] + "Run2"].add(y)
@@ -1380,6 +1401,12 @@ def create_DNN_columns_list(run2, flatten, columns_dict, btag=False):
     if btag:
         column_dict[f"JetGoodFromHiggsOrdered{'Run2' if run2 else ''}"].append(
             "btagPNetB"
+        )
+        column_dict[f"JetGoodFromHiggsOrdered{'Run2' if run2 else ''}"].append(
+            "btagPNetB_5wp"
+        )
+        column_dict[f"JetGoodFromHiggsOrdered{'Run2' if run2 else ''}"].append(
+            "provenance"
         )
     column_list = get_columns_list(column_dict, flatten)
     return column_list
@@ -1443,14 +1470,35 @@ def define_single_category(category_name):
         else:
             cut_list.append(cuts.blindedRun2)
 
+    if "vbf" in category_name:
+        if "lead_mjj" in category_name:
+            cut_list.append(cuts.hh4b_vbf_lead_mjj_region)
+        elif "best_candidates" in category_name:
+            cut_list.append(cuts.hh4b_vbf_best_candidates_region)
+        elif "discriminator" in category_name:
+            cut_list.append(cuts.hh4b_vbf_discriminator_region)
+        else:
+            raise ValueError("Unrecognized region name")
+
     if len(cut_list) < 1:  # aka if no cut applied
         cut_list.append(passthrough)
+
     category_item = {category_name: cut_list}
+
     return category_item
 
 
 def define_categories(
-    bkg_morphing_dnn=False, blind=False, spanet=False, run2=False, vr1=False, btag_sf_comp=False, boosted=False, split_qcd=True
+    bkg_morphing_dnn=False,
+    blind=False,
+    spanet=False,
+    run2=False,
+    vr1=False,
+    btag_sf_comp=False,
+    boosted=False,
+    split_qcd=True,
+    vbf_analysis=False,
+    vbf_discriminator=False,
 ):
     """
     Define the categories for the analysis.
@@ -1458,7 +1506,6 @@ def define_categories(
     categories_dict = {}
     if not vr1:
         if spanet:
-            # categories_dict |= define_single_category("4b_region")
             categories_dict |= define_single_category("4b_control_region")
             categories_dict |= define_single_category("2b_control_region_preW")
             categories_dict |= (
@@ -1555,6 +1602,16 @@ def define_categories(
             btag_sf_categories[f"{key}_sf_btag"] = value
         categories_dict |= btag_sf_categories
 
+    if vbf_analysis:
+        # NOTE: this region requires at least 5 JetGood and 2 JetVBF
+        categories_dict |= define_single_category("vbf_lead_mjj_4b_region")
+        # NOTE: this region requires at least 6 jets
+        categories_dict |= define_single_category("vbf_best_candidates_4b_region")
+
+        if vbf_discriminator:
+            # NOTE: this region requires at least 6 jets and that the vbf vs ggf score is above the threshold
+            categories_dict |= define_single_category("vbf_discriminator_4b_region")
+
     return categories_dict
 
 
@@ -1564,6 +1621,8 @@ def define_preselection(options):
         preselection = [cuts.hh4b_presel_nobtag]
     else:
         if options["vbf_presel"]:
+            # block vbf_presel because it's done on the wrong jet collection
+            raise ValueError("vbf_presel is not spported anymore!")
             if options["tight_cuts"]:
                 preselection = [vbf_cuts.vbf_hh4b_presel_tight]
             else:
@@ -1575,11 +1634,10 @@ def define_preselection(options):
                 preselection = [cuts.hh4b_presel_tight]
             else:
                 preselection = [cuts.hh4b_presel]
-    
+
     # Add the Jet Veto Map
     # Do this in the preselection to select jets based on
     # corrected pT after the Calibrators have run
     if not options["boosted_presel"]: # FIXME
         preselection.append(cuts.hh4b_JetVetoMap)
-    
     return preselection

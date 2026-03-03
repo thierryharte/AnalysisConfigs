@@ -6,10 +6,8 @@ from configs.HH4b_common.config_files.__config_file__ import (
     config_options_dict,
     onnx_model_dict,
 )
-from pocket_coffea.lib.calibrators.legacy.legacy_calibrators import (
-    JetsCalibrator,
-    JetsPtRegressionCalibrator,
-)
+import pocket_coffea.lib.calibrators.legacy.legacy_calibrators as legacy_cal
+from pocket_coffea.lib.calibrators.common.common import JetsCalibrator
 
 
 from pocket_coffea.lib.weights.common.common import common_weights
@@ -25,26 +23,18 @@ from workflow import HH4bbQuarkMatchingProcessor
 
 import configs.HH4b_common.custom_cuts_common as cuts
 from configs.HH4b_common.config_files.configurator_tools import (
-    SPANET_TRAINING_DEFAULT_COLUMNS,
     SPANET_TRAINING_DEFAULT_COLUMNS_BTWP,
     DEFAULT_FATJET_COLUMNS,
     create_DNN_columns_list,
     define_categories,
-    define_single_category,
+    define_preselection,
     get_columns_list,
     get_variables_dict,
-    define_preselection
+    define_single_category,
 )
 from configs.HH4b_common.custom_weights import (
     bkg_morphing_dnn_weight,
     bkg_morphing_dnn_weightRun2,
-)
-from configs.HH4b_common.dnn_input_variables import (
-    bkg_morphing_dnn_input_variables,
-    bkg_morphing_boosted_dnn_input_variables,
-    # bkg_morphing_dnn_input_variables_altOrder,
-    sig_bkg_dnn_input_variables,
-    sig_bkg_boosted_dnn_input_variables,
 )
 from configs.HH4b_common.params.CustomWeights import SF_btag_fixed_multiple_wp
 
@@ -54,7 +44,7 @@ localdir = os.path.dirname(os.path.abspath(__file__))
 # Loading default parameters
 
 default_parameters = defaults.get_default_parameters()
-defaults.register_configuration_dir("config_dir", localdir + "/params")
+defaults.register_configuration_dir("config_dir", localdir)
 
 # adding object preselection
 year = ["2022_postEE", "2022_preEE"]  # , "2023_preBPix", "2023_postBPix"]
@@ -62,9 +52,12 @@ parameters = defaults.merge_parameters_from_files(
     default_parameters,
     f"{localdir}/../HH4b_common/params/object_preselection.yaml",
     f"{localdir}/../HH4b_common/params/triggers.yaml",
+    f"{localdir}/../HH4b_common/params/variations.yaml",
     f"{localdir}/../HH4b_common/params/btagging_multipleWP.yaml",
-    f"{localdir}/../HH4b_common/params/jets_calibration_legacy_Calibrator_withoutVariations_withJERC.yaml",
+    f"{localdir}/../HH4b_common/params/btagging_sampleGroups.yaml",
+    # f"{localdir}/../HH4b_common/params/jets_calibration_legacy_Calibrator_withoutVariations_withJERC.yaml",
     # f"{localdir}/../HH4b_common/params/jets_calibration_legacy_Calibrator_withVariations.yaml",
+    f"{localdir}/../HH4b_common/params/jets_calibration_regression_json.yaml",
     update=True,
 )
 
@@ -96,18 +89,18 @@ preselection = define_preselection(config_options_dict)
 
 # Defining the used samples
 sample_ggF_list = [
-     "GluGlutoHHto4B_spanet_kl-1p00_kt-1p00_c2-0p00_skimmed",
-     "GluGlutoHHto4B_spanet_kl-m2p00_kt-1p00_c2-0p00_skimmed",
-     "GluGlutoHHto4B_spanet_kl-m1p00_kt-1p00_c2-0p00_skimmed",
-     "GluGlutoHHto4B_spanet_kl-5p00_kt-1p00_c2-0p00_skimmed",
-     "GluGlutoHHto4B_spanet_kl-2p45_kt-1p00_c2-0p00_skimmed",
-     "GluGlutoHHto4B_spanet_kl-0p00_kt-0p00_c2-0p00_skimmed",
-     "GluGlutoHHto4B_spanet_kl-3p50_kt-1p00_c2-0p00_skimmed",
-     "GluGlutoHHto4B_spanet_kl-4p00_kt-1p00_c2-0p00_skimmed",
-     "GluGlutoHHto4B_spanet_kl-3p00_kt-1p00_c2-0p00_skimmed",
-     "GluGlutoHHto4B_spanet_kl-2p00_kt-1p00_c2-0p00_skimmed",
-     "GluGlutoHHto4B_spanet_kl-1p50_kt-1p00_c2-0p00_skimmed",
-     "GluGlutoHHto4B_spanet_kl-0p50_kt-1p00_c2-0p00_skimmed",
+      "GluGlutoHHto4B_spanet_kl-1p00_kt-1p00_c2-0p00_skimmed",
+      "GluGlutoHHto4B_spanet_kl-5p00_kt-1p00_c2-0p00_skimmed",
+      "GluGlutoHHto4B_spanet_kl-2p45_kt-1p00_c2-0p00_skimmed",
+      # "GluGlutoHHto4B_spanet_kl-m2p00_kt-1p00_c2-0p00_skimmed",
+      # "GluGlutoHHto4B_spanet_kl-m1p00_kt-1p00_c2-0p00_skimmed",
+      # "GluGlutoHHto4B_spanet_kl-0p00_kt-0p00_c2-0p00_skimmed",
+      # "GluGlutoHHto4B_spanet_kl-3p50_kt-1p00_c2-0p00_skimmed",
+      # "GluGlutoHHto4B_spanet_kl-4p00_kt-1p00_c2-0p00_skimmed",
+      # "GluGlutoHHto4B_spanet_kl-3p00_kt-1p00_c2-0p00_skimmed",
+      # "GluGlutoHHto4B_spanet_kl-2p00_kt-1p00_c2-0p00_skimmed",
+      # "GluGlutoHHto4B_spanet_kl-1p50_kt-1p00_c2-0p00_skimmed",
+      # "GluGlutoHHto4B_spanet_kl-0p50_kt-1p00_c2-0p00_skimmed",
 ]
 sample_list = [
     # "DATA_JetMET_JMENano_C_skimmed",
@@ -170,19 +163,11 @@ column_listRun2 = []
 
 assert not (config_options_dict["random_pt"] and config_options_dict["run2"])
 if config_options_dict["dnn_variables"]:
-    if config_options_dict["boosted"]:
-        print("Using boosted DNN input variables")
-        total_input_variables = (
-            sig_bkg_boosted_dnn_input_variables
-            | bkg_morphing_boosted_dnn_input_variables
-            | {"year": ["events", "year"]}
-        )
-    else:
-        total_input_variables = (
-            sig_bkg_dnn_input_variables
-            | bkg_morphing_dnn_input_variables
-            | {"year": ["events", "year"]}
-        )
+    total_input_variables = (
+        config_options_dict["sig_bkg_dnn_input_variables"]
+        | config_options_dict["bkg_morphing_dnn_input_variables"]
+        | {"year": ["events", "year"]}
+    )
     if config_options_dict["spanet"]:
         total_input_variables |= {
             "Delta_pairing_probabilities": ["events", "Delta_pairing_probabilities"],
@@ -202,10 +187,10 @@ if config_options_dict["dnn_variables"]:
     # print(total_input_variables)
 
     column_list = create_DNN_columns_list(
-        False, not config_options_dict["save_chunk"], total_input_variables, btag=False
+        False, not config_options_dict["save_chunk"], total_input_variables, btag=True
     )
     column_listRun2 = create_DNN_columns_list(
-        True, not config_options_dict["save_chunk"], total_input_variables, btag=False
+        True, not config_options_dict["save_chunk"], total_input_variables, btag=True
     )
 elif all([model == "" for model in onnx_model_dict.values()]) and not (config_options_dict["boosted"]):
     if "wp" in config_options_dict["spanet_input_name_list"][-1]:
@@ -335,17 +320,18 @@ cfg = Configurator(
     },
     workflow=HH4bbQuarkMatchingProcessor,
     workflow_options=config_options_dict,
-    skim=skimming_cut_list,
+    skim=cuts.skimming_cut_list(config_options_dict),
     preselections=preselection,
     categories=categories_dict,
     weights_classes=common_weights
     + [bkg_morphing_dnn_weight, bkg_morphing_dnn_weightRun2, SF_btag_fixed_multiple_wp],
-    calibrators=[JetsCalibrator, JetsPtRegressionCalibrator],
+    # calibrators=[legacy_cal.JetsCalibrator, legacy_cal.JetsPtRegressionCalibrator],
+    calibrators=[JetsCalibrator],
     weights={
         "common": {
-            # "inclusive": ["genWeight", "lumi", "XS", "sf_btag_fixed_multiple_wp"],
+            "inclusive": ["genWeight", "lumi", "XS", "pileup", "sf_btag_fixed_multiple_wp"],
             # "inclusive": ["genWeight", "lumi", "XS", "pileup"],
-            "inclusive": ["genWeight", "lumi", "XS"],
+            # "inclusive": ["genWeight", "lumi", "XS"],
             # "inclusive": [],
             "bycategory": {
             },
@@ -355,8 +341,8 @@ cfg = Configurator(
     variations={
         "weights": {
             "common": {
-                # "inclusive": ["pileup"],  # , "sf_btag_fixed_multiple_wp"],
-                "inclusive": [],
+                "inclusive": ["pileup", "sf_btag_fixed_multiple_wp"],
+                # "inclusive": [],
                 "bycategory": {},
             },
             "bysample": {},

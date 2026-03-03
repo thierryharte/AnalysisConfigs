@@ -25,7 +25,6 @@ from workflow import HH4bbQuarkMatchingProcessor
 
 import configs.HH4b_common.custom_cuts_common as cuts
 from configs.HH4b_common.config_files.configurator_tools import (
-    SPANET_TRAINING_DEFAULT_COLUMNS,
     SPANET_TRAINING_DEFAULT_COLUMNS_BTWP,
     create_DNN_columns_list,
     define_categories,
@@ -104,7 +103,8 @@ sample_list = [
 # print(onnx_model_dict)
 if all([model == "" for model in onnx_model_dict.values()]):
     print("Didn't find any onnx model. Will choose region for SPANet training")
-    categories_dict = define_single_category("4b_region")
+    # categories_dict = define_single_category("4b_region")
+    categories_dict = define_single_category("inclusive")
 
 # print("categories_dict", categories_dict)
 
@@ -160,7 +160,7 @@ cfg = Configurator(
     },
     workflow=HH4bbQuarkMatchingProcessor,
     workflow_options=config_options_dict,
-    skim=cuts.skimming_cut_list,
+    skim=cuts.skimming_cut_list(config_options_dict),
     preselections=preselection,
     categories=categories_dict,
     weights_classes=common_weights

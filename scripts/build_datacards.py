@@ -79,7 +79,8 @@ region_name = "ggHH"
 suffix = "Run2" if args.run2 else ""
 sig_region_name=f"4b_signal_region{suffix}"
 bkg_region_name=f"2b_signal_region_postW{suffix}"
-rescale_bkg_region_name=f"4b_control_region{suffix}"
+control_region_name=f"4b_control_region{suffix}"
+bkg_control_region_name=f"2b_control_region_postW{suffix}"
 
 
 def get_year(pocketcoffea_year, year_type=0):
@@ -104,7 +105,7 @@ def get_year(pocketcoffea_year, year_type=0):
 
 def get_uncertainty_name(pocketcoffea_name, year):
     """Get conventional datacard name for systematic uncertainties"""
-    # Try to remove unnecessary things in front (e.g. "AK4PFPuppy")
+    # Try to remove unnecessary things in front (e.g. "AK4PFPuppi")
     if "Puppi" in pocketcoffea_name:
         pocketcoffea_name = pocketcoffea_name.split("_", 1)[-1]
     unc_map = {
@@ -115,9 +116,15 @@ def get_uncertainty_name(pocketcoffea_name, year):
         }
     if pocketcoffea_name in unc_map.keys():
         return unc_map[pocketcoffea_name]
+    # Variations connected to b-tag SF
     elif "btag" in pocketcoffea_name:
         variation = pocketcoffea_name.split("_")[-1]
-        return f"CMS_btag_fixedWP_bc_{variation}_{year}"
+        if "heavy" in pocketcoffea_name:
+            return f"CMS_btag_fixedWP_bc_{variation}_{year}"
+        elif "light" in pocketcoffea_name:
+            return f"CMS_btag_fixedWP_light_{variation}_{year}"
+        else:
+            raise ValueError(f"Unclear flavour type for b-tag correction {pocketcoffea_name}. Should contain 'light' or 'heavy' in name")
     else:
         raise ValueError(f"Did not found name mapping for {pocketcoffea_name}")
 
@@ -201,15 +208,19 @@ def duplicate_category(histo, src_label, new_label, axis=0, rescale_label=False)
     if not rescale_label:
         new_histo.view(flow=True)[tuple(sl_dst)] = vals
     else:
-        idx_ref = histo.axes[axis].index(rescale_label)
-        sl_ref = [slice(None)] * histo.ndim
-        sl_ref[axis] = idx_ref
+        idx_ref_num = histo.axes[axis].index(rescale_label[1])
+        sl_ref_num = [slice(None)] * histo.ndim
+        sl_ref_num[axis] = idx_ref_num
+        idx_ref_denom = histo.axes[axis].index(rescale_label[0])
+        sl_ref_denom = [slice(None)] * histo.ndim
+        sl_ref_denom[axis] = idx_ref_denom
 
-        ref_vals = histo.view(flow=True)[tuple(sl_ref)]
-        ref_sum = ref_vals["value"].sum()
-        src_sum = vals["value"].sum()
+        ref_vals_num = histo.view(flow=True)[tuple(sl_ref_num)]
+        ref_sum_num = ref_vals_num["value"].sum()
+        ref_vals_denom = histo.view(flow=True)[tuple(sl_ref_denom)]
+        ref_sum_denom = ref_vals_denom["value"].sum()
 
-        factor = ref_sum / src_sum
+        factor = ref_sum_num / ref_sum_denom
 
         vals["value"] *= factor
         vals["variance"] *= factor**2
@@ -247,7 +258,7 @@ def create_new_region(coffea_file, cat_name):
                 coffea_file["variables"][column][sample][dataset] = histogram_with_new
                 # If Data, also copy from the background region
                 if "DATA" in dataset:
-                    histogram_with_new = duplicate_category(histogram, bkg_region_name, cat_name, axis=0, rescale_label=(sig_region_name if args.separate_normalisation else rescale_bkg_region_name))
+                    histogram_with_new = duplicate_category(histogram, bkg_region_name, cat_name, axis=0, rescale_label=([bkg_region_name, sig_region_name] if args.separate_normalisation else [bkg_control_region_name, control_region_name]))
                     coffea_file["variables"][column][f"{sample}_background"][f"{dataset}_background"] = histogram_with_new
     # == datasets_metadata : by_datataking_period ==
     for period in coffea_file["datasets_metadata"]["by_datataking_period"].keys():

@@ -308,7 +308,7 @@ blindedRun2 = Cut(
     function=cuts_f.blinding_cuts,
 )
 
-hh4b_JetVetoMap= Cut(
+hh4b_JetVetoMap = Cut(
     name="hh4b_JetVetoMap",
     params={
         "jet_type": "Jet",
@@ -317,17 +317,46 @@ hh4b_JetVetoMap= Cut(
     function=get_custom_JetVetoMap_Mask,
 )
 
-skimming_cut_list = [
-    eventFlags,
-    goldenJson,
-    get_nPVgood(1),
-    get_HLTsel(primaryDatasets=["JetMET"]),
-    get_L1sel(primaryDatasets=["JetMET"]),
-]
+hh4b_vbf_lead_mjj_region = Cut(
+    name="hh4b_vbf_lead_mjj_region",
+    params={
+        "min_mjj": 400,
+        "min_deta": 3.5,
+        "jet_vbf_coll":"JetGoodVBFLeadingMjj",
+    },
+    function=cuts_f.hh4b_vbf_eta_mjj_cuts,
+)
 
-skimming_cut_list_boosted = [
-    eventFlags,
-    goldenJson,
-    get_nPVgood(1),
-    get_HLTsel(primaryDatasets=["Boosted"]),
-]
+hh4b_vbf_best_candidates_region = Cut(
+    name="hh4b_vbf_best_candidates_region",
+    params={
+        "min_mjj": 400,
+        "min_deta": 3.5,
+        "jet_vbf_coll":"JetGoodFromVBFEnergyOrdered",
+    },
+    function=cuts_f.hh4b_vbf_eta_mjj_cuts,
+)
+
+hh4b_vbf_discriminator_region = Cut(
+    name="hh4b_vbf_discriminator_region",
+    params={
+        "discriminator": "VBF_ggF_score",
+        "threshold": 0.8,
+        "jet_vbf_coll":"JetGoodFromVBFEnergyOrdered",
+    },
+    function=cuts_f.hh4b_vbf_discriminator_cuts,
+)
+
+def skimming_cut_list(configs):
+    skimlist = [
+        eventFlags,
+        goldenJson,
+        get_nPVgood(1),
+    ]
+    if configs["boosted"]:
+        skimlist.append(get_HLTsel(primaryDatasets=["Boosted"]))
+    else:
+        skimlist.append(get_HLTsel(primaryDatasets=["JetMET"]))
+    if not configs["noL1"] and not configs["boosted"]:
+        skimlist.append(get_L1sel(primaryDatasets=["JetMET"]))
+    return skimlist
