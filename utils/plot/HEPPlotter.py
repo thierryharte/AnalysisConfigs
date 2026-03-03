@@ -949,7 +949,7 @@ class HEPPlotter:
         # print xticklabels
         if self.xticklabels is not None and self.label_pos is not None:
             ax.set_xticks(self.label_pos)
-            ax.setxticklabels(
+            ax.set_xticklabels(
                 self.xticklabels,
                 rotation=45 if self.rotate_xticks else 0,
                 ha="right" if self.rotate_xticks else "center",
