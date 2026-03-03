@@ -244,6 +244,7 @@ class HH4bCommonProcessor(BaseProcessorABC):
         else:
             raise ValueError(f"Invalid input. rand_type {rand_type} not known.")
 
+        random_weights = ak.to_regular(random_weights[:, np.newaxis], axis=1)
         self.events = ak.with_field(
             self.events,
             random_weights,
@@ -465,13 +466,13 @@ class HH4bCommonProcessor(BaseProcessorABC):
         )
         genpart = self.events.GenPart
 
-        if self.which_vbf_quark == "with_status":
+        if which_vbf_quark == "with_status":
             # find the vbf looking at the status
             outgoing_part = genpart[genpart.status == 23]
             # WARNING: can it be that the VBF jets have pdgId ==5? I didn't see any
             vbf_quarks = outgoing_part[abs(outgoing_part.pdgId) != 5]
 
-        elif self.which_vbf_quark == "with_mothers_children":
+        elif which_vbf_quark == "with_mothers_children":
             # find the vbf looking if the children of the mother are Higgs
             # for samples which are not vbf this one creates issues
             isQuark = abs(genpart.pdgId) < 7
@@ -1072,9 +1073,9 @@ class HH4bCommonProcessor(BaseProcessorABC):
                     self.events["JetGoodVBFEnergyOrdered"] = get_lead_mjj_jet_pair(
                         self.events, "JetGoodVBFCandidates"
                     )
-                    
+
             if self._isMC:
-                #HERE add also the vbf idx
+                # HERE add also the vbf idx
                 matched_jet_higgs_idx_not_noneTrue = self.get_true_pairing_and_compare(
                     suffix="True",
                     pairing_predictions=pairing_predictions,
@@ -1132,7 +1133,7 @@ class HH4bCommonProcessor(BaseProcessorABC):
             self.events["JetGoodVBFEnergyOrderedRun2"] = get_lead_mjj_jet_pair(
                 self.events, "JetGoodVBFCandidatesRun2"
             )
-            
+
             matched_jet_higgs_idx_not_noneRun2 = (
                 self.events.JetGoodFromHiggsOrderedRun2.index
             )
@@ -1141,7 +1142,7 @@ class HH4bCommonProcessor(BaseProcessorABC):
                 + (self.events.HiggsSubLeadingRun2.mass - 120) ** 2
             )
             if self._isMC:
-                #HERE add also the vbf idx
+                # HERE add also the vbf idx
                 matched_jet_higgs_idx_not_noneTrue = self.get_true_pairing_and_compare(
                     suffix="True",
                     pairing_predictions=pairing_predictions,
