@@ -25,6 +25,7 @@ def define_spanet_sequential_inputs(
 
         if variable_name not in ["btag12_ratioSubLead", "btag_ratioAll"]:
             if islog:
+                # apply the log to the padded value
                 input_dict[variable_name] = np.array(
                     np.log(
                         ak.to_numpy(
@@ -37,10 +38,10 @@ def define_spanet_sequential_inputs(
                                 value=PAD_VALUE_SPANET,
                             ),
                             allow_missing=True,
-                        ),
-                        dtype=np.float32,
-                    )
-                    + 1
+                        )
+                        + 1
+                    ),
+                    dtype=np.float32,
                 )
             else:
                 input_dict[variable_name] = np.array(
@@ -59,7 +60,9 @@ def define_spanet_sequential_inputs(
                 )
 
     # Define btag and variations
-    btag_padded = ak.pad_none(events[collection].btagPNetB, max_num_jets_spanet, clip=True)
+    btag_padded = ak.pad_none(
+        events[collection].btagPNetB, max_num_jets_spanet, clip=True
+    )
 
     btag_ratio_sum_1 = btag_padded[:, 0] / (btag_padded[:, 0] + btag_padded[:, 1])
     btag_ratio_sum_2 = btag_padded[:, 1] / (btag_padded[:, 0] + btag_padded[:, 1])
@@ -156,10 +159,17 @@ def define_spanet_pairing_inputs(
 
 
 def get_pairing_information(
-    session, input_name, output_name, events, max_num_jets_spanet, spanet_input_name_list
+    session,
+    input_name,
+    output_name,
+    events,
+    max_num_jets_spanet,
+    spanet_input_name_list,
 ):
     inputs_complete = {}
-    inputs = define_spanet_pairing_inputs(events, max_num_jets_spanet, spanet_input_name_list)
+    inputs = define_spanet_pairing_inputs(
+        events, max_num_jets_spanet, spanet_input_name_list
+    )
 
     mask = np.array(
         ak.to_numpy(
@@ -265,6 +275,8 @@ def clean_assignment_prob(assignment_prob, jet_coll_pairing):
         mask_bad = ak.count(jet_coll_pairing.pt, axis=1) < 6
 
         # Replace assignment_prob[2] for bad events
-        cleaned_assignment_prob[2][mask_bad] = np.zeros_like(cleaned_assignment_prob[2][mask_bad])
+        cleaned_assignment_prob[2][mask_bad] = np.zeros_like(
+            cleaned_assignment_prob[2][mask_bad]
+        )
 
     return cleaned_assignment_prob

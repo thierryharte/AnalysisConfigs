@@ -72,12 +72,10 @@ def extract_inputs_global(input_name, output_name, events, variables, pad_value,
                     getattr(getattr(events, collection), feature), pad_value
                 )
         if scale and "log" in scale:
+            # apply the log to the padded value
             arr = np.array(
-                np.log(
-                    ak.to_numpy(ak_array, allow_missing=True),
-                    dtype=np.float32,
-                )
-                + 1
+                np.log(ak.to_numpy(ak_array, allow_missing=True) + 1),
+                dtype=np.float32,
             )
 
             if arr.ndim == 1:
@@ -155,15 +153,17 @@ def extract_inputs(input_name, output_name, events, variables, pad_value, run2):
                     getattr(getattr(events, collection), feature), pad_value
                 )
         if scale and "log" in scale:
+            # apply the log to the padded value
             variables_array.append(
                 np.array(
                     np.log(
                         ak.to_numpy(
                             ak_array,
                             allow_missing=True,
-                        ),
-                        dtype=np.float32,
-                    )
+                        )
+                        + 1
+                    ),
+                    dtype=np.float32,
                 )
             )
         else:
@@ -300,7 +300,7 @@ def get_onnx_prediction(
         return (
             spanet_separated_output,
             "spanet",
-        ) 
+        )
     else:
         return (
             get_dnn_prediction(
