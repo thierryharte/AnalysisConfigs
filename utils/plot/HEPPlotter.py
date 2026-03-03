@@ -81,6 +81,7 @@ class HEPPlotter:
         self.xticklabels = None
         self.label_pos = None
         self.rotate_xticks = False
+        self.xtick_fontsize = 18
 
         # extra kwargs for plotting functions
         self.extra_kwargs = {}
@@ -161,6 +162,7 @@ class HEPPlotter:
         xticklabels=None,
         label_pos=None,
         rotate_xticks=False,
+        xtick_fontsize=18,
     ):
         """Set the axis labels."""
         self.xlabel = xlabel
@@ -171,6 +173,7 @@ class HEPPlotter:
         self.xticklabels = xticklabels
         self.label_pos = label_pos
         self.rotate_xticks = rotate_xticks
+        self.xtick_fontsize = xtick_fontsize
 
         return self
 
@@ -961,7 +964,7 @@ class HEPPlotter:
                 self.xticklabels,
                 rotation=45 if self.rotate_xticks else 0,
                 ha="right" if self.rotate_xticks else "center",
-                fontsize=18,
+                fontsize=self.xtick_fontsize,
             )
 
         # ----------------------------
