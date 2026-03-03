@@ -618,6 +618,12 @@ class HEPPlotter:
                 if style.get("appear_in_legend", True)
                 else None
             )
+            
+            if x_errors is None:
+                x_errors = [0] * len(x_values)
+            if y_errors is None:
+                y_errors = [0] * len(y_values)
+            
             if np.any(np.array(x_errors) > 0) or np.any(np.array(y_errors) > 0):
                 # plot with error bars
                 ax.errorbar(
