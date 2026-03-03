@@ -78,8 +78,8 @@ class HEPPlotter:
         self.cbar_label = "Events"
         self.ratio_label = "Ratio"
         ## special for categorical plots
-        self.xticklabels = []
-        self.label_pos = []
+        self.xticklabels = None
+        self.label_pos = None
         self.rotate_xticks = False
 
         # extra kwargs for plotting functions
@@ -158,8 +158,8 @@ class HEPPlotter:
         ylabel="Events",
         cbar_label="Events",
         ratio_label="Ratio",
-        xticklabels=[],
-        label_pos=[],
+        xticklabels=None,
+        label_pos=None,
         rotate_xticks=False,
     ):
         """Set the axis labels."""
