@@ -20,7 +20,7 @@ def get_input_name(collection, input_name):
     raise ValueError(f"No {collection} found in {input_name}")
 
 
-def extract_inputs_global(input_name, output_name, events, variables, pad_value, run2):
+def extract_inputs_global(input_name, output_name, events, variables, pad_value_spanet, run2):
     """Extract inputs for SPANet global inputs."""
     variables_dict = {}
     for var_name, attributes in variables.items():
@@ -56,7 +56,7 @@ def extract_inputs_global(input_name, output_name, events, variables, pad_value,
                 ak_array = getattr(getattr(events, collection.split(":")[0]), feature)
             pos = int(collection.split(":")[1])
             ak_array = ak.fill_none(
-                ak.pad_none(ak_array, pos + 1, clip=True), pad_value
+                ak.pad_none(ak_array, pos + 1, clip=True), pad_value_spanet
             )
         else:
             try:
@@ -65,11 +65,11 @@ def extract_inputs_global(input_name, output_name, events, variables, pad_value,
                         getattr(events, f"{collection}Run2" if run2 else collection),
                         feature,
                     ),
-                    pad_value,
+                    pad_value_spanet,
                 )
             except AttributeError:
                 ak_array = ak.fill_none(
-                    getattr(getattr(events, collection), feature), pad_value
+                    getattr(getattr(events, collection), feature), pad_value_spanet
                 )
         if scale and "log" in scale:
             # apply the log to the padded value
@@ -211,10 +211,12 @@ def get_onnx_prediction(
     events,
     variables,
     pad_value,
+    pad_value_spanet,
     max_num_jets_spanet,
     run2=False,
 ):
     if "sequential" in variables:
+        # SPANet
         assert "global" in variables
         input_name_forpop = input_name.copy()
         inputs_complete = {}
@@ -243,7 +245,7 @@ def get_onnx_prediction(
                 input_name_forpop.pop(0): mask,
             }  # Take always the first element from input_name.
         global_inputs_total = extract_inputs_global(
-            input_name_forpop, output_name, events, variables["global"], pad_value, run2
+            input_name_forpop, output_name, events, variables["global"], pad_value_spanet, run2
         )  # use remaining input_name, which is reduced by the pops from before
         inputs_complete |= global_inputs_total
         spanet_output = session.run(output_name, inputs_complete)
@@ -302,6 +304,7 @@ def get_onnx_prediction(
             "spanet",
         )
     else:
+        # DNN
         return (
             get_dnn_prediction(
                 session, input_name, output_name, events, variables, pad_value, run2

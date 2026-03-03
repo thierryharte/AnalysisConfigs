@@ -982,6 +982,7 @@ class HH4bCommonProcessor(BaseProcessorABC):
                 self.events,
                 self.spanet_input_name,
                 self.pad_value,
+                self.pad_value_spanet,
                 self.max_num_jets_spanet,
             )
             # Not needed anymore
@@ -1292,6 +1293,7 @@ class HH4bCommonProcessor(BaseProcessorABC):
                     self.events,
                     self.sig_bkg_dnn_input_variables,
                     pad_value=self.pad_value,
+                    pad_value_spanet=self.pad_value_spanet,
                     max_num_jets_spanet=self.max_num_jets_spanet_class,
                 )
                 if out_type == "spanet":
@@ -1312,6 +1314,7 @@ class HH4bCommonProcessor(BaseProcessorABC):
                     self.events,
                     self.sig_bkg_dnn_input_variables,
                     pad_value=self.pad_value,
+                    pad_value_spanet=self.pad_value_spanet,
                     max_num_jets_spanet=self.max_num_jets_spanet_class,
                     run2=True,
                 )
