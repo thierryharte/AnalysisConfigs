@@ -660,7 +660,7 @@ class HEPPlotter:
         x = np.arange(n_cats)
         width = 0.8 / n_series
 
-        if self.xticklabels or self.label_pos:
+        if self.xticklabels is not None or self.label_pos is not None:
             print(
                 "WARNING: xticklabels and label_pos will be overridden for categorical plots"
             )
@@ -947,7 +947,7 @@ class HEPPlotter:
         ax.set_ylabel(self.ylabel)
 
         # print xticklabels
-        if self.xticklabels and self.label_pos:
+        if self.xticklabels is not None and self.label_pos is not None:
             ax.set_xticks(self.label_pos)
             ax.setxticklabels(
                 self.xticklabels,
