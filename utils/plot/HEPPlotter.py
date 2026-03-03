@@ -634,6 +634,7 @@ class HEPPlotter:
                     fmt=style.get("fmt", "o"),
                     label=legend_name,
                     color=style.get("color"),
+                    linestyle=style.get("linestyle"),
                     markersize=style.get("markersize"),
                     **self.extra_kwargs,
                 )
@@ -645,6 +646,7 @@ class HEPPlotter:
                     style.get("fmt", "o"),
                     label=legend_name,
                     color=style.get("color"),
+                    linestyle=style.get("linestyle"),
                     markersize=style.get("markersize"),
                     **self.extra_kwargs,
                 )
