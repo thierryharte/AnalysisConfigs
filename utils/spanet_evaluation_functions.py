@@ -4,11 +4,9 @@ import copy
 
 from utils.prediction_selection import extract_predictions
 
-PAD_VALUE_SPANET = 9999.0
-
 
 def define_spanet_sequential_inputs(
-    events, max_num_jets_spanet, collection, spanet_input_name_list
+    events, max_num_jets_spanet, collection, spanet_input_name_list, pad_value_spanet
 ):
     """
     Define the sequential (2D arrays) input features for the SPANet model.
@@ -35,7 +33,7 @@ def define_spanet_sequential_inputs(
                                     max_num_jets_spanet,
                                     clip=True,
                                 ),
-                                value=PAD_VALUE_SPANET,
+                                value=pad_value_spanet,
                             ),
                             allow_missing=True,
                         )
@@ -52,7 +50,7 @@ def define_spanet_sequential_inputs(
                                 max_num_jets_spanet,
                                 clip=True,
                             ),
-                            value=PAD_VALUE_SPANET,
+                            value=pad_value_spanet,
                         ),
                         allow_missing=True,
                     ),
@@ -94,7 +92,7 @@ def define_spanet_sequential_inputs(
                 np.stack(
                     ak.fill_none(
                         btag12_ratioSubLead_list,
-                        value=PAD_VALUE_SPANET,
+                        value=pad_value_spanet,
                     ),
                     axis=-1,
                 ),
@@ -110,7 +108,7 @@ def define_spanet_sequential_inputs(
                 np.stack(
                     ak.fill_none(
                         btag_ratioAll_list,
-                        value=PAD_VALUE_SPANET,
+                        value=pad_value_spanet,
                     ),
                     axis=-1,
                 ),
@@ -124,14 +122,18 @@ def define_spanet_sequential_inputs(
 
 
 def define_spanet_pairing_inputs(
-    events, max_num_jets_spanet, collection, spanet_input_name_list
+    events, max_num_jets_spanet, collection, spanet_input_name_list, pad_value_spanet
 ):
     """
     Define the input features for the SPANet model used for jet pairing.
     """
 
     input_dict = define_spanet_sequential_inputs(
-        events, max_num_jets_spanet, collection, spanet_input_name_list
+        events,
+        max_num_jets_spanet,
+        collection,
+        spanet_input_name_list,
+        pad_value_spanet,
     )
     # TODO: add global inputs for the pairing as well
 
@@ -165,10 +167,11 @@ def get_pairing_information(
     events,
     max_num_jets_spanet,
     spanet_input_name_list,
+    pad_value_spanet,
 ):
     inputs_complete = {}
     inputs = define_spanet_pairing_inputs(
-        events, max_num_jets_spanet, spanet_input_name_list
+        events, max_num_jets_spanet, spanet_input_name_list, pad_value_spanet
     )
 
     mask = np.array(

@@ -4,7 +4,6 @@ from collections import defaultdict
 
 from utils.spanet_evaluation_functions import (
     define_spanet_pairing_inputs,
-    get_pairing_information,
 )
 
 
@@ -223,7 +222,7 @@ def get_onnx_prediction(
         collection_feature_dict = get_collections(variables["sequential"])
         for collection, features in collection_feature_dict.items():
             sequential_inputs = define_spanet_pairing_inputs(
-                events, max_num_jets_spanet, collection, features
+                events, max_num_jets_spanet, collection, features, pad_value_spanet
             )  # Currently hardcode jets to 4
             mask = np.array(
                 ak.to_numpy(
