@@ -77,6 +77,10 @@ class HEPPlotter:
         self.ylabel = "Events"
         self.cbar_label = "Events"
         self.ratio_label = "Ratio"
+        ## special for categorical plots
+        self.xticklabels = []
+        self.label_pos = []
+        self.rotate_xticks = False
 
         # extra kwargs for plotting functions
         self.extra_kwargs = {}
@@ -112,7 +116,6 @@ class HEPPlotter:
             "reference_to_den": True,
             "grid": True,
             "enable_watermark": True,
-            "rotate_xticks": False,
         }
 
         # expose as attributes too (so they're accessible normally)
@@ -126,10 +129,6 @@ class HEPPlotter:
         self._lines = []
 
         self._change_histogram_binning = False
-
-        # special for categorical plots
-        self._xticklabels = []
-        self._label_pos = []
 
     # ----------------------------
     # CONFIGURATION METHODS
@@ -154,13 +153,25 @@ class HEPPlotter:
         return self
 
     def set_labels(
-        self, xlabel, ylabel="Events", cbar_label="Events", ratio_label="Ratio"
+        self,
+        xlabel,
+        ylabel="Events",
+        cbar_label="Events",
+        ratio_label="Ratio",
+        xticklabels=[],
+        label_pos=[],
+        rotate_xticks=False,
     ):
-        """Set the x and y axis labels."""
+        """Set the axis labels."""
         self.xlabel = xlabel
         self.ylabel = ylabel
         self.cbar_label = cbar_label
         self.ratio_label = ratio_label
+
+        self.xticklabels = xticklabels
+        self.label_pos = label_pos
+        self.rotate_xticks = rotate_xticks
+
         return self
 
     def set_data(self, series_dict, plot_type="1d"):
@@ -644,12 +655,17 @@ class HEPPlotter:
 
         categories = first["data"]["categories"]
         n_cats = len(categories)
-        self._xticklabels = categories
         n_series = len(series_names)
 
         x = np.arange(n_cats)
         width = 0.8 / n_series
-        self._label_pos = x + width * (n_series - 1) / 2
+
+        if self.xticklabels or self.label_pos:
+            print(
+                "WARNING: xticklabels and label_pos will be overridden for categorical plots"
+            )
+        self.xticklabels = categories
+        self.label_pos = x + width * (n_series - 1) / 2
 
         offset = 0
         for name in series_names:
@@ -930,22 +946,18 @@ class HEPPlotter:
 
         ax.set_ylabel(self.ylabel)
 
-        # ----------------------------
-        # CATEGORICAL-SPECIFIC HANDLING
-        # ----------------------------
-        if self.plot_type == "categorical":
-
-            if self._xticklabels:
-                ax.set_xticks(self._label_pos)
-                ax.set_xticklabels(
-                    self._xticklabels,
-                    rotation=45 if self.rotate_xticks else 0,
-                    ha="right" if self.rotate_xticks else "center",
-                    fontsize=18,
-                )
+        # print xticklabels
+        if self.xticklabels and self.label_pos:
+            ax.set_xticks(self.label_pos)
+            ax.setxticklabels(
+                self.xticklabels,
+                rotation=45 if self.rotate_xticks else 0,
+                ha="right" if self.rotate_xticks else "center",
+                fontsize=18,
+            )
 
         # ----------------------------
-        # AUTO Y-LIMITS (NON-CATEGORICAL)
+        # AUTO Y-LIMITS
         # ----------------------------
         if self.set_ylim and self.plot_type != "2d":
             top_value = (
@@ -966,7 +978,7 @@ class HEPPlotter:
             ax.set_ylim(top=top_value, bottom=bottom_value)
 
         # ----------------------------
-        # AUTO X-LIMITS (NON-CATEGORICAL)
+        # AUTO X-LIMITS
         # ----------------------------
         if self.set_xlim and self.plot_type != "2d":
             right_value = (

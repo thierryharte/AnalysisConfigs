@@ -131,6 +131,7 @@ def plot_efficiencies_all_categories_all_jets(
         .set_labels(
             xlabel=None,
             ylabel="Efficiency %",
+            rotate_xticks=False,
         )
         .set_data(series_dict, plot_type="categorical")
         .set_options(
@@ -140,7 +141,6 @@ def plot_efficiencies_all_categories_all_jets(
             ylim_top_value=1.4,
             ylim_bottom_value=0,
             grid=False,
-            rotate_xticks=False,
         )
         .add_annotation(
             0.97,
