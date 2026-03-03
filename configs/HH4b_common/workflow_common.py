@@ -19,6 +19,7 @@ from utils.reconstruct_higgs_candidates import (
     reconstruct_resonances_from_idx,
     reconstruct_higgs_from_provenance,
     run2_matching_algorithm,
+    get_lead_mjj_jet_pair,
 )
 from utils.spanet_evaluation_functions import get_best_pairings, clean_assignment_prob
 
@@ -175,6 +176,7 @@ class HH4bCommonProcessor(BaseProcessorABC):
         # Cut on the JEC pt (w/o regression)
         self.events["JetGood"], mask_jet_good = custom_jet_selection(
             self.events,
+            "Jet",
             "Jet",
             self.params,
             year=self._year,
@@ -371,6 +373,7 @@ class HH4bCommonProcessor(BaseProcessorABC):
     #     self._preselections = self._preselections_temp
 
     def flatten_pt(self, rand_type, jet_collection):
+        np.random.seed(42)
         if rand_type == 0.5:
             random_weights = ak.Array(
                 np.random.rand((len(self.events[jet_collection].pt))) + 0.5
@@ -838,14 +841,11 @@ class HH4bCommonProcessor(BaseProcessorABC):
             jet_higgs_idx_per_event
         )
 
-        self.params.object_preselection.update(
-            {"JetNotFromHiggs": self.params.object_preselection["Jet"]}
-        )
-
         # Cut on the JEC pt (w/o regression)
         self.events["JetNotFromHiggs"], _ = custom_jet_selection(
             self.events,
             "JetNotFromHiggs",
+            "Jet",
             self.params,
             year=self._year,
             pt_type="pt_default",
@@ -1256,7 +1256,6 @@ class HH4bCommonProcessor(BaseProcessorABC):
                 model_session_spanet, input_name_spanet, output_name_spanet = (
                     get_model_session(self.spanet, "spanet")
                 )
-
                 # compute the pairing information using the SPANET model
                 spanet_output, _ = get_onnx_prediction(
                     model_session_spanet,
@@ -1317,7 +1316,7 @@ class HH4bCommonProcessor(BaseProcessorABC):
                     np.digitize(
                         ak.to_numpy(self.events.Arctanh_Delta_pairing_probabilities),
                         arctanh_delta_prob_bin_edges,
-                    )
+                        )
                     - 1
                 )
                 self.events["Padded_Arctanh_Delta_pairing_probabilities"] = np.where(
@@ -1326,7 +1325,39 @@ class HH4bCommonProcessor(BaseProcessorABC):
                     self.pad_value,
                     self.events.Arctanh_Delta_pairing_probabilities,
                 )
+
+                (
+                    self.events["HiggsLeading"],
+                    self.events["HiggsSubLeading"],
+                    self.events["JetGoodFromHiggsOrdered"],
+                    jet_vbf,
+                ) = reconstruct_resonances_from_idx(
+                    self.events[jet_coll_pairing], pairing_predictions
+                )
+                if self.vbf_analysis:
+                    if jet_vbf is not None:
+                        self.events["JetGoodVBFEnergyOrdered"] = jet_vbf
+                    else:
+                        # get the vbf candidates as the leading in mjj
+                        self.events["JetVBFCandidates"] = self.get_jets_not_from_idx(
+                            self.events["JetGoodFromHiggsOrdered"].index
+                        )
+                        self.events["JetGoodVBFCandidates"], _ = custom_jet_selection(
+                            self.events,
+                            "JetVBFCandidates",
+                            "JetVBF",
+                            self.params,
+                            year=self._year,
+                            pt_type="pt_default",
+                            pt_cut_name=self.pt_cut_name,
+                            forward_jet_veto=True,
+                        )
+                        self.events["JetGoodVBFEnergyOrdered"] = get_lead_mjj_jet_pair(
+                            self.events, "JetGoodVBFCandidates"
+                        )
+
                 if self._isMC:
+                    # HERE add also the vbf idx
                     matched_jet_higgs_idx_not_noneTrue = self.get_true_pairing_and_compare(
                         suffix="True",
                         pairing_predictions=pairing_predictions,
@@ -1334,15 +1365,6 @@ class HH4bCommonProcessor(BaseProcessorABC):
                     )
                 else:
                     self.dummy_provenance()
-
-                (
-                    self.events["HiggsLeading"],
-                    self.events["HiggsSubLeading"],
-                    self.events["JetGoodFromHiggsOrdered"],
-                    self.events["JetGoodFromVBFEnergyOrdered"],
-                ) = reconstruct_resonances_from_idx(
-                    self.events[jet_coll_pairing], pairing_predictions
-                )
 
                 matched_jet_higgs_idx_not_none = self.events.JetGoodFromHiggsOrdered.index
                 # Define distance parameter for selection:
@@ -1357,7 +1379,10 @@ class HH4bCommonProcessor(BaseProcessorABC):
                 )
 
                 # Get classification probability if present
-                if len(spanet_output["class_prob"]) > 0 and self.vbf_discriminator == self.spanet:
+                if (
+                    len(spanet_output["class_prob"]) > 0
+                    and self.vbf_discriminator == self.spanet
+                ):
                     if self.vbf_analysis:
                         self.events["VBF_ggF_score"] = spanet_output["class_prob"][0][:, -1]
                     else:
@@ -1373,6 +1398,24 @@ class HH4bCommonProcessor(BaseProcessorABC):
                     self.events["JetGoodFromHiggsOrderedRun2"],
                 ) = run2_matching_algorithm(self.events["JetGoodHiggs"])
 
+                # get the vbf candidates as the leading in mjj
+                self.events["JetVBFCandidatesRun2"] = self.get_jets_not_from_idx(
+                    self.events["JetGoodFromHiggsOrderedRun2"].index
+                )
+                self.events["JetGoodVBFCandidatesRun2"], _ = custom_jet_selection(
+                    self.events,
+                    "JetVBFCandidatesRun2",
+                    "JetVBF",
+                    self.params,
+                    year=self._year,
+                    pt_type="pt_default",
+                    pt_cut_name=self.pt_cut_name,
+                    forward_jet_veto=True,
+                )
+                self.events["JetGoodVBFEnergyOrderedRun2"] = get_lead_mjj_jet_pair(
+                    self.events, "JetGoodVBFCandidatesRun2"
+                )
+
                 matched_jet_higgs_idx_not_noneRun2 = (
                     self.events.JetGoodFromHiggsOrderedRun2.index
                 )
@@ -1381,6 +1424,7 @@ class HH4bCommonProcessor(BaseProcessorABC):
                     + (self.events.HiggsSubLeadingRun2.mass - 120) ** 2
                 )
                 if self._isMC:
+                    #HERE add also the vbf idx
                     matched_jet_higgs_idx_not_noneTrue = self.get_true_pairing_and_compare(
                         suffix="True",
                         pairing_predictions=pairing_predictions,
@@ -1392,30 +1436,26 @@ class HH4bCommonProcessor(BaseProcessorABC):
                 # (useless for Run2 pairing because it's always 4 jets)
                 self.events["btag_order_add_jet"] = ak.any(
                     ak.flatten(pairing_predictions, axis=-1) > 3, axis=-1
-                )
 
-            if not (self._isMC and not self.spanet):
-                self.dummy_provenance()
+                    )
+                if not (self._isMC and not self.spanet):
+                    self.dummy_provenance()
 
             self.events["nJetGoodHiggsMatched"] = ak.num(
                 self.events.JetGoodHiggsMatched, axis=1
             )
+            self.events["nJetGoodMatched"] = ak.num(self.events.JetGoodMatched, axis=1)
 
-        self.events["nJetGoodHiggsMatched"] = ak.num(
-            self.events.JetGoodHiggsMatched, axis=1
-        )
-        self.events["nJetGoodMatched"] = ak.num(self.events.JetGoodMatched, axis=1)
+            if self.vbf_discriminator and self.vbf_discriminator != self.spanet:
+                (
+                    model_session_vbf_discriminator,
+                    input_name_vbf_discriminator,
+                    output_name_vbf_discriminator,
+                ) = get_model_session(self.vbf_discriminator, "vbf_discriminator")
 
-        if self.vbf_discriminator and self.vbf_discriminator != self.spanet:
-            (
-                model_session_vbf_discriminator,
-                input_name_vbf_discriminator,
-                output_name_vbf_discriminator,
-            ) = get_model_session(self.vbf_discriminator, "vbf_discriminator")
-
-            del model_session_vbf_discriminator
-            del input_name_vbf_discriminator
-            del output_name_vbf_discriminator
+                del model_session_vbf_discriminator
+                del input_name_vbf_discriminator
+                del output_name_vbf_discriminator
 
         if self.dnn_variables and self.spanet and not self.boosted:
             (

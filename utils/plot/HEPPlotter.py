@@ -77,6 +77,10 @@ class HEPPlotter:
         self.ylabel = "Events"
         self.cbar_label = "Events"
         self.ratio_label = "Ratio"
+        ## special for categorical plots
+        self.xticklabels = None
+        self.label_pos = None
+        self.rotate_xticks = False
 
         # extra kwargs for plotting functions
         self.extra_kwargs = {}
@@ -102,11 +106,16 @@ class HEPPlotter:
             "ylim_bottom_factor": 1e-2,
             "ylim_top_value": None,
             "ylim_bottom_value": None,
+            ## x lim
+            "set_xlim": False,
+            "xlim_right_factor": 1,
+            "xlim_left_factor": 1,
+            "xlim_right_value": None,
+            "xlim_left_value": None,
             ## other
             "reference_to_den": True,
             "grid": True,
             "enable_watermark": True,
-            "rotate_xticks": False,
         }
 
         # expose as attributes too (so they're accessible normally)
@@ -120,10 +129,6 @@ class HEPPlotter:
         self._lines = []
 
         self._change_histogram_binning = False
-
-        # special for categorical plots
-        self._xticklabels = []
-        self._label_pos=[]
 
     # ----------------------------
     # CONFIGURATION METHODS
@@ -148,13 +153,25 @@ class HEPPlotter:
         return self
 
     def set_labels(
-        self, xlabel, ylabel="Events", cbar_label="Events", ratio_label="Ratio"
+        self,
+        xlabel,
+        ylabel="Events",
+        cbar_label="Events",
+        ratio_label="Ratio",
+        xticklabels=None,
+        label_pos=None,
+        rotate_xticks=False,
     ):
-        """Set the x and y axis labels."""
+        """Set the axis labels."""
         self.xlabel = xlabel
         self.ylabel = ylabel
         self.cbar_label = cbar_label
         self.ratio_label = ratio_label
+
+        self.xticklabels = xticklabels
+        self.label_pos = label_pos
+        self.rotate_xticks = rotate_xticks
+
         return self
 
     def set_data(self, series_dict, plot_type="1d"):
@@ -638,12 +655,17 @@ class HEPPlotter:
 
         categories = first["data"]["categories"]
         n_cats = len(categories)
-        self._xticklabels = categories
         n_series = len(series_names)
 
         x = np.arange(n_cats)
         width = 0.8 / n_series
-        self._label_pos=x + width * (n_series - 1) / 2
+
+        if self.xticklabels is not None or self.label_pos is not None:
+            print(
+                "WARNING: xticklabels and label_pos will be overridden for categorical plots"
+            )
+        self.xticklabels = categories
+        self.label_pos = x + width * (n_series - 1) / 2
 
         offset = 0
         for name in series_names:
@@ -924,22 +946,18 @@ class HEPPlotter:
 
         ax.set_ylabel(self.ylabel)
 
-        # ----------------------------
-        # CATEGORICAL-SPECIFIC HANDLING
-        # ----------------------------
-        if self.plot_type == "categorical":
-
-            if self._xticklabels:
-                ax.set_xticks(self._label_pos)
-                ax.set_xticklabels(
-                    self._xticklabels,
-                    rotation=45 if self.rotate_xticks else 0,
-                    ha="right" if self.rotate_xticks else "center",
-                    fontsize=18,
-                )
+        # print xticklabels
+        if self.xticklabels is not None and self.label_pos is not None:
+            ax.set_xticks(self.label_pos)
+            ax.set_xticklabels(
+                self.xticklabels,
+                rotation=45 if self.rotate_xticks else 0,
+                ha="right" if self.rotate_xticks else "center",
+                fontsize=18,
+            )
 
         # ----------------------------
-        # AUTO Y-LIMITS (NON-CATEGORICAL)
+        # AUTO Y-LIMITS
         # ----------------------------
         if self.set_ylim and self.plot_type != "2d":
             top_value = (
@@ -958,6 +976,27 @@ class HEPPlotter:
             )
 
             ax.set_ylim(top=top_value, bottom=bottom_value)
+
+        # ----------------------------
+        # AUTO X-LIMITS
+        # ----------------------------
+        if self.set_xlim and self.plot_type != "2d":
+            right_value = (
+                self.xlim_right_value
+                if self.xlim_right_value is not None
+                else (
+                    self.xlim_right_factor * ax.get_xlim()[1]
+                    if not self.y_log
+                    else ax.get_xlim()[1] ** self.xlim_right_factor
+                )
+            )
+            left_value = (
+                self.xlim_left_value
+                if self.xlim_left_value is not None
+                else self.xlim_left_factor * ax.get_xlim()[0]
+            )
+
+            ax.set_xlim(left=left_value, right=right_value)
 
         # ----------------------------
         # 2D COLORBAR

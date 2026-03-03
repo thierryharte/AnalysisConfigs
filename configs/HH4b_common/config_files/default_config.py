@@ -18,7 +18,7 @@ default_config_options_dict = {
     "boosted_presel": False,
     "semi_tight_vbf": True,
     "vbf_analysis": False,
-    "which_vbf_quark": "with_status",  # "with_mothers_children"
+    "which_vbf_quark": "with_mothers_children",  # "with_status"
     "max_num_jets_add_vbf": 2,
     #
     "dnn_variables": True,
