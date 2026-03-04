@@ -16,7 +16,7 @@ default_config_options_dict = {
     "vbf_parton_matching": False,
     "vbf_presel": False,
     "vbf_analysis": False,
-    "which_vbf_quark": "with_status",  # "with_mothers_children"
+    "which_vbf_quark": "with_mothers_children",  # "with_status"
     "max_num_jets_add_vbf": 2,
     #
     "dnn_variables": True,
@@ -35,6 +35,7 @@ default_config_options_dict = {
     "fifth_jet": "pt",
     "donotscale_sumgenweights": False,
     "pad_value": -999.0,
+    "pad_value_spanet": 9999.0,
     "arctanh_delta_prob_bin_edge": 2.44,
     "arctanh_delta_prob_pad_limit": 2.0,
     "add_jet_spanet": False,
