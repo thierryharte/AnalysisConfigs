@@ -17,7 +17,7 @@ logger = logging.getLogger()
 
 
 def get_columns_from_files(
-    inputfiles, sel_var="nominal", filter_lambda=None, debug=False, novars=False
+    inputfiles, sel_var="nominal", filter_lambda=None, debug=True, novars=False
 ):
     if not debug:
         logger.setLevel(level=logging.INFO)
