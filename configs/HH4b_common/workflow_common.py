@@ -1093,8 +1093,6 @@ class HH4bCommonProcessor(BaseProcessorABC):
                     pairing_predictions=pairing_predictions,
                     pairing_suffix="",
                 )
-            else:
-                self.dummy_provenance()
 
             matched_jet_higgs_idx_not_none = self.events.JetGoodFromHiggsOrdered.index
             # Define distance parameter for selection:
