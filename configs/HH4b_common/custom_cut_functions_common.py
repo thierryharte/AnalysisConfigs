@@ -198,12 +198,74 @@ def hh4b_boosted_qcd_CR_cuts_X(events, params, **kwargs):
     # Pad None values with False
     return ak.where(ak.is_none(mask), False, mask)
 
+
 def hh4b_boosted_vbf_cuts(events, params, **kwargs):
     # candidate VBF jets are already selected in the object preselection and stored in the nDiJetVBFCandidates
     mask_vbf = (events.nDiJetVBFCandidates > 0)
 
     # Pad None values with False
     return ak.where(ak.is_none(mask_vbf), False, mask_vbf)
+
+
+def hh4b_boosted_category_1(events, params, **kwargs):
+    txbb = events["HiggsSubLeading"]["btagBBTXbb"]
+    bdt_ggf = events["boosted_bdt_score"]
+    cat_mask = (txbb > 0.945) & (bdt_ggf > 0.94)
+    return cat_mask
+
+
+def hh4b_boosted_category_vbf(events, params, **kwargs):
+    txbb = events["HiggsSubLeading"]["btagBBTXbb"]
+    bdt_vbf = events["boosted_bdt_vbf_score"]
+    cat_mask = ~hh4b_boosted_category_1(events, params) & (txbb > 0.8) & (bdt_vbf > 0.9825)
+    return cat_mask
+
+
+def hh4b_boosted_category_2(events, params, **kwargs):
+    txbb = events["HiggsSubLeading"]["btagBBTXbb"]
+    bdt_ggf = events["boosted_bdt_score"]
+    cat_mask_1 = (
+            ~hh4b_boosted_category_1(events, params) & 
+            ~hh4b_boosted_category_vbf(events, params) &
+            (txbb > 0.85) & (txbb < 0.945) & (bdt_ggf > 0.94)
+            )
+    cat_mask_2 = (
+            ~hh4b_boosted_category_1(events, params) &
+            ~hh4b_boosted_category_vbf(events, params) &
+            (txbb > 0.945) & (bdt_ggf > 0.755) & (bdt_ggf < 0.94)
+            )
+    cat_mask = cat_mask_1 | cat_mask_2
+    return cat_mask
+
+
+def hh4b_boosted_category_3(events, params, **kwargs):
+    txbb = events["HiggsSubLeading"]["btagBBTXbb"]
+    bdt_ggf = events["boosted_bdt_score"]
+    cat_mask = (
+            ~hh4b_boosted_category_1(events, params) &
+            ~hh4b_boosted_category_vbf(events, params) &
+            ~hh4b_boosted_category_2(events, params) &
+            (txbb > 0.85) & (bdt_ggf > 0.03)
+            )
+    return cat_mask
+
+
+def hh4b_boosted_background_vbf(events, params, **kwargs):
+    txbb = events["HiggsSubLeading"]["btagBBTXbb"]
+    bdt_vbf = events["boosted_bdt_vbf_score"]
+    cat_mask = (
+            (txbb < 0.85) & (bdt_vbf > 0.03)
+            )
+    return cat_mask
+
+
+def hh4b_boosted_background_ggf(events, params, **kwargs):
+    txbb = events["HiggsSubLeading"]["btagBBTXbb"]
+    bdt_ggf = events["boosted_bdt_score"]
+    cat_mask = (
+            (txbb < 0.85) & (bdt_ggf > 0.03)
+            )
+    return cat_mask
 
 
 def hh4b_2b_cuts(events, params, **kwargs):

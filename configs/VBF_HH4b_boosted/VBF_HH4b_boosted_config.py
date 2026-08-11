@@ -4,6 +4,9 @@ import cloudpickle
 from configs.HH4b_common.config_files.__config_file__ import (
     config_options_dict,
 )
+from pocket_coffea.lib.cut_functions import (
+    eventFlags,
+)
 from pocket_coffea.lib.calibrators.common.common import JetsCalibrator
 from pocket_coffea.lib.weights.common.common import common_weights
 from pocket_coffea.parameters import defaults
@@ -138,11 +141,12 @@ sample_list = (
         # "DATA_JetMET_JMENano_E",
         # "DATA_JetMET_JMENano_F",
         # "DATA_JetMET_JMENano_G",
-        # "TTtoLNu2Q",
-        # "TTto2L2Nu",
-        # "TTto4Q",
+        "TTtoLNu2Q",
+        "TTto2L2Nu",
+        "TTto4Q",
         # "DATA_ParkingHH",
-        "DATA_JetMET0_HH4bBoosted"
+        "DATA_JetMET0_HH4bBoosted",
+        "DATA_JetMET1_HH4bBoosted",
     ]
     + sample_ggF_list
     + sample_VBF_list
@@ -163,7 +167,6 @@ categories_dict = define_categories(
     run2=config_options_dict["run2"],
     vr1=config_options_dict["vr1"],
     boosted=config_options_dict["boosted"],
-    other_group=True if config_options_dict["approach"] == "boosted" else False,
     split_qcd=config_options_dict["split_qcd"] if config_options_dict["boosted"] else False,
     # vbf_analysis=config_options_dict["vbf_analysis"],
     vbf_analysis=config_options_dict["vbf_selection"] if "vbf_selection" in config_options_dict.keys() else config_options_dict["vbf_analysis"],
@@ -225,14 +228,32 @@ else:
         )
         column_list += get_columns_list({})
     elif config_options_dict["boosted"]:
-        column_list += get_columns_list(DEFAULT_FATJET_COLUMNS, not config_options_dict["save_chunk"])
-
+        # column_list += get_columns_list(DEFAULT_FATJET_COLUMNS, not config_options_dict["save_chunk"])
+        column_list += get_columns_list(
+            {
+                "JetGood": ["pt_regressed", "pt_default", "pt", "eta", "phi", "mass"],
+                "JetGoodVBF": ["pt", "eta", "phi", "mass"],
+                "JetGoodCloseToFatJet": ["pt_regressed", "pt_default", "pt", "eta", "phi", "mass"],
+                "Jet": ["pt_regressed", "pt_default", "eta"],
+                "JetGoodVBFEnergyOrdered": ["pt", "eta", "phi", "mass"],
+                "events": ["HT_jetJetGoodVBF", "HT_jetJetGood", "nJetGood", "nFatJetGoodSelected", "event", "boosted_bdt_score", "boosted_bdt_vbf_score", "mjjJetGoodVBFEnergyOrdered", "mjjJetGoodVBF", "mjjJetGoodVBF", "detaJetGoodVBF", "detaJetGoodVBFEnergyOrdered", "HiggsLeadingByHiggsSubLeadingPt"],
+                "JetGoodVBFNearHiggsLeading": ["pt", "eta", "phi", "mass"],
+                "JetGoodVBFNearHiggsSubLeading": ["pt", "eta", "phi", "mass"],
+                "FatJetGoodSelected": ["pt", "eta", "phi", "msoftdrop", "mass_orig", "mass", "btagBBTXbb"],
+                "HiggsLeading": ["pt", "eta", "phi", "msoftdrop", "mass_orig", "mass", "btagBBTXbb", "btagBBTXbb_dig", "Tau3OverTau2", "dRclosestVBF", "massclosestVBF", "divHHmass"],
+                "HiggsSubLeading": ["pt", "eta", "phi", "msoftdrop", "mass_orig", "mass", "btagBBTXbb", "Tau3OverTau2", "dRclosestVBF", "massclosestVBF", "divHHmass"],
+                "HH": ["pt", "eta", "mass"],
+                "PuppiMET": ["pt"],
+                "PFMET": ["pt"],
+            }
+        )
     else:
         total_input_columns |= DEFAULT_JET_COLUMNS_DICT
 
-    column_list += create_DNN_columns_list(
-        False, not config_options_dict["save_chunk"], total_input_columns, btag=False
-    )
+    if not config_options_dict["boosted"]:
+        column_list += create_DNN_columns_list(
+            False, not config_options_dict["save_chunk"], total_input_columns, btag=False
+        )
     # Add special columns
     if config_options_dict["sig_bkg_dnn"]:
         column_list += get_columns_list({"events": ["sig_bkg_dnn_score"]})
@@ -279,7 +300,10 @@ cfg = Configurator(
             # f"{localdir}/../HH4b_common/datasets/background_TTtoX.json",
             # f"{localdir}/../HH4b_common/datasets/signal_VBFHHto4B_Par_2024.json",
             # f"{localdir}/../HH4b_common/datasets/signal_GluGluHHto4B_Par_2024.json",
-            f"{localdir}/../HH4b_common/datasets/DATA_JetMET_boosted_test_24EraD.json",
+            f"{localdir}/../HH4b_common/datasets/TT_boosted_skimmed.json",
+            f"{localdir}/../HH4b_common/datasets/DATA_JetMET_boosted_skimmed_2024_2023preBPix.json",
+            f"{localdir}/../HH4b_common/datasets/signal_VBFHHto4B_Par_boosted_skimmed_2024.json",
+            f"{localdir}/../HH4b_common/datasets/signal_GluGluHHto4B_Par_boosted_skimmed_2024.json",
         ],
         "filter": {
             "samples": sample_list,
@@ -291,7 +315,7 @@ cfg = Configurator(
     workflow=VBFHH4bProcessor,
     workflow_options=config_options_dict,
     skim=cuts.skimming_cut_list(config_options_dict),
-    preselections=preselection,
+    preselections=[eventFlags, cuts.hh4b_JetVetoMap, cuts.hh4b_boosted_2fatjets, cuts.hh4b_boosted_lepton_veto],  # preselection,
     categories=categories_dict,
     weights_classes=common_weights
     + [bkg_morphing_dnn_weight],

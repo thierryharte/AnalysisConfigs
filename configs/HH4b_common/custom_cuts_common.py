@@ -143,8 +143,8 @@ hh4b_control_region_wide = Cut(
     function=cuts_f.hh4b_Rhh_cuts,
 )
 
-hh4b_boosted_signal_region_other_group = Cut(
-    name="hh4b_boosted_signal_region",
+hh4b_boosted_baseline = Cut(
+    name="hh4b_boosted_baseline",
     params={
         # "pnet_cut": 0.65,
         "bbtagTXbb": 0.30,
@@ -152,6 +152,42 @@ hh4b_boosted_signal_region_other_group = Cut(
         # "mass_max": 150,
     },
     function=cuts_f.hh4b_boosted_SR_cuts,
+)
+
+hh4b_boosted_category_1 = Cut(
+    name="hh4b_boosted_category_1",
+    params={},
+    function=cuts_f.hh4b_boosted_category_1,
+)
+
+hh4b_boosted_category_vbf = Cut(
+    name="hh4b_boosted_category_vbf",
+    params={},
+    function=cuts_f.hh4b_boosted_category_vbf,
+)
+
+hh4b_boosted_category_2 = Cut(
+    name="hh4b_boosted_category_2",
+    params={},
+    function=cuts_f.hh4b_boosted_category_2,
+)
+
+hh4b_boosted_category_3 = Cut(
+    name="hh4b_boosted_category_3",
+    params={},
+    function=cuts_f.hh4b_boosted_category_3,
+)
+
+hh4b_boosted_background_vbf = Cut(
+    name="hh4b_boosted_background_vbf",
+    params={},
+    function=cuts_f.hh4b_boosted_background_vbf,
+)
+
+hh4b_boosted_background_ggf = Cut(
+    name="hh4b_boosted_background_ggf",
+    params={},
+    function=cuts_f.hh4b_boosted_background_ggf,
 )
 
 hh4b_boosted_signal_region = Cut(

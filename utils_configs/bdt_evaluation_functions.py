@@ -13,7 +13,7 @@ import xgboost as xgb
 def disc_TXbb(txbb_array):
     bins = np.array([0, 0.8, 0.9, 0.94, 0.97, 0.99, 1])
     is_valid = ~ak.is_none(txbb_array)
-    digitized = np.digitize(ak.fill_none(txbb_array, -1.0), bins)
+    digitized = np.digitize(ak.fill_none(txbb_array, -1), bins)
     digitized = ak.Array(digitized)
     bin_indices = ak.mask(digitized, is_valid)
     return bin_indices
@@ -24,6 +24,10 @@ def to_col(arr, handle_none=None):
         arr = ak.fill_none(arr, np.inf)
     if handle_none == "99999":
         arr = ak.fill_none(arr, -99999)
+    if handle_none == "199998":
+        arr = ak.fill_none(arr, 199998)
+    if handle_none == "1":
+        arr = ak.fill_none(arr, 1)
     if handle_none == "0":
         arr = ak.fill_none(arr, 0)
     if handle_none == "NaN":
@@ -37,10 +41,11 @@ def to_col(arr, handle_none=None):
     return col
 
 def get_default_bdt_inputs(events):
+    # VBFdeta needs special treatment:
     inputs = pd.DataFrame(
         {
             # dihiggs system
-            "HHPt": to_col(events.HH.pt),
+            "HHPt": to_col(events.HH.pt, handle_none="199998"),
             "HHeta": to_col(events.HH.eta, handle_none="inf"),
             "HHmass": to_col(events.HH.mass),
             # met in the event
@@ -56,14 +61,15 @@ def get_default_bdt_inputs(events):
             "H2Pt": to_col(events.HiggsSubLeading.pt, "99999"),
             "H1eta": to_col(events.HiggsLeading.eta, "99999"),
             # xbb
-            "H1Xbb": to_col(events.HiggsLeading.btagBBTXbb),
+            "H1Xbb": to_col(events.HiggsLeading.btagBBTXbb_dig, "1").astype(np.int64),
             # ratios
             "H1Pt_HHmass": to_col(events.HiggsLeading.divHHmass),
             "H2Pt_HHmass": to_col(events.HiggsSubLeading.divHHmass),
-            "H1Pt/H2Pt": to_col(events.HiggsLeadingByHiggsSubLeadingPt, "99999"),
+            "H1Pt/H2Pt": to_col(events.HiggsLeadingByHiggsSubLeadingPt, "1"),
             # vbf mjj and eta_jj
             "VBFjjMass": to_col(events.mjjJetGoodVBFEnergyOrdered, "NaN"),
             "VBFjjDeltaEta": to_col(events.detaJetGoodVBFEnergyOrdered),
+            # "VBFjjDeltaEta": to_col(detavbf),
             # AK4JetAway
             "H1AK4JetAway1dR": to_col(events.HiggsLeading.dRclosestVBF, "0"),
             "H2AK4JetAway2dR": to_col(events.HiggsSubLeading.dRclosestVBF, "0"),
@@ -78,6 +84,6 @@ def evaluate_bdt(bdt_model, bdt_events):
     bdt_model_xgb.load_model(bdt_model)
     bdt_scores = bdt_model_xgb.predict_proba(bdt_events)
     bg_tot = np.sum(bdt_scores[:, 2:], axis=1)
-    bdt_score = bdt_scores[:, 0] / (bdt_scores[:, 1] + bg_tot)
+    bdt_score = bdt_scores[:, 0] / (bdt_scores[:, 0] + bg_tot)
     bdt_vbf_score = bdt_scores[:, 1] / (bdt_scores[:, 1] + bdt_scores[:, 2] + bdt_scores[:, 3])
     return bdt_score, bdt_vbf_score

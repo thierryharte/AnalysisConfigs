@@ -123,7 +123,7 @@ def custom_jet_selection(
 
     obj_param = params_copy.object_preselection[jet_type_obj_presel]
     if "dr_jet" in obj_param.keys():
-        clean_jet_coll = obj_param["clean_jet_coll"] if "clean_jet_coll" in obj_param.keys() else "FatJetGood"
+        clean_jet_coll = obj_param["clean_jet_coll"] if "clean_jet_coll" in obj_param.keys() else "FatJetGoodSelected"
         mask = mask & object_cleaning_mask(events_copy[jet_type_default], events_copy[clean_jet_coll], obj_param["dr_jet"])
     if "dr_lep" in obj_param.keys():
         eles = events_copy[obj_param["clean_ele_coll"] if "clean_ele_coll" in obj_param.keys() else "Electron"]

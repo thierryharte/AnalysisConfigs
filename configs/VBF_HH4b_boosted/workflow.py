@@ -107,28 +107,42 @@ class VBFHH4bProcessor(HH4bCommonProcessor):
                 pt_cut_name="pt",
             )
             # ===== Regressions (needed for additional cuts) ===== 
-            self.events["FatJetGood"] = ak.with_field(
-                self.events["FatJetGood"],
-                self.events["FatJetGood"].mass * self.events["FatJetGood"].particleNet_massCorr,
-                "mass_regr"
-            )
-            self.events["FatJetGood"] = ak.with_field(
-                self.events["FatJetGood"],
-                self.events["FatJetGood"].pt * self.events["FatJetGood"].particleNet_massCorr,
-                "pt_regr"
-            )
+            if self._year == "2024":
+                self.events["FatJetGood"] = ak.with_field(self.events["FatJetGood"], self.events["FatJetGood"]["mass"], "mass_orig")
+                self.events["FatJetGood"] = ak.with_field(
+                    self.events["FatJetGood"],
+                    self.events["FatJetGood"].mass_raw * self.events["FatJetGood"].globalParT3_massCorrGeneric,  # Check, if we should use globalParT3_massCorrGeneric
+                    "mass"
+                )
+                # self.events["FatJetGood"] = ak.with_field(
+                #     self.events["FatJetGood"],
+                #     self.events["FatJetGood"].pt_raw * self.events["FatJetGood"].globalParT3_massCorrGeneric,
+                #     "pt_regr"
+                # )
+            else:
+                self.events["FatJetGood"] = ak.with_field(self.events["FatJetGood"], self.events["FatJetGood"]["mass"], "mass_orig")
+                self.events["FatJetGood"] = ak.with_field(
+                    self.events["FatJetGood"],
+                    self.events["FatJetGood"].mass * self.events["FatJetGood"].particleNet_massCorr,
+                    "mass"
+                )
+                # self.events["FatJetGood"] = ak.with_field(
+                #     self.events["FatJetGood"],
+                #     self.events["FatJetGood"].pt_raw * self.events["FatJetGood"].particleNet_massCorr,
+                #     "pt_regr"
+                # )
             fatjet_obj_presel_lead = self.params.object_preselection["FatJetLeading"]
             fatjet_obj_presel_sublead = self.params.object_preselection["FatJetSubLeading"]
             if "mass_regr_min" in fatjet_obj_presel_lead.keys() and "mass_regr_max" in fatjet_obj_presel_lead.keys():
                 mask_mass_regr = (
-                    (self.events["FatJetGood"]["mass_regr"] >= fatjet_obj_presel_lead["mass_regr_min"]) &
-                    (self.events["FatJetGood"]["mass_regr"] <= fatjet_obj_presel_lead["mass_regr_max"])
+                    (self.events["FatJetGood"]["mass"] >= fatjet_obj_presel_lead["mass_regr_min"]) &
+                    (self.events["FatJetGood"]["mass"] <= fatjet_obj_presel_lead["mass_regr_max"])
                 )
                 mask_fat_lead = mask_fat_lead & mask_mass_regr
             if "mass_regr_min" in fatjet_obj_presel_sublead.keys() and "mass_regr_max" in fatjet_obj_presel_sublead.keys():
                 mask_mass_regr = (
-                    (self.events["FatJetGood"]["mass_regr"] >= fatjet_obj_presel_sublead["mass_regr_min"]) &
-                    (self.events["FatJetGood"]["mass_regr"] <= fatjet_obj_presel_sublead["mass_regr_max"])
+                    (self.events["FatJetGood"]["mass"] >= fatjet_obj_presel_sublead["mass_regr_min"]) &
+                    (self.events["FatJetGood"]["mass"] <= fatjet_obj_presel_sublead["mass_regr_max"])
                 )
                 mask_fat_sublead = mask_fat_sublead & mask_mass_regr
             # == Cut on b-tag
@@ -237,7 +251,7 @@ class VBFHH4bProcessor(HH4bCommonProcessor):
                     "JetBoosted",
                     self.params,
                     year=self._year,
-                    pt_type="pt_default",
+                    pt_type="pt",
                     pt_cut_name=self.pt_cut_name,
                     forward_jet_veto=False,
                 )
@@ -247,7 +261,7 @@ class VBFHH4bProcessor(HH4bCommonProcessor):
                     "JetVBF",
                     self.params,
                     year=self._year,
-                    pt_type="pt_default",
+                    pt_type="pt",
                     pt_cut_name=self.pt_cut_name,
                     forward_jet_veto=False,
                 )
@@ -256,6 +270,8 @@ class VBFHH4bProcessor(HH4bCommonProcessor):
                 ]
                 self.events["JetVBF"] = copy.copy(self.events.Jet)
                 self.events["HT_jetJetGoodVBF"] = ak.sum(self.events.JetGoodVBF.pt, axis=1)
+                self.events["HT_jetJetGood"] = ak.sum(self.events.JetGood.pt, axis=1)
+                self.events["HT"] = ak.sum(self.events.Jet.pt, axis=1)
 
                 self.events["JetGoodCloseToFatJet"], mask_jet_close_to_fatjet = custom_jet_selection(
                     self.events,
@@ -263,7 +279,7 @@ class VBFHH4bProcessor(HH4bCommonProcessor):
                     "JetNearFatJet",
                     self.params,
                     year=self._year,
-                    pt_type="pt_default",
+                    pt_type="pt",
                     pt_cut_name=self.pt_cut_name,
                     forward_jet_veto=False,
                 )

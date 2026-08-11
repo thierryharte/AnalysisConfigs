@@ -179,17 +179,14 @@ class HH4bCommonProcessor(BaseProcessorABC):
             )
         elif self.approach == "boosted":
             # self.events["Jet"] = ak.where(
-            #     (ak.nan_to_num(self.events["JetPNetPlusNeutrino"].pt, nan=-1) > 0)
-            #     | (
-            #         self.events["JetPNetPlusNeutrino"].btagPNetB
-            #         > self.params["btagging"]["working_point"][self._year][
-            #             "btagging_WP"
-            #         ]["btagPNetB"]["L"]
-            #     ),
+            #     ak.nan_to_num(self.events["JetPNetPlusNeutrino"].pt, nan=-1) > 0,
             #     self.events["JetPNetPlusNeutrino"],
             #     self.events.JetDefault,
             # )
-            print("Skipping selection on jet objects for now - no btagging info available")
+            self.events["Jet"] = self.events["JetDefault"]
+
+            print("We are using the default values in this case")
+
 
         else:
             raise ValueError(
