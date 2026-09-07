@@ -2,6 +2,7 @@ import os
 import sys
 import numpy as np
 import awkward as ak
+import importlib.util
 from multiprocessing import Pool
 from hist import Hist
 
@@ -73,19 +74,47 @@ if args.run2:
         ],
     }
 elif args.boosted:
+    sub_regions = {
+        "signal":    "boosted_signal_region_A",
+        "sig_bkg_preW":  "boosted_signal_sideband_region_B",
+        "sig_bkg_postW": "boosted_signal_sideband_region_B_postW",
+        "control":    "boosted_control_region_C",
+        "con_bkg_preW":  "boosted_control_sideband_region_D",
+        "con_bkg_postW": "boosted_control_sideband_region_D_postW",
+    }
+    if args.bbtag_direction:
+        sub_regions["sig_bkg_preW"] = "boosted_control_region_C"
+        sub_regions["sig_bkg_postW"] = "boosted_control_region_C_postW"
+        sub_regions["control"] = "boosted_signal_sideband_region_B"
     cat_dict |= {
+        f"CR_TT_{args.region_suffix}": [
+            [
+                sub_regions["control"],
+                sub_regions["con_bkg_postW"],
+                sub_regions["con_bkg_preW"],
+                sub_regions["control"] + "_TT",
+            ]
+        ],
+        f"SR_TT_{args.region_suffix}": [
+            [
+                sub_regions["signal"],
+                sub_regions["sig_bkg_postW"],
+                sub_regions["sig_bkg_preW"],
+                sub_regions["signal"] + "_TT",
+            ]
+        ],
         f"CR{args.region_suffix}": [
             [
-                "boosted_vbf_incl_qcd_B_region",
-                "boosted_vbf_incl_qcd_A_region_postW",
-                "boosted_vbf_incl_qcd_A_region",
+                sub_regions["control"],
+                sub_regions["con_bkg_postW"],
+                sub_regions["con_bkg_preW"],
             ]
         ],
         f"SR{args.region_suffix}": [
             [
-                "boosted_vbf_incl_signal_region",
-                "boosted_vbf_incl_qcd_C_region_postW",
-                "boosted_vbf_incl_qcd_C_region",
+                sub_regions["signal"],
+                sub_regions["sig_bkg_postW"],
+                sub_regions["sig_bkg_preW"],
             ]
         ]
     }
@@ -105,23 +134,6 @@ elif args.mixed:
                 f"4b{args.region_suffix}_signal_region_preW",
             ]
         ],
-        # f"SR{args.region_suffix}_blind": [
-        #     f"4b{args.region_suffix}_signal_region_blind",
-        #     f"2b{args.region_suffix}_signal_region_postW_blind",
-        #     f"2b{args.region_suffix}_signal_region_preW_blind",
-        # ],
-        #
-        # Special case for the 2b morphed with the spread of the morphing weights
-        # Keyword: "SPREAD"
-        #
-        # f"SR{args.region_suffix}_SPREAD": [
-        #     [
-        #         f"4b{args.region_suffix}_signal_region_postW",
-        #         f"4b{args.region_suffix}_signal_region_postW_SPREAD",
-        #     ]
-        # ],
-        # f"CR{args.region_suffix}_2b_Run2SPANet": [f"2b{args.region_suffix}_control_region_preWRun2", f"2b{args.region_suffix}_control_region_preW"],
-        # f"CR{args.region_suffix}_4b_Run2SPANet": [f"4b{args.region_suffix}_control_regionRun2", f"4b{args.region_suffix}_control_region"],
     }
 else:
     cat_dict |= {
@@ -207,6 +219,12 @@ color_list_DATAMC = [
     [("blue",), ("dodgerblue",)],
     [("green",), ("limegreen",)],
 ]
+color_list_BOOSTED = [
+    [("black",), ("red", "salmon"), ("gray",)]
+]
+color_list_BOOSTED_TT = [
+    [("black",), ("red", "salmon"), ("gray",), ("darkorange", "navajowhite")]
+]
 
 ## Load the onnx model
 if args.onnx_model:
@@ -235,8 +253,46 @@ else:
         if file.endswith(".coffea") and ("DATA" in file or "Mixed" in file)
     ]
 
-filter_lambda = (lambda x: ("weight" in x or "score" in x)) if args.spread else (lambda x: "prov" not in x and "events_sigma" not in x and "era" not in x)
+# Optional debug restriction: only keep columns matching one of --only-vars
+# ("weight" and "*_N" are always kept because the plotting code needs them).
+# This filter is pushed all the way down into Arrow's to_table(columns=...)
+# in the parquet loader, so unmatched columns are never read from disk.
+if args.only_vars:
+    if len(args.only_vars)==1 and args.only_vars[0].endswith(".py"):
+        def _load_only_vars_from_py(filepath):
+           spec = importlib.util.spec_from_file_location("only_vars_module", filepath)
+           module = importlib.util.module_from_spec(spec)
+           spec.loader.exec_module(module)
+           variables_dict = module.dnn_input_variables
+           return ["_".join(v) for v in variables_dict.values()]
+
+        args.only_vars = _load_only_vars_from_py(args.only_vars[0])
+    def _keep_var(x):
+        return "weight" in x or "_N" in x or any(s in x for s in args.only_vars)
+else:
+    def _keep_var(x):
+        return True
+
+filter_lambda = (
+    (lambda x: _keep_var(x) and ("weight" in x or "score" in x))
+    if args.spread
+    else (lambda x: _keep_var(x) and "prov" not in x and "events_sigma" not in x and "era" not in x)
+)
 cat_col_data, total_datasets_list = get_columns_from_files(inputfiles, "nominal", filter_lambda, debug=False, novars=args.novars, filter_mixed=args.mixed)
+cat_col_tt = None
+inputfiles_tt = [
+    os.path.join(input_dir, file)
+    for file in os.listdir(input_dir)
+    if file.endswith(".coffea") and ("TT" in file)
+]
+if inputfiles_tt:
+    cat_col_tt, _ = get_columns_from_files(
+        inputfiles_tt, "nominal",
+        lambda x: _keep_var(x) and "prov" not in x and "era" not in x,
+        debug=False, novars=args.novars, filter_mixed=args.mixed,
+    )
+else:
+    print("WARNING: no ttbar ('TT') files found in input_mc, ttbar stacking disabled")
 
 cat_col_mc = None
 if args.input_mc:
@@ -250,12 +306,12 @@ if args.input_mc:
             if file.endswith(".coffea") and "DATA" not in file
         ]
 
-    cat_col_mc, _ = get_columns_from_files(inputfiles_mc, "nominal", lambda x: "prov" not in x and "era" not in x, debug=False, novars=args.novars, filter_mixed=args.mixed)
+    cat_col_mc, _ = get_columns_from_files(inputfiles_mc, "nominal", lambda x: _keep_var(x) and "prov" not in x and "era" not in x, debug=False, novars=args.novars, filter_mixed=args.mixed)
 
     if args.run2:
         cols_sig_mc = cat_col_mc[f"4b{args.region_suffix}_signal_regionRun2"]
     elif args.boosted:
-        cols_sig_mc = cat_col_mc[f"boosted_signal_{args.region_suffix}_region"]
+        cols_sig_mc = cat_col_mc[sub_regions["signal"]]
     else:
         cols_sig_mc = cat_col_mc[f"4b{args.region_suffix}_signal_region"]
 
@@ -288,7 +344,6 @@ if args.input_mc:
 else:
     CONST_SIG_BINNING = False
 
-
 def plot_weights(weights_list, suffix, lumi, era_string):
 
     hist_1d_dict = {}
@@ -297,7 +352,7 @@ def plot_weights(weights_list, suffix, lumi, era_string):
         if any(weights == np.inf):
             print(f"There are infinite values in the weights at {ak.local_index(weights[weights == np.inf])}")
             print(f"We remove them")
-        weights = weights[weights < np.inf]
+            weights = weights[weights < np.inf]
         var_name = f"Morphing weights" + (f" {i}" if len(weights_list) > 1 else "")
         # Remove corrupted weights
         nan_events = np.isnan(weights)
@@ -465,15 +520,33 @@ def plot_single_var_from_columns(
             col_den = col_den[mask_den]
             col_num = col_num[mask_num]
 
-            ### This is a bad workaround for the case where a few weights are Nan or very high.
+            ### This is a bad workaround for the case where a few weights are Nan, very high or strongly negative.
             if args.mask_large_weights:
-                bad_weights = np.isnan(weights_den) | (weights_den > 100)
+                bad_weights = np.isnan(weights_den)  # | (weights_den > 100) | (weights_den < 0)
                 weights_den = weights_den[~bad_weights]
                 col_den = col_den[~bad_weights]
 
             # WARNING: the weights are different for the additional jets because
             # the number of events is different since it's computed after the masking of the PAD_VALUE
-            if args.normalisation == "num_events":
+            if "TT" in cats_name and i != 2:
+                # TTbar-inclusive closure check compares absolute yields. The
+                # TT MC (i == 3) and the data (i == 0) keep their own
+                # normalization. The data-driven QCD estimate (i == 1) is
+                # scaled to (data - ttbar MC) in this region, so that
+                # QCD_est + ttbar_MC reproduces the data by construction
+                # instead of double-counting the ttbar already contained in
+                # the reweighted data.
+                norm_factor_num = 1.0
+                if i == 1:
+                    w_tt = weight_dict[cat_list[3]]
+                    c_tt = col_dict[cat_list[3]]
+                    m_tt = (c_tt != PAD_VALUE) & (np.abs(w_tt) < np.inf)
+                    norm_factor_den = (
+                        weights_num.sum() - w_tt[m_tt].sum()
+                    ) / weights_den.sum()
+                else:
+                    norm_factor_den = 1.0
+            elif args.normalisation == "num_events":
                 norm_factor_den = len(weights_den) / len(weights_num)
                 norm_factor_num = 1.0
             elif args.normalisation == "sum_weights":
@@ -532,6 +605,17 @@ def plot_single_var_from_columns(
             if "TRANSFORM" in var:
                 bins = np.linspace(bins[0], bins[-1], NUMBER_OF_BINS + 1)
 
+            # Guard against degenerate binning: if the selected column is
+            # (nearly) constant or empty, the 0.1%/99.9% quantile range
+            # collapses and the bin edges are not strictly ascending. Skip
+            # the whole variable instead of crashing the run.
+            if not (np.all(np.isfinite(bins)) and np.all(np.diff(bins) > 0)):
+                print(
+                    f"WARNING: degenerate bin edges for {var} in {cats_name} "
+                    f"(range {bins[0]}..{bins[-1]}); skipping variable"
+                )
+                return
+
             histo = Hist.new.Var(bins, name=var, flow=False).Weight()
             histo.fill(col_den, weight=weights_den)
 
@@ -555,6 +639,32 @@ def plot_single_var_from_columns(
                     "plot_errors": True if i == 0 else False,
                     "linewidth": 1,
                 }
+                hist_1d_dict[cat_plot_name] = {
+                    "data": histo,
+                    "style": style_dict,
+                }
+            elif "TT" in cats_name and i == 1:
+                # stash the reweighted background; it is combined with the
+                # TT MC histogram (i == 3) into one stacked entry below,
+                # instead of being plotted as its own overlaid curve
+                histo_bkg_stack = histo
+                cat_plot_name_bkg_stack = cat_plot_name
+                color_bkg_stack = color_list[k][i]
+            elif "TT" in cats_name and i == 3:
+                color_tt_stack = color_list[k][i]
+                hist_1d_dict[f"{cat_plot_name_bkg_stack} + TT"] = {
+                    "data": [histo_bkg_stack, histo],
+                    "style": {
+                        "is_reference": False,
+                        "histtype": "fill",
+                        "stack": True,
+                        "legend_name": [cat_plot_name_bkg_stack, cat_plot_name],
+                        "edgecolor": [color_bkg_stack[0], color_tt_stack[0]],
+                        "facecolor": [color_bkg_stack[-1], color_tt_stack[-1]],
+                        "alpha": [0.5, 0.5],
+                    },
+                }
+                del histo_bkg_stack, cat_plot_name_bkg_stack, color_bkg_stack
             else:
                 if len(color_list[k][i]) > 1:
                     style_dict = {
@@ -570,10 +680,10 @@ def plot_single_var_from_columns(
                         "color": color_list[k][i][0],
                     }
 
-            hist_1d_dict[cat_plot_name] = {
-                "data": histo,
-                "style": style_dict,
-            }
+                hist_1d_dict[cat_plot_name] = {
+                    "data": histo,
+                    "style": style_dict,
+                }
 
             del col_den, col_num
 
@@ -648,6 +758,7 @@ def main(cat_cols, lumi, era_string):
     print(cat_dict)
     cat_col_DATA = cat_cols[0]
     cat_col_MC = cat_cols[1]
+    cat_col_TT = cat_cols[2]
 
     col_dict = {}
     for cats_name, cat_lists in cat_dict.items():
@@ -670,11 +781,19 @@ def main(cat_cols, lumi, era_string):
             if "SPREAD" in cats_name:
                 chi_squared = False
                 color_list = color_list_spread
+            if args.boosted and "DATAMC" not in cats_name and "SPREAD" not in cats_name:
+                color_list = color_list_BOOSTED
+            if "TT" in cats_name:
+                color_list = color_list_BOOSTED_TT
+
+            if "TT" in cats_name and cat_col_TT is None:
+                print(f"WARNING: no ttbar columns loaded, skipping {cats_name}")
+                continue
 
             # check if the categories are in the accumulator
             try:
                 for cat in cat_list:
-                    cat_col_DATA[cat.replace("_MC", "").replace("_SPREAD", "")]
+                    cat_col_DATA[cat.replace("_MC", "").replace("_TT", "").replace("_SPREAD", "")]
             except KeyError:
                 print(
                     f"KeyError: {cat} not in {cat_col_DATA.keys()}, skipping {cats_name}"
@@ -729,24 +848,27 @@ def main(cat_cols, lumi, era_string):
                                 continue
                             if "MC" in cat:
                                 cat_col = cat_col_MC
+                            elif "TT" in cat:
+                                cat_col = cat_col_TT
                             else:
                                 cat_col = cat_col_DATA
 
                             print(v, cat)
+                            base_cat = cat.replace("_MC", "").replace("_TT", "")
                             try:
                                 col_dict[f"{var_name}_{idx}"][cat] = cat_col[
-                                    cat.replace("_MC", "")
+                                    base_cat
                                 ][v][
-                                    np.arange(len(cat_col[cat.replace("_MC", "")][v]))
+                                    np.arange(len(cat_col[base_cat][v]))
                                     % N
                                     == idx
                                 ]
                             except KeyError:
                                 col_dict[f"{var_name}_{idx}"][cat] = cat_col[
-                                    cat.replace("_MC", "")
+                                    base_cat
                                 ][var_name][
                                     np.arange(
-                                        len(cat_col[cat.replace("_MC", "")][var_name])
+                                        len(cat_col[base_cat][var_name])
                                     )
                                     % N
                                     == idx
@@ -765,15 +887,18 @@ def main(cat_cols, lumi, era_string):
                             if "morph" in v:
                                 continue
                             cat_col = cat_col_MC
+                        elif "TT" in cat:
+                            cat_col = cat_col_TT
                         else:
                             cat_col = cat_col_DATA
 
                         # swap the dict keys
                         print(v, cat)
+                        base_cat = cat.replace("_MC", "").replace("_TT", "")
                         try:
-                            col_dict[var_name][cat] = cat_col[cat.replace("_MC", "")][v]
+                            col_dict[var_name][cat] = cat_col[base_cat][v]
                         except KeyError:
-                            col_dict[var_name][cat] = cat_col[cat.replace("_MC", "")][
+                            col_dict[var_name][cat] = cat_col[base_cat][
                                 var_name
                             ]
 
@@ -890,7 +1015,7 @@ def main(cat_cols, lumi, era_string):
 
 
 if __name__ == "__main__":
-            
+
     lumi, era_string = get_era_lumi(total_datasets_list)
 
     # plot the weights
@@ -901,7 +1026,16 @@ if __name__ == "__main__":
         weights = weights[weights < np.inf]
         if "postW" in category:
             plot_weights([weights], category, lumi, era_string)
+    # plot the weights
+    if cat_col_tt:
+        for category in cat_col_tt.keys():
+            weights = cat_col_tt[category]["weight"]
+            if np.any(weights >= np.inf):
+                print("Found infinite values in weights")
+            weights = weights[weights < np.inf]
+            if "postW" in category:
+                plot_weights([weights], f"{category}_ttbar", lumi, era_string)
 
-    main([cat_col_data, cat_col_mc], lumi, era_string)
+    main([cat_col_data, cat_col_mc, cat_col_tt], lumi, era_string)
 
     print(f"\nPlots saved in {outputdir}")

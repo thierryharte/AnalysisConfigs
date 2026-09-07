@@ -18,8 +18,24 @@ logging.basicConfig(
 logger = logging.getLogger()
 
 
+def _merge_sum_genweights(inputfiles):
+    """Union the per-file ``sum_genweights`` dicts.
+
+    Each coffea accumulator only carries the ``sum_genweights`` of the
+    dataset(s) processed in that job. When the columns live in parquet and
+    we fall back to :func:`get_columns_from_parquet` for *all* input files
+    at once, we must pass the merged mapping -- otherwise datasets whose
+    genweights sit in a later file are never normalised and keep their raw
+    (huge, sign-carrying) weights.
+    """
+    merged = {}
+    for f in inputfiles:
+        merged.update(load(f)["sum_genweights"])
+    return merged
+
+
 def get_columns_from_files(
-    inputfiles, sel_var="nominal", filter_lambda=None, debug=False, novars=False, max_num_parquet_files=None, filter_mixed=False,
+    inputfiles, sel_var="nominal", filter_lambda=None, debug=False, novars=False, max_num_parquet_files=None, filter_mixed=False, ragged_pad_length=2,
 ):
     if not debug:
         logger.setLevel(level=logging.INFO)
@@ -34,7 +50,7 @@ def get_columns_from_files(
         samples = list(accumulator["columns"].keys())
         if accumulator["columns"] == {}:
             logger.info("Empty columns, trying to read from parquet files")
-            return get_columns_from_parquet(inputfiles, sel_var, filter_lambda, debug, accumulator["sum_genweights"], max_num_parquet_files=max_num_parquet_files, filter_mixed=True)
+            return get_columns_from_parquet(inputfiles, sel_var, filter_lambda, debug, _merge_sum_genweights(inputfiles), max_num_parquet_files=max_num_parquet_files, filter_mixed=True, ragged_pad_length=ragged_pad_length)
         if debug:
             logger.debug(f"inputfile {inputfile}")
         for sample in samples:
@@ -209,10 +225,18 @@ def get_columns_from_parquet(
     max_num_parquet_files=None,
     num_workers=4,
     filter_mixed=False,
+    ragged_pad_length=2,
 ):
     """
     Fast Parquet loader using Arrow's to_table() (no batching overhead) and
     ThreadPoolExecutor for parallel variation loading.
+
+    ragged_pad_length: fixed number of elements every ragged (variable-length
+        list, e.g. per-jet) column is padded/truncated to with PAD_VALUE. This
+        must be the same across every (dataset, category, variation) work
+        unit -- otherwise the resulting "{column}_{idx}" split columns differ
+        between datasets and merging them later raises KeyErrors like
+        "JetGoodVBF_8 not found".
 
     Returns:
         cat_col[category][(variation)][column]  -> numpy array   (sel_var="all")
@@ -287,9 +311,16 @@ def get_columns_from_parquet(
         """
         Handles three cases:
           1. Plain 1D array -> {column: arr}
-          2. Plain 2D array (n_events, n_objects) -> {column_0: ..., column_1: ...}
-          3. Object-dtype array of variable-length lists (ragged) -> pad to fixed N
-             using PAD_VALUE, then split, OR raise if ragged and no padding strategy.
+          2. Plain 2D array (n_events, n_objects) -> {column_0: ..., column_1: ...},
+             padded/truncated to ragged_pad_length.
+          3. Object-dtype array of variable-length lists (ragged) -> pad/truncate
+             to ragged_pad_length using PAD_VALUE, then split.
+
+        ragged_pad_length is fixed (not derived from this array's own max
+        length) so every work unit produces the same "{column}_{idx}" keys
+        regardless of dataset -- otherwise merging across datasets with
+        different max list lengths drops/misaligns columns (e.g. a
+        "JetGoodVBF_8 not found" KeyError when one dataset never reaches 8).
         """
         arr = np.asarray(arr)
 
@@ -298,26 +329,34 @@ def get_columns_from_parquet(
 
         if arr.ndim == 2:
             n_objects = arr.shape[1]
-            return {f"{column}_{idx}": arr[:, idx] for idx in range(n_objects)}
+            if n_objects != ragged_pad_length:
+                fixed = np.full((arr.shape[0], ragged_pad_length), PAD_VALUE, dtype=np.float64)
+                n_copy = min(n_objects, ragged_pad_length)
+                fixed[:, :n_copy] = arr[:, :n_copy]
+                arr = fixed
+            return {f"{column}_{idx}": arr[:, idx] for idx in range(ragged_pad_length)}
 
         if arr.dtype == object:
-            # Ragged array of lists/arrays per event
-            lengths = {len(row) for row in arr}
-            if len(lengths) != 1:
-                logger.warning(
-                    f"Column {column} is ragged with varying lengths {lengths}; "
-                    f"padding to max length with PAD_VALUE"
-                )
-                n_objects = max(lengths)
-                padded = np.full((len(arr), n_objects), PAD_VALUE, dtype=np.float64)
-                for row_idx, row in enumerate(arr):
-                    padded[row_idx, : len(row)] = row
-                arr2d = padded
-            else:
-                n_objects = lengths.pop()
-                arr2d = np.stack([np.asarray(row, dtype=np.float64) for row in arr])
+            if len(arr) == 0:
+                # No events in this file/variation - nothing to split, no
+                # way to know the intended number of objects.
+                return {column: arr}
 
-            return {f"{column}_{idx}": arr2d[:, idx] for idx in range(n_objects)}
+            # Ragged array of lists/arrays per event: pad/truncate every row
+            # to the same fixed length.
+            lengths = {len(row) for row in arr}
+            if lengths != {ragged_pad_length}:
+                logger.debug(
+                    f"Column {column} has lengths {lengths}; "
+                    f"padding/truncating to fixed length {ragged_pad_length} with PAD_VALUE"
+                )
+            padded = np.full((len(arr), ragged_pad_length), PAD_VALUE, dtype=np.float64)
+            for row_idx, row in enumerate(arr):
+                n_copy = min(len(row), ragged_pad_length)
+                padded[row_idx, :n_copy] = np.asarray(row[:n_copy], dtype=np.float64)
+            arr2d = padded
+
+            return {f"{column}_{idx}": arr2d[:, idx] for idx in range(ragged_pad_length)}
 
         raise ValueError(f"Column {column} has unsupported ndim={arr.ndim}, dtype={arr.dtype}")
 
@@ -443,7 +482,7 @@ def get_columns_from_files_novars(inputfiles, filter_lambda=None, debug=False, m
         if accumulator["columns"] == {}:
             logger.info("Empty columns, trying to read from parquet files")
             return get_columns_from_parquet(
-                inputfiles, "", filter_lambda, debug, accumulator["sum_genweights"], max_num_parquet_files=max_num_parquet_files
+                inputfiles, "", filter_lambda, debug, _merge_sum_genweights(inputfiles), max_num_parquet_files=max_num_parquet_files
             )
         for sample in samples:
             if debug:

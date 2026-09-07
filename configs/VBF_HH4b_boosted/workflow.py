@@ -44,12 +44,13 @@ class VBFHH4bProcessor(HH4bCommonProcessor):
             # here we propagate the btagging scores to the FatJetGood collection as is done in the pocket coffea jet_selection
             # if we're interested in other taggers, we need to add them here or swap to the mass correlated ones ("particleNetWithMass_HbbvsQCD", "particleNetWithMass_HccvsQCD")
 
-            if self._year == "2024":
+            if "2022" not in self._year:
                 self.events["FatJetGood"] = ak.with_field(
                     self.events["FatJetGood"],
                     (self.events["FatJetGood"]["globalParT3_Xbb"] / (self.events["FatJetGood"]["globalParT3_Xbb"] + self.events["FatJetGood"]["globalParT3_QCD"])),
                     "btagBBTXbb",
                 )
+                self.events["FatJetGood"] = ak.with_field(self.events["FatJetGood"], ak.where(self.events["FatJetGood"]["btagBBTXbb"] > 0.8, (self.events["FatJetGood"]["btagBBTXbb"]), (self.events["FatJetGood"]["btagBBTXbb"] - 0.3) * 2 / (0.8 - 0.3) + 0.8), "btagBBTXbb_morph")
                 self.events["FatJetGood"] = ak.with_field(
                     self.events["FatJetGood"],
                     (self.events["FatJetGood"]["particleNetLegacy_Xbb"] / (self.events["FatJetGood"]["particleNetLegacy_Xbb"] + self.events["FatJetGood"]["particleNetLegacy_QCD"])),
@@ -453,6 +454,13 @@ class VBFHH4bProcessor(HH4bCommonProcessor):
                 self.events[f"deta{jet_coll}"] = vbf_deta
 
         super().process_extra_after_presel(variation=variation)
+
+        if self.bdt_model:
+            bdt_events = get_default_bdt_inputs(self.events)
+            self.events["boosted_bdt_score"], self.events["boosted_bdt_vbf_score"] = evaluate_bdt(self.bdt_model, bdt_events)
+
+    def build_boosted_variables(self):
+        """Define the Higgs variable used for a boosted analysis."""
         self.events["HiggsLeading"] = ak.with_field(
             self.events["HiggsLeading"],
             ak.fill_none(self.events.HiggsLeading.tau3 / self.events.HiggsLeading.tau2, -999),
@@ -496,13 +504,8 @@ class VBFHH4bProcessor(HH4bCommonProcessor):
             ak.fill_none((self.events.HiggsSubLeading + self.events.JetGoodVBFNearHiggsSubLeading).mass, -999),
             "massclosestVBF",
         )
-
-        if self.bdt_model:
-
-            self.events["HiggsLeading"] = ak.with_field(
-                self.events["HiggsLeading"],
-                ak.fill_none(disc_TXbb(self.events.HiggsLeading.btagBBTXbb), -999),
-                "btagBBTXbb_dig",
-                )
-            bdt_events = get_default_bdt_inputs(self.events)
-            self.events["boosted_bdt_score"], self.events["boosted_bdt_vbf_score"] = evaluate_bdt(self.bdt_model, bdt_events)
+        self.events["HiggsLeading"] = ak.with_field(
+            self.events["HiggsLeading"],
+            ak.fill_none(disc_TXbb(self.events.HiggsLeading.btagBBTXbb), -999),
+            "btagBBTXbb_dig",
+            )

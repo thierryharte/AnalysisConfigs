@@ -58,6 +58,78 @@ variables_dict_jets = {
 variables_dict_fatjets = {
     **jet_hists(coll="FatJetGood", pos=0),
     **jet_hists(coll="FatJetGood", pos=1),
+    "LeadingHiggsMass": HistConf(
+        [
+            Axis(
+                coll=f"HiggsLeading",
+                field="mass",
+                bins=240,
+                start=0,
+                stop=240,
+                label=r"$M_{H_1}$",
+            )
+        ],
+    ),
+    "SubLeadingHiggsMass": HistConf(
+        [
+            Axis(
+                coll=f"HiggsSubLeading",
+                field="mass",
+                bins=240,
+                start=0,
+                stop=240,
+                label=r"$M_{H_2}$",
+            )
+        ],
+    ),
+    "LeadingHiggsTXbb": HistConf(
+        [
+            Axis(
+                coll=f"HiggsLeading",
+                field="btagBBTXbb",
+                bins=100,
+                start=0,
+                stop=1,
+                label=r"$TXbb_{H_1}$",
+            )
+        ],
+    ),
+    "SubLeadingHiggsTXbb": HistConf(
+        [
+            Axis(
+                coll=f"HiggsSubLeading",
+                field="btagBBTXbb",
+                bins=100,
+                start=0,
+                stop=1,
+                label=r"$TXbb_{H_2}$",
+            )
+        ],
+    ),
+    "BDTggFScore": HistConf(
+        [
+            Axis(
+                coll=f"events",
+                field="boosted_bdt_score",
+                bins=100,
+                start=0,
+                stop=1,
+                label=r"$BDT_{ggF}$ score",
+            )
+        ],
+    ),
+    "BDTVBFScore": HistConf(
+        [
+            Axis(
+                coll=f"events",
+                field="boosted_bdt_vbf_score",
+                bins=100,
+                start=0,
+                stop=1,
+                label=r"$BDT_{VBF}$ score",
+            )
+        ],
+    ),
 }
 
 
@@ -1106,7 +1178,7 @@ def get_variables_dict(
     # Sort of lazy implementation. If neither SPANet nor RUN2 are active, no variables are saved.
     if (BOOSTED) and (not SPANET) and (not RUN2):
         print(" - Removing non-FatJetGood variables")
-        variables_dict = {k: v for k, v in variables_dict.items() if "FatJetGood" in k}
+        variables_dict |= {k: v for k, v in variables_dict.items() if "FatJetGood" in k}
     return variables_dict
 
 
@@ -1323,7 +1395,7 @@ def create_DNN_columns_list(run2, flatten, columns_dict, btag=True):
     return column_list
 
 
-def define_single_category(category_name, wide_cr=False, ggf_vbf_threshold=False):
+def define_single_category(category_name, wide_cr=False, ggf_vbf_threshold=False, full_sideband=False):
     """
     Define a single category for the analysis.
 
@@ -1339,18 +1411,34 @@ def define_single_category(category_name, wide_cr=False, ggf_vbf_threshold=False
 
     elif "boosted" in category_name: # Elif mainly because I only want one region for the moment for testing.
         cut_list.append(cuts.hh4b_boosted_baseline)
-        if "category_1" in category_name:
-            cut_list.append(cuts.hh4b_boosted_category_1)
-        elif "category_vbf" in category_name:
-            cut_list.append(cuts.hh4b_boosted_category_vbf)
-        elif "category_2" in category_name:
-            cut_list.append(cuts.hh4b_boosted_category_2)
-        elif "category_3" in category_name:
-            cut_list.append(cuts.hh4b_boosted_category_3)
-        elif "background_vbf" in category_name:
-            cut_list.append(cuts.hh4b_boosted_background_vbf)
-        elif "background_ggf" in category_name:
-            cut_list.append(cuts.hh4b_boosted_background_ggf)
+        if "boosted_signal" in category_name:
+            cut_list.append(cuts.hh4b_boosted_TXbb_signal)
+            if "sideband" in category_name:
+                if full_sideband:
+                    cut_list.append(cuts.hh4b_boosted_mass_sideband_full)
+                else:
+                    cut_list.append(cuts.hh4b_boosted_mass_sideband_lower)
+            else:
+                cut_list.append(cuts.hh4b_boosted_mass_signal)
+        elif "boosted_control" in category_name:
+            cut_list.append(cuts.hh4b_boosted_TXbb_control)
+            if "sideband" in category_name:
+                if full_sideband:
+                    cut_list.append(cuts.hh4b_boosted_mass_sideband_full)
+                else:
+                    cut_list.append(cuts.hh4b_boosted_mass_sideband_lower)
+            else:
+                cut_list.append(cuts.hh4b_boosted_mass_signal)
+        # With the categories, we have to check, if we maybe need to separate by the reweighted TXbb for the postW.
+        # However, "postW" is not a good factor, as the region B still can use the normal TXbb. So Actually I need the "boosted_control" name. I will never morph D, so that is not an issue.
+        if "cat1" in category_name:
+            cut_list.append(cuts.hh4b_boosted_category_1(txbb_morph="boosted_control" in category_name))
+        elif "catvbf" in category_name:
+            cut_list.append(cuts.hh4b_boosted_category_vbf(txbb_morph="boosted_control" in category_name))
+        elif "cat2" in category_name:
+            cut_list.append(cuts.hh4b_boosted_category_2(txbb_morph="boosted_control" in category_name))
+        elif "cat3" in category_name:
+            cut_list.append(cuts.hh4b_boosted_category_3(txbb_morph="boosted_control" in category_name))
 
     # mass cuts
     elif "VR1" not in category_name:
@@ -1415,18 +1503,47 @@ def define_categories(
     vbf_analysis=False,
     vbf_discriminator=False,
     ggf_vbf_threshold=0.95,  # Only needed if using a vbf_discriminator
-    high_score_reg=False
+    high_score_reg=False,
+    full_sideband=False
 ):
     """Define the categories for the analysis."""
     categories_dict = {}
 
     if boosted:
-        categories_dict |= define_single_category("boosted_category_1_signal")
-        categories_dict |= define_single_category("boosted_category_VBF_signal")
-        categories_dict |= define_single_category("boosted_category_2_signal")
-        categories_dict |= define_single_category("boosted_category_3_signal")
-        categories_dict |= define_single_category("boosted_background_vbf")
-        categories_dict |= define_single_category("boosted_background_ggf")
+        # For reweighting, the different categories are all covered by the signal_region_A.
+        # We split into 4 regions depending on:
+        #     - Jet2 TXbb score (below 0.8 is control region)
+        #     - JEt2 Mass (signal region defined as 110 < m_j2 < 150 GeV)
+        # We train the reweighting from low TXbb score to hight TXbb score in the mass sideband (from from D -> B)
+        # And then we apply it to the mass signal region (C -> A)
+        categories_dict |= define_single_category("boosted_signal_region_A")
+        categories_dict |= define_single_category("boosted_signal_sideband_region_B", full_sideband)
+        categories_dict |= define_single_category("boosted_control_region_C")
+        categories_dict |= define_single_category("boosted_control_sideband_region_D", full_sideband)
+        if bkg_morphing_dnn:
+            categories_dict |= define_single_category("boosted_control_sideband_region_D_postW", full_sideband)
+            categories_dict |= define_single_category("boosted_control_sideband_region_D_cat1_postW", full_sideband)
+            categories_dict |= define_single_category("boosted_control_sideband_region_D_cat2_postW", full_sideband)
+            categories_dict |= define_single_category("boosted_control_sideband_region_D_cat3_postW", full_sideband)
+            categories_dict |= define_single_category("boosted_control_sideband_region_D_catvbf_postW", full_sideband)
+            categories_dict |= define_single_category("boosted_signal_region_A_cat1")
+            categories_dict |= define_single_category("boosted_signal_region_A_cat2")
+            categories_dict |= define_single_category("boosted_signal_region_A_cat3")
+            categories_dict |= define_single_category("boosted_signal_region_A_catvbf")
+            if "mass" in bkg_morphing_dnn:
+                categories_dict |= define_single_category("boosted_signal_sideband_region_B_postW", full_sideband)
+                categories_dict |= define_single_category("boosted_signal_sideband_region_B_cat1_postW", full_sideband)
+                categories_dict |= define_single_category("boosted_signal_sideband_region_B_cat2_postW", full_sideband)
+                categories_dict |= define_single_category("boosted_signal_sideband_region_B_cat3_postW", full_sideband)
+                categories_dict |= define_single_category("boosted_signal_sideband_region_B_catvbf_postW", full_sideband)
+            elif "btag" in bkg_morphing_dnn:
+                categories_dict |= define_single_category("boosted_control_region_C_postW")
+                categories_dict |= define_single_category("boosted_control_region_C_cat1_postW")
+                categories_dict |= define_single_category("boosted_control_region_C_cat2_postW")
+                categories_dict |= define_single_category("boosted_control_region_C_cat3_postW")
+                categories_dict |= define_single_category("boosted_control_region_C_catvbf_postW")
+
+
         # elif not vbf_discriminator:
         #     categories_dict |= define_single_category(f"boosted{is_vbf}_incl_region")
         #     categories_dict |= define_single_category(f"boosted{is_vbf}_incl_signal_region", ggf_vbf_threshold)

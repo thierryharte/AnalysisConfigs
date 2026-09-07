@@ -1194,22 +1194,6 @@ class HH4bCommonProcessor(BaseProcessorABC):
         )
 
     def process_extra_after_presel(self, variation):  # -> ak.Array:
-        # Extract the single weight values for each event:
-        extract_single_weights = False
-        if extract_single_weights:
-            for name, weight in self.weights_manager._weightsObj.items():
-                weight_vals = weight.compute(
-                    self.events, self.nEvents_after_presel, "nominal"
-                ).nominal
-                logger.debug(f"Loading weight {name}")
-                logger.debug(weight_vals)
-                self.events = ak.with_field(
-                    self.events,
-                    weight_vals,
-                    f"weight_single_{name}",
-                )
-                logger.debug(f"Saving weight component: weight_single_{name}")
-
         if not self.boosted:
             # Define the Delta WP
             self.events["JetGood"] = self.generate_btag_delta_workingpoints(
@@ -1426,6 +1410,7 @@ class HH4bCommonProcessor(BaseProcessorABC):
                 self.events.JetGoodVBFEnergyOrdered,
                 vbf_variables=True,
             )
+            self.build_boosted_variables()  # This is to define the Higgs variables we need for the Analysis.
         # ======= VBF GGF DISCRIMINATOR ===========
         if (
             self.spanet
@@ -1465,9 +1450,7 @@ class HH4bCommonProcessor(BaseProcessorABC):
             )
 
         # ============== BKG MORPHING =============
-        if self.bkg_morphing_dnn and not (
-            self._isMC and "TTto" not in self.events.metadata["dataset"]
-        ):
+        if self.bkg_morphing_dnn and not (self._isMC and "TTto" not in self.events.metadata["dataset"]):
             (
                 model_session_bkg_morphing_dnn,
                 input_name_bkg_morphing_dnn,
@@ -1556,3 +1539,18 @@ class HH4bCommonProcessor(BaseProcessorABC):
                 input_name_SIG_BKG_DNN,
                 output_name_SIG_BKG_DNN,
             )
+        # ====== Extract the single weight values for each event =======
+        extract_single_weights = False
+        if extract_single_weights:
+            for name, weight in self.weights_manager._weightsObj.items():
+                weight_vals = weight.compute(
+                    self.events, self.nEvents_after_presel, "nominal"
+                ).nominal
+                logger.debug(f"Loading weight {name}")
+                logger.debug(weight_vals)
+                self.events = ak.with_field(
+                    self.events,
+                    weight_vals,
+                    f"weight_single_{name}",
+                )
+                logger.debug(f"Saving weight component: weight_single_{name}")

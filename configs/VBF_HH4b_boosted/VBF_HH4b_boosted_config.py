@@ -65,7 +65,6 @@ if config_options_dict["save_chunk"]:
         "save_chunk"
     ]
 
-print(config_options_dict)
 # Define the variables to save
 variables_dict = get_variables_dict(
     year,
@@ -172,6 +171,7 @@ categories_dict = define_categories(
     vbf_analysis=config_options_dict["vbf_selection"] if "vbf_selection" in config_options_dict.keys() else config_options_dict["vbf_analysis"],
     vbf_discriminator=config_options_dict["vbf_discriminator"],
     ggf_vbf_threshold=config_options_dict["ggf_vbf_threshold"],
+    full_sideband=config_options_dict["boosted_full_sideband"]
 )
 
 if BASELINE:
@@ -219,41 +219,48 @@ else:
         total_input_columns |= (
             config_options_dict["sig_bkg_dnn_input_variables"]
             | config_options_dict["bkg_morphing_dnn_input_variables"]
-            | {"year": ["events", "year"],
-               "vbf_jet_prov": ["JetGoodVBF", "provenance"],
-               "vbf_cand_jet_prov": ["JetGoodVBFCandidates", "provenance"],
-               "Higgs_leading_btag": ["HiggsLeading", "btagBB"],
-               "Higgs_subleading_btag": ["HiggsSubLeading", "btagBB"],
-              }
+            # | {"year": ["events", "year"],
+            #    "vbf_jet_prov": ["JetGoodVBF", "provenance"],
+            #    "vbf_cand_jet_prov": ["JetGoodVBFCandidates", "provenance"],
+            #    "Higgs_leading_btag": ["HiggsLeading", "btagBB"],
+            #    "Higgs_subleading_btag": ["HiggsSubLeading", "btagBB"],
+            #   }
         )
         column_list += get_columns_list({})
-    elif config_options_dict["boosted"]:
+    if config_options_dict["boosted"]:
         # column_list += get_columns_list(DEFAULT_FATJET_COLUMNS, not config_options_dict["save_chunk"])
         column_list += get_columns_list(
             {
-                "JetGood": ["pt_regressed", "pt_default", "pt", "eta", "phi", "mass"],
+                "JetGood": ["pt", "eta", "phi", "mass"],
                 "JetGoodVBF": ["pt", "eta", "phi", "mass"],
-                "JetGoodCloseToFatJet": ["pt_regressed", "pt_default", "pt", "eta", "phi", "mass"],
-                "Jet": ["pt_regressed", "pt_default", "eta"],
+                "JetGoodCloseToFatJet": ["pt", "eta", "phi", "mass"],
                 "JetGoodVBFEnergyOrdered": ["pt", "eta", "phi", "mass"],
-                "events": ["HT_jetJetGoodVBF", "HT_jetJetGood", "nJetGood", "nFatJetGoodSelected", "event", "boosted_bdt_score", "boosted_bdt_vbf_score", "mjjJetGoodVBFEnergyOrdered", "mjjJetGoodVBF", "mjjJetGoodVBF", "detaJetGoodVBF", "detaJetGoodVBFEnergyOrdered", "HiggsLeadingByHiggsSubLeadingPt"],
+                "events": ["HT_jetJetGoodVBF", "HT_jetJetGood", "nJetGood", "nFatJetGoodSelected", "event", "boosted_bdt_score", "boosted_bdt_vbf_score", "mjjJetGoodVBFEnergyOrdered", "mjjJetGoodVBF", "mjjJetGoodVBF", "detaJetGoodVBF", "detaJetGoodVBFEnergyOrdered", "HiggsLeadingByHiggsSubLeadingPt", "era"],
                 "JetGoodVBFNearHiggsLeading": ["pt", "eta", "phi", "mass"],
                 "JetGoodVBFNearHiggsSubLeading": ["pt", "eta", "phi", "mass"],
                 "FatJetGoodSelected": ["pt", "eta", "phi", "msoftdrop", "mass_orig", "mass", "btagBBTXbb"],
                 "HiggsLeading": ["pt", "eta", "phi", "msoftdrop", "mass_orig", "mass", "btagBBTXbb", "btagBBTXbb_dig", "Tau3OverTau2", "dRclosestVBF", "massclosestVBF", "divHHmass"],
                 "HiggsSubLeading": ["pt", "eta", "phi", "msoftdrop", "mass_orig", "mass", "btagBBTXbb", "Tau3OverTau2", "dRclosestVBF", "massclosestVBF", "divHHmass"],
-                "HH": ["pt", "eta", "mass"],
+                "HH": ["pt", "eta", "mass", "phi", "dR", "dEta", "dPhi"],
                 "PuppiMET": ["pt"],
                 "PFMET": ["pt"],
-            }
+            },
+            not config_options_dict["save_chunk"],
         )
+        # column_list += get_columns_list(
+        #     {
+        #         "events": [
+        #             "weight_single_lumi",
+        #             "weight_single_XS",
+        #             "weight_single_pileup",
+        #         ]
+        #     }
+        # )
     else:
         total_input_columns |= DEFAULT_JET_COLUMNS_DICT
-
-    if not config_options_dict["boosted"]:
-        column_list += create_DNN_columns_list(
-            False, not config_options_dict["save_chunk"], total_input_columns, btag=False
-        )
+    column_list += create_DNN_columns_list(
+        False, not config_options_dict["save_chunk"], total_input_columns, btag=False
+    )
     # Add special columns
     if config_options_dict["sig_bkg_dnn"]:
         column_list += get_columns_list({"events": ["sig_bkg_dnn_score"]})
@@ -325,6 +332,7 @@ cfg = Configurator(
                 "genWeight",
                 "lumi",
                 "XS",
+                "pileup",
             ],
             "bycategory": {},
         },

@@ -61,4 +61,5 @@ default_config_options_dict = {
     "mixeddata": False,
     "TXbb_order": False,
     "bdt_model": "",
+    "boosted_full_sideband": False,
 } | default_onnx_model_dict

@@ -19,10 +19,10 @@ parser.add_argument(
     default=None,
 )
 parser.add_argument(
-    "--input-ttbar",
+    "--bbtag-direction",
     action="store_true",
-    help="Input ttbar files for reweighting plots",
-    default=None,
+    help="For Boosted only: If true, the ABCD method is intended in the other direction (from low to high bbtag).",
+    default=False,
 )
 parser.add_argument(
     "-ir",
@@ -101,6 +101,22 @@ parser.add_argument(
     action="store_true",
     help="If true, old save format without saved variations is expected",
     default=False,
+)
+parser.add_argument(
+    "-ov",
+    "--only-vars",
+    type=str,
+    nargs="+",
+    default=None,
+    help=(
+    "For debugging: only read/plot columns whose name contains one of "
+    "these substrings ('weight' and '*_N' are always kept). Greatly "
+    "speeds up loading when checking a single variable. Alternatively, "
+    "pass a single path ending in '.py' pointing to a script defining "
+    "a dict called `dnn_input_variables` (e.g. "
+    "bkg_morphing_dnn_boosted_bdt_inputs.py); its values will be joined "
+    "with '_' to build the list of substrings automatically."
+    ),
 )
 parser.add_argument(
     "--boosted",

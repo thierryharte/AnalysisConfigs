@@ -1,0 +1,9 @@
+scaleout: 50
+cores-per-worker: 1
+mem-per-worker: "5GB"
+disk-per-worker: "1GB"
+queue: "long"
+walltime: "5-12:00:00"
+chunksize: 50000
+retries: 5
+  #tree-reduction: 5

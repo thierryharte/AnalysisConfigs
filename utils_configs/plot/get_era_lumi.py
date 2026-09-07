@@ -12,7 +12,15 @@ def get_era_lumi(dataset_data):
         "23 Era Dv1": 7.83,
         "23 Era Dv2": 1.67,
         "22 preEE": 4.95+2.92,
-        "22 postEE": 5.79+17.6+2.88
+        "22 postEE": 5.79+17.6+2.88,
+        "24 Era C": 7.45,
+        "24 Era D": 8.94,
+        "24 Era E": 11.56,
+        "24 Era F": 28.43,
+        "24 Era G": 39.78,
+        "24 Era H": 6.26,
+        "24 Era I": 11.95,
+        "2024": 114.44
     }
     # GluGlutoHHto4B_spanet_kl-1p00_kt-1p00_c2-0p00_2022_postEE
     era_list = []
@@ -53,6 +61,30 @@ def get_era_lumi(dataset_data):
                 era_list.append("23 postBPix")
             else:
                 print("2023 data, but not identified")
+        elif "2024" in dataset:
+            if "EraC" in dataset:
+                if "24 Era C" not in era_list:
+                    era_list.append("24 Era C")
+            elif "EraD" in dataset:
+                if "24 Era D" not in era_list:
+                    era_list.append("24 Era D")
+            elif "EraE" in dataset:
+                if "24 Era E" not in era_list:
+                    era_list.append("24 Era E")
+            elif "EraF" in dataset:
+                if "24 Era F" not in era_list:
+                    era_list.append("24 Era F")
+            elif "EraG" in dataset:
+                if "24 Era G" not in era_list:
+                    era_list.append("24 Era G")
+            elif "EraH" in dataset:
+                if "24 Era H" not in era_list:
+                    era_list.append("24 Era H")
+            elif "EraI" in dataset:
+                if "24 Era I" not in era_list:
+                    era_list.append("24 Era I")
+            else:
+                era_list.append("2024")
     print("Found eras in datasets")
     print(era_list)
     assert len(era_list) > 0
@@ -76,6 +108,8 @@ def get_era_lumi(dataset_data):
         ]
     ):
         era_string = "23 postParkingHH"
+    if all([era in era_list for era in ["24 Era C", "24 Era D", "24 Era E", "24 Era F", "24 Era G", "24 Era H", "24 Era I",]]):
+        era_string = "2024"
     # If full years were taken
     if all(
         [

@@ -154,29 +154,89 @@ hh4b_boosted_baseline = Cut(
     function=cuts_f.hh4b_boosted_SR_cuts,
 )
 
-hh4b_boosted_category_1 = Cut(
-    name="hh4b_boosted_category_1",
+hh4b_boosted_inclusive = Cut(
+    name="hh4b_boosted_inclusive",
     params={},
-    function=cuts_f.hh4b_boosted_category_1,
+    function=cuts_f.hh4b_boosted_inclusive,
 )
 
-hh4b_boosted_category_vbf = Cut(
-    name="hh4b_boosted_category_vbf",
-    params={},
-    function=cuts_f.hh4b_boosted_category_vbf,
+hh4b_boosted_TXbb_signal = Cut(
+    name="hh4b_boosted_TXbb_signal",
+    params={
+        "signal": True,
+        "threshold": 0.8
+        },
+    function=cuts_f.hh4b_boosted_TXbb,
+)
+hh4b_boosted_TXbb_control = Cut(
+    name="hh4b_boosted_TXbb_control",
+    params={
+        "signal": False,
+        "threshold": 0.8
+        },
+    function=cuts_f.hh4b_boosted_TXbb,
 )
 
-hh4b_boosted_category_2 = Cut(
-    name="hh4b_boosted_category_2",
-    params={},
-    function=cuts_f.hh4b_boosted_category_2,
+hh4b_boosted_mass_signal = Cut(
+    name="hh4b_boosted_mass_signal",
+    params={
+        "signal": True,
+        "lower": 110,
+        "upper": 155,
+        "full_sideband": False
+        },
+    function=cuts_f.hh4b_boosted_mass,
 )
 
-hh4b_boosted_category_3 = Cut(
-    name="hh4b_boosted_category_3",
-    params={},
-    function=cuts_f.hh4b_boosted_category_3,
+hh4b_boosted_mass_sideband_full = Cut(
+    name="hh4b_boosted_mass_sideband_full",
+    params={
+        "signal": False,
+        "lower": 110,
+        "upper": 155,
+        "full_sideband": True
+        },
+    function=cuts_f.hh4b_boosted_mass,
 )
+
+hh4b_boosted_mass_sideband_lower = Cut(
+    name="hh4b_boosted_mass_sideband_lower",
+    params={
+        "signal": False,
+        "lower": 110,
+        "upper": 155,
+        "full_sideband": False
+        },
+    function=cuts_f.hh4b_boosted_mass,
+)
+
+def hh4b_boosted_category_1(txbb_morph=False):
+    return Cut(
+        name="hh4b_boosted_category_1",
+        params={"txbb_morph": txbb_morph},
+        function=cuts_f.hh4b_boosted_category_1,
+    )
+
+def hh4b_boosted_category_vbf(txbb_morph=False):
+    return Cut(
+        name="hh4b_boosted_category_vbf",
+        params={"txbb_morph": txbb_morph},
+        function=cuts_f.hh4b_boosted_category_vbf,
+    )
+
+def hh4b_boosted_category_2(txbb_morph=False):
+    return Cut(
+        name="hh4b_boosted_category_2",
+        params={"txbb_morph": txbb_morph},
+        function=cuts_f.hh4b_boosted_category_2,
+    )
+
+def hh4b_boosted_category_3(txbb_morph=False):
+    return Cut(
+        name="hh4b_boosted_category_3",
+        params={"txbb_morph": txbb_morph},
+        function=cuts_f.hh4b_boosted_category_3,
+    )
 
 hh4b_boosted_background_vbf = Cut(
     name="hh4b_boosted_background_vbf",
