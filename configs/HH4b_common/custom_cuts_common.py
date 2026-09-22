@@ -143,16 +143,18 @@ hh4b_control_region_wide = Cut(
     function=cuts_f.hh4b_Rhh_cuts,
 )
 
-hh4b_boosted_baseline = Cut(
-    name="hh4b_boosted_baseline",
-    params={
-        # "pnet_cut": 0.65,
-        "bbtagTXbb": 0.30,
-        # "mass_min": 100,
-        # "mass_max": 150,
-    },
-    function=cuts_f.hh4b_boosted_SR_cuts,
+def hh4b_boosted_baseline(region_setting="40GeV"):
+    return Cut(
+        name="hh4b_boosted_baseline",
+        params={
+            # "pnet_cut": 0.65,
+            "bbtagTXbb": 0.30 if region_setting=="40GeV" else 0.05,
+            # "mass_min": 100,
+            # "mass_max": 150,
+        },
+        function=cuts_f.hh4b_boosted_SR_cuts,
 )
+
 
 hh4b_boosted_inclusive = Cut(
     name="hh4b_boosted_inclusive",
@@ -160,54 +162,62 @@ hh4b_boosted_inclusive = Cut(
     function=cuts_f.hh4b_boosted_inclusive,
 )
 
-hh4b_boosted_TXbb_signal = Cut(
-    name="hh4b_boosted_TXbb_signal",
-    params={
-        "signal": True,
-        "threshold": 0.8
-        },
-    function=cuts_f.hh4b_boosted_TXbb,
+def hh4b_boosted_TXbb_signal(region_setting):
+    return Cut(
+        name="hh4b_boosted_TXbb_signal",
+        params={
+            "signal": True,
+            "threshold": 0.8 if region_setting=="40GeV" else 0.65
+            },
+        function=cuts_f.hh4b_boosted_TXbb,
 )
-hh4b_boosted_TXbb_control = Cut(
-    name="hh4b_boosted_TXbb_control",
-    params={
-        "signal": False,
-        "threshold": 0.8
-        },
-    function=cuts_f.hh4b_boosted_TXbb,
-)
-
-hh4b_boosted_mass_signal = Cut(
-    name="hh4b_boosted_mass_signal",
-    params={
-        "signal": True,
-        "lower": 110,
-        "upper": 155,
-        "full_sideband": False
-        },
-    function=cuts_f.hh4b_boosted_mass,
+def hh4b_boosted_TXbb_control(region_setting):
+    return Cut(
+        name="hh4b_boosted_TXbb_control",
+        params={
+            "signal": False,
+            "threshold": 0.8 if region_setting=="40GeV" else 0.65
+            },
+        function=cuts_f.hh4b_boosted_TXbb,
 )
 
-hh4b_boosted_mass_sideband_full = Cut(
-    name="hh4b_boosted_mass_sideband_full",
-    params={
-        "signal": False,
-        "lower": 110,
-        "upper": 155,
-        "full_sideband": True
-        },
-    function=cuts_f.hh4b_boosted_mass,
+def hh4b_boosted_mass_signal(region_setting):
+    return Cut(
+        name="hh4b_boosted_mass_signal",
+        params={
+            "signal": True,
+            "lower": 110 if region_setting=="40GeV" else 100,
+            "upper": 155 if region_setting=="40GeV" else 150,
+                "sideband_size": 40 if region_setting=="40GeV" else 50,
+            "full_sideband": False
+            },
+        function=cuts_f.hh4b_boosted_mass,
 )
 
-hh4b_boosted_mass_sideband_lower = Cut(
-    name="hh4b_boosted_mass_sideband_lower",
-    params={
-        "signal": False,
-        "lower": 110,
-        "upper": 155,
-        "full_sideband": False
-        },
-    function=cuts_f.hh4b_boosted_mass,
+def hh4b_boosted_mass_sideband_full(region_setting):
+    return Cut(
+        name="hh4b_boosted_mass_sideband_full",
+        params={
+            "signal": False,
+            "lower": 110 if region_setting=="40GeV" else 100,
+            "upper": 155 if region_setting=="40GeV" else 150,
+            "sideband_size": 40 if region_setting=="40GeV" else 50,
+            "full_sideband": True
+            },
+        function=cuts_f.hh4b_boosted_mass,
+)
+
+def hh4b_boosted_mass_sideband_lower(region_setting):
+    return Cut(
+        name="hh4b_boosted_mass_sideband_lower",
+        params={
+            "signal": False,
+            "lower": 110 if region_setting=="second" else 100,
+            "upper": 155 if region_setting=="second" else 150,
+            "sideband_size": 40 if region_setting=="second" else 50,
+            "full_sideband": False
+            },
+        function=cuts_f.hh4b_boosted_mass,
 )
 
 def hh4b_boosted_category_1(txbb_morph=False):

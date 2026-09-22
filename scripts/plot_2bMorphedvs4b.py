@@ -75,17 +75,17 @@ if args.run2:
     }
 elif args.boosted:
     sub_regions = {
-        "signal":    "boosted_signal_region_A",
-        "sig_bkg_preW":  "boosted_signal_sideband_region_B",
-        "sig_bkg_postW": "boosted_signal_sideband_region_B_postW",
-        "control":    "boosted_control_region_C",
-        "con_bkg_preW":  "boosted_control_sideband_region_D",
-        "con_bkg_postW": "boosted_control_sideband_region_D_postW",
+        "signal":    "boosted_signal_region_D",
+        "sig_bkg_preW":  "boosted_signal_sideband_region_C",
+        "sig_bkg_postW": "boosted_signal_sideband_region_C_postW",
+        "control":    "boosted_control_region_B",
+        "con_bkg_preW":  "boosted_control_sideband_region_A",
+        "con_bkg_postW": "boosted_control_sideband_region_A_postW",
     }
     if args.bbtag_direction:
-        sub_regions["sig_bkg_preW"] = "boosted_control_region_C"
-        sub_regions["sig_bkg_postW"] = "boosted_control_region_C_postW"
-        sub_regions["control"] = "boosted_signal_sideband_region_B"
+        sub_regions["sig_bkg_preW"] = "boosted_control_region_B"
+        sub_regions["sig_bkg_postW"] = "boosted_control_region_B_postW"
+        sub_regions["control"] = "boosted_signal_sideband_region_C"
     cat_dict |= {
         f"CR_TT_{args.region_suffix}": [
             [
@@ -264,7 +264,15 @@ if args.only_vars:
            module = importlib.util.module_from_spec(spec)
            spec.loader.exec_module(module)
            variables_dict = module.dnn_input_variables
-           return ["_".join(v) for v in variables_dict.values()]
+           only_vars = []
+           for collection, feature, *_ in variables_dict.values():
+               # strip the ":pos" suffix used for multi-jet inputs (e.g.
+               # "JetGoodVBFEnergyOrdered:0") so the filter matches the real
+               # per-jet column name ("JetGoodVBFEnergyOrdered_pt"), same as
+               # get_DNN_input_list.py does when building the DNN input list.
+               coll = collection.split(":")[0]
+               only_vars.append(f"{coll}_{feature}")
+           return only_vars
 
         args.only_vars = _load_only_vars_from_py(args.only_vars[0])
     def _keep_var(x):
@@ -522,9 +530,18 @@ def plot_single_var_from_columns(
 
             ### This is a bad workaround for the case where a few weights are Nan, very high or strongly negative.
             if args.mask_large_weights:
-                bad_weights = np.isnan(weights_den)  # | (weights_den > 100) | (weights_den < 0)
-                weights_den = weights_den[~bad_weights]
-                col_den = col_den[~bad_weights]
+                if "postW" in cats_name:
+                    n_before = len(weights_den)
+                    bad_weights = np.isnan(weights_den) | (weights_den > 100) | (weights_den < 0)
+                    n_cut = int(np.sum(bad_weights))
+                    if n_cut > 0:
+                        print(
+                            f"[mask_large_weights] {cat}, variable {var}: removing "
+                            f"{n_cut}/{n_before} events ({100 * n_cut / n_before:.3f}%) "
+                            f"with NaN, weight > 100, or weight < 0"
+                        )
+                    weights_den = weights_den[~bad_weights]
+                    col_den = col_den[~bad_weights]
 
             # WARNING: the weights are different for the additional jets because
             # the number of events is different since it's computed after the masking of the PAD_VALUE
@@ -934,7 +951,11 @@ def main(cat_cols, lumi, era_string):
                         output_name_SIG_BKG_DNN, inputs_complete
                     )
                     # print("events_sig_bkg_dnn_score", col_dict["events_sig_bkg_dnn_score"][cat])
-                    col_dict[v][cat] = outputs[0][:, -1]
+                    # SvB classifiers output (N, n_classes) -> take the last
+                    # class' score; single-output regression/reweighting
+                    # models (e.g. the bkg-morphing "avg_w" output) are
+                    # already 1D and used as-is.
+                    col_dict[v][cat] = outputs[0][:, -1] if outputs[0].ndim > 1 else outputs[0]
                     print("outputs", cat, outputs[0].shape, outputs[0])
                     del input_variables_array, inputs_complete, outputs
 

@@ -57,6 +57,7 @@ default_config_options_dict = {
     "only5jetsbSF": False,
     "noL1": False,
     "approach": "first",
+    "region_setting": "40GeV",  # This defines the size of the signal and control regions in the boosted topology
     "expandCR": False,
     "mixeddata": False,
     "TXbb_order": False,

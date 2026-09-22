@@ -225,9 +225,9 @@ def hh4b_boosted_mass(events, params, **kwargs):
     mass = events["HiggsSubLeading"]["mass"]
     cat_mask = (mass > params["lower"]) & (mass < params["upper"])
     if params["full_sideband"]:
-        cat_mask_outer = (mass > params["lower"] - 40) & (mass < params["upper"] + 40)
+        cat_mask_outer = (mass > (params["lower"] - params["sideband_size"])) & (mass < (params["upper"] + params["sideband_size"]))
     else:
-        cat_mask_outer = (mass > params["lower"] - 40) & (mass < params["lower"])
+        cat_mask_outer = (mass > params["lower"] - params["sideband_size"]) & (mass < params["lower"])
     if params["signal"]:
         return cat_mask
     else:

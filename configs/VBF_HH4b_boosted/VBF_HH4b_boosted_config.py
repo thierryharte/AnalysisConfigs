@@ -171,7 +171,8 @@ categories_dict = define_categories(
     vbf_analysis=config_options_dict["vbf_selection"] if "vbf_selection" in config_options_dict.keys() else config_options_dict["vbf_analysis"],
     vbf_discriminator=config_options_dict["vbf_discriminator"],
     ggf_vbf_threshold=config_options_dict["ggf_vbf_threshold"],
-    full_sideband=config_options_dict["boosted_full_sideband"]
+    full_sideband=config_options_dict["boosted_full_sideband"],
+    region_setting=config_options_dict["region_setting"],
 )
 
 if BASELINE:
@@ -239,8 +240,8 @@ else:
                 "JetGoodVBFNearHiggsLeading": ["pt", "eta", "phi", "mass"],
                 "JetGoodVBFNearHiggsSubLeading": ["pt", "eta", "phi", "mass"],
                 "FatJetGoodSelected": ["pt", "eta", "phi", "msoftdrop", "mass_orig", "mass", "btagBBTXbb"],
-                "HiggsLeading": ["pt", "eta", "phi", "msoftdrop", "mass_orig", "mass", "btagBBTXbb", "btagBBTXbb_dig", "Tau3OverTau2", "dRclosestVBF", "massclosestVBF", "divHHmass"],
-                "HiggsSubLeading": ["pt", "eta", "phi", "msoftdrop", "mass_orig", "mass", "btagBBTXbb", "Tau3OverTau2", "dRclosestVBF", "massclosestVBF", "divHHmass"],
+                "HiggsLeading": ["pt", "eta", "phi", "msoftdrop", "mass_orig", "mass", "btagBBTXbb", "btagBBTXbb_dig", "btagBBTXbb_morph", "Tau3OverTau2", "dRclosestVBF", "massclosestVBF", "divHHmass"],
+                "HiggsSubLeading": ["pt", "eta", "phi", "msoftdrop", "mass_orig", "mass", "btagBBTXbb", "btagBBTXbb_morph", "Tau3OverTau2", "dRclosestVBF", "massclosestVBF", "divHHmass"],
                 "HH": ["pt", "eta", "mass", "phi", "dR", "dEta", "dPhi"],
                 "PuppiMET": ["pt"],
                 "PFMET": ["pt"],
@@ -309,6 +310,7 @@ cfg = Configurator(
             # f"{localdir}/../HH4b_common/datasets/signal_GluGluHHto4B_Par_2024.json",
             f"{localdir}/../HH4b_common/datasets/TT_boosted_skimmed.json",
             f"{localdir}/../HH4b_common/datasets/DATA_JetMET_boosted_skimmed_2024_2023preBPix.json",
+            # f"{localdir}/../HH4b_common/datasets/DATA_JetMET_boosted_skimmed_2024_EraC.json",
             f"{localdir}/../HH4b_common/datasets/signal_VBFHHto4B_Par_boosted_skimmed_2024.json",
             f"{localdir}/../HH4b_common/datasets/signal_GluGluHHto4B_Par_boosted_skimmed_2024.json",
         ],
