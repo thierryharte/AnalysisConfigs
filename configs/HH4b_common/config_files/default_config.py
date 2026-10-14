@@ -58,6 +58,7 @@ default_config_options_dict = {
     "noL1": False,
     "approach": "first",
     "region_setting": "40GeV",  # This defines the size of the signal and control regions in the boosted topology
+    "lead_sublead": "sublead",  # Region definition for boosted either by leading or subleading Higgs mass
     "expandCR": False,
     "mixeddata": False,
     "TXbb_order": False,

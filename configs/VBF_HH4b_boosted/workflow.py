@@ -50,7 +50,13 @@ class VBFHH4bProcessor(HH4bCommonProcessor):
                     (self.events["FatJetGood"]["globalParT3_Xbb"] / (self.events["FatJetGood"]["globalParT3_Xbb"] + self.events["FatJetGood"]["globalParT3_QCD"])),
                     "btagBBTXbb",
                 )
-                self.events["FatJetGood"] = ak.with_field(self.events["FatJetGood"], ak.where(self.events["FatJetGood"]["btagBBTXbb"] > 0.8, (self.events["FatJetGood"]["btagBBTXbb"]), (self.events["FatJetGood"]["btagBBTXbb"] - 0.3) * 2 / (0.8 - 0.3) + 0.8), "btagBBTXbb_morph")
+                if self.region_setting == "40GeV":
+                    b_low = 0.3
+                    b_thresh = 0.8
+                elif self.region_setting == "50GeV":
+                    b_low = 0.05
+                    b_thresh = 0.65
+                self.events["FatJetGood"] = ak.with_field(self.events["FatJetGood"], ak.where(self.events["FatJetGood"]["btagBBTXbb"] > b_thresh, (self.events["FatJetGood"]["btagBBTXbb"]), (self.events["FatJetGood"]["btagBBTXbb"] - b_low) * (1-b_thresh) / (b_thresh - b_low) + b_thresh), "btagBBTXbb_morph")
                 self.events["FatJetGood"] = ak.with_field(
                     self.events["FatJetGood"],
                     (self.events["FatJetGood"]["particleNetLegacy_Xbb"] / (self.events["FatJetGood"]["particleNetLegacy_Xbb"] + self.events["FatJetGood"]["particleNetLegacy_QCD"])),
@@ -319,10 +325,11 @@ class VBFHH4bProcessor(HH4bCommonProcessor):
                 # )
                 # self.events["JetGoodVBF"] = ak.pad_none(vbf_pool[mask_pt_vbf & mask_eta_vbf], 2, clip=True)
 
-                self.events["JetGoodVBFEnergyOrdered"] = get_lead_mjj_jet_pair(
+                self.events["JetGoodVBFEnergyOrderedPadded"] = get_lead_mjj_jet_pair(
                     self.events, "JetGoodVBF"
                 )
-                for jet_coll in ["JetGood", "JetGoodVBF", "JetGoodVBFEnergyOrdered"]:
+                self.events["JetGoodVBFGood"] = self.events["JetGoodVBFEnergyOrderedPadded"][~ak.is_none(self.events["JetGoodVBFEnergyOrderedPadded"]["pt"], axis=1)]
+                for jet_coll in ["JetGood", "JetGoodVBF", "JetGoodVBFGood"]:
                     padded = ak.pad_none(self.events[jet_coll], 2, axis=1)
                     vbf_mjj = (
                         padded[:, 0]
@@ -351,7 +358,8 @@ class VBFHH4bProcessor(HH4bCommonProcessor):
         if self.vbf_analysis:
             self.events["nJetGoodVBF"] = ak.num(self.events.JetGoodVBF, axis=1)
             self.events["nJetGoodCloseToFatJet"] = ak.num(self.events.JetGoodCloseToFatJet, axis=1)
-            self.events["nJetGoodVBFEnergyOrdered"] = ak.num(self.events.JetGoodVBFEnergyOrdered, axis=1)
+            self.events["nJetGoodVBFEnergyOrderedPadded"] = ak.sum(~ak.is_none(self.events.JetGoodVBFEnergyOrderedPadded, axis=1), axis=1)
+            self.events["nJetGoodVBFGood"] = ak.num(self.events.JetGoodVBF, axis=1)
 
     def process_extra_after_presel(self, variation):  # -> ak.Array:
         if self.vbf_analysis and not self.boosted:

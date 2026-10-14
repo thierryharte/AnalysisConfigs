@@ -181,7 +181,7 @@ def hh4b_boosted_TXbb_control(region_setting):
         function=cuts_f.hh4b_boosted_TXbb,
 )
 
-def hh4b_boosted_mass_signal(region_setting):
+def hh4b_boosted_mass_signal(region_setting, lead_sublead):
     return Cut(
         name="hh4b_boosted_mass_signal",
         params={
@@ -189,12 +189,13 @@ def hh4b_boosted_mass_signal(region_setting):
             "lower": 110 if region_setting=="40GeV" else 100,
             "upper": 155 if region_setting=="40GeV" else 150,
                 "sideband_size": 40 if region_setting=="40GeV" else 50,
-            "full_sideband": False
+            "full_sideband": False,
+            "higgs": lead_sublead
             },
         function=cuts_f.hh4b_boosted_mass,
 )
 
-def hh4b_boosted_mass_sideband_full(region_setting):
+def hh4b_boosted_mass_sideband_full(region_setting, lead_sublead):
     return Cut(
         name="hh4b_boosted_mass_sideband_full",
         params={
@@ -202,63 +203,73 @@ def hh4b_boosted_mass_sideband_full(region_setting):
             "lower": 110 if region_setting=="40GeV" else 100,
             "upper": 155 if region_setting=="40GeV" else 150,
             "sideband_size": 40 if region_setting=="40GeV" else 50,
-            "full_sideband": True
+            "full_sideband": True,
+            "higgs": lead_sublead
             },
         function=cuts_f.hh4b_boosted_mass,
 )
 
-def hh4b_boosted_mass_sideband_lower(region_setting):
+def hh4b_boosted_mass_sideband_lower(region_setting, lead_sublead):
     return Cut(
         name="hh4b_boosted_mass_sideband_lower",
         params={
             "signal": False,
-            "lower": 110 if region_setting=="second" else 100,
-            "upper": 155 if region_setting=="second" else 150,
-            "sideband_size": 40 if region_setting=="second" else 50,
-            "full_sideband": False
+            "lower": 110 if region_setting=="40GeV" else 100,
+            "upper": 155 if region_setting=="40GeV" else 150,
+            "sideband_size": 40 if region_setting=="40GeV" else 50,
+            "full_sideband": False,
+            "higgs": lead_sublead
             },
         function=cuts_f.hh4b_boosted_mass,
 )
 
-def hh4b_boosted_category_1(txbb_morph=False):
+def _get_params(txbb_morph, region_setting="50GeV"):
+    if region_setting == "50GeV":
+        return {"txbb_morph": txbb_morph, "txbb_c1": 0.935, "bdt_ggf_c1": 0.955, "txbb_vbf": 0.8125, "bdt_vbf": 0.9875, "txbb_c2a": 0.81, "bdt_ggf_c2b": 0.845, "bdt_ggf_bkg": 0.03}
+    else:
+        return {"txbb_morph": txbb_morph, "txbb_c1": 0.945, "bdt_ggf_c1": 0.94, "txbb_vbf": 0.8, "bdt_vbf": 0.9825, "txbb_c2a": 0.85, "bdt_ggf_c2b": 0.755, "bdt_ggf_bkg": 0.03}
+
+def hh4b_boosted_category_1(txbb_morph=True, region_setting="50GeV"):
     return Cut(
         name="hh4b_boosted_category_1",
-        params={"txbb_morph": txbb_morph},
+        params=_get_params(txbb_morph, region_setting),
         function=cuts_f.hh4b_boosted_category_1,
     )
 
-def hh4b_boosted_category_vbf(txbb_morph=False):
+def hh4b_boosted_category_vbf(txbb_morph=True, region_setting="50GeV"):
     return Cut(
         name="hh4b_boosted_category_vbf",
-        params={"txbb_morph": txbb_morph},
+        params=_get_params(txbb_morph, region_setting),
         function=cuts_f.hh4b_boosted_category_vbf,
     )
 
-def hh4b_boosted_category_2(txbb_morph=False):
+def hh4b_boosted_category_2(txbb_morph=True, region_setting="50GeV"):
     return Cut(
         name="hh4b_boosted_category_2",
-        params={"txbb_morph": txbb_morph},
+        params=_get_params(txbb_morph, region_setting),
         function=cuts_f.hh4b_boosted_category_2,
     )
 
-def hh4b_boosted_category_3(txbb_morph=False):
+def hh4b_boosted_category_3(txbb_morph=True, region_setting="50GeV"):
     return Cut(
         name="hh4b_boosted_category_3",
-        params={"txbb_morph": txbb_morph},
+        params=_get_params(txbb_morph, region_setting),
         function=cuts_f.hh4b_boosted_category_3,
     )
 
-hh4b_boosted_background_vbf = Cut(
-    name="hh4b_boosted_background_vbf",
-    params={},
-    function=cuts_f.hh4b_boosted_background_vbf,
-)
+def hh4b_boosted_background_vbf(txbb_morph=True, region_setting="50GeV"):
+    return Cut(
+        name="hh4b_boosted_background_vbf",
+        params=_get_params(txbb_morph, region_setting),
+        function=cuts_f.hh4b_boosted_background_vbf,
+    )
 
-hh4b_boosted_background_ggf = Cut(
-    name="hh4b_boosted_background_ggf",
-    params={},
-    function=cuts_f.hh4b_boosted_background_ggf,
-)
+def hh4b_boosted_background_ggf(txbb_morph=True, region_setting="50GeV"):
+    return Cut(
+        name="hh4b_boosted_background_ggf",
+        params=_get_params(txbb_morph, region_setting),
+        function=cuts_f.hh4b_boosted_background_ggf,
+    )
 
 hh4b_boosted_signal_region = Cut(
     name="hh4b_boosted_signal_region",

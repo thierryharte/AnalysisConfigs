@@ -106,6 +106,30 @@ variables_dict_fatjets = {
             )
         ],
     ),
+    "LeadingHiggsTXbbmorph": HistConf(
+        [
+            Axis(
+                coll=f"HiggsLeading",
+                field="btagBBTXbb_morph",
+                bins=100,
+                start=0,
+                stop=1,
+                label=r"$TXbb_{H_1}$ morphed",
+            )
+        ],
+    ),
+    "SubLeadingHiggsTXbbmorph": HistConf(
+        [
+            Axis(
+                coll=f"HiggsSubLeading",
+                field="btagBBTXbb_morph",
+                bins=100,
+                start=0,
+                stop=1,
+                label=r"$TXbb_{H_2}$ morphed",
+            )
+        ],
+    ),
     "BDTggFScore": HistConf(
         [
             Axis(
@@ -1395,7 +1419,7 @@ def create_DNN_columns_list(run2, flatten, columns_dict, btag=True):
     return column_list
 
 
-def define_single_category(category_name, wide_cr=False, ggf_vbf_threshold=False, full_sideband=False, region_setting="40GeV"):
+def define_single_category(category_name, wide_cr=False, ggf_vbf_threshold=False, full_sideband=False, region_setting="40GeV", lead_sublead="sublead"):
     """
     Define a single category for the analysis.
 
@@ -1415,30 +1439,30 @@ def define_single_category(category_name, wide_cr=False, ggf_vbf_threshold=False
             cut_list.append(cuts.hh4b_boosted_TXbb_signal(region_setting))
             if "sideband" in category_name:
                 if full_sideband:
-                    cut_list.append(cuts.hh4b_boosted_mass_sideband_full(region_setting))
+                    cut_list.append(cuts.hh4b_boosted_mass_sideband_full(region_setting, lead_sublead))
                 else:
-                    cut_list.append(cuts.hh4b_boosted_mass_sideband_lower(region_setting))
+                    cut_list.append(cuts.hh4b_boosted_mass_sideband_lower(region_setting, lead_sublead))
             else:
-                cut_list.append(cuts.hh4b_boosted_mass_signal(region_setting))
+                cut_list.append(cuts.hh4b_boosted_mass_signal(region_setting, lead_sublead))
         elif "boosted_control" in category_name:
             cut_list.append(cuts.hh4b_boosted_TXbb_control(region_setting))
             if "sideband" in category_name:
                 if full_sideband:
-                    cut_list.append(cuts.hh4b_boosted_mass_sideband_full(region_setting))
+                    cut_list.append(cuts.hh4b_boosted_mass_sideband_full(region_setting, lead_sublead))
                 else:
-                    cut_list.append(cuts.hh4b_boosted_mass_sideband_lower(region_setting))
+                    cut_list.append(cuts.hh4b_boosted_mass_sideband_lower(region_setting, lead_sublead))
             else:
-                cut_list.append(cuts.hh4b_boosted_mass_signal(region_setting))
+                cut_list.append(cuts.hh4b_boosted_mass_signal(region_setting, lead_sublead))
         # With the categories, we have to check, if we maybe need to separate by the reweighted TXbb for the postW.
         # However, "postW" is not a good factor, as the region B still can use the normal TXbb. So Actually I need the "boosted_control" name. I will never morph D, so that is not an issue.
         if "cat1" in category_name:
-            cut_list.append(cuts.hh4b_boosted_category_1(txbb_morph="boosted_control" in category_name))
+            cut_list.append(cuts.hh4b_boosted_category_1(txbb_morph="boosted_control" in category_name, region_setting=region_setting))
         elif "catvbf" in category_name:
-            cut_list.append(cuts.hh4b_boosted_category_vbf(txbb_morph="boosted_control" in category_name))
+            cut_list.append(cuts.hh4b_boosted_category_vbf(txbb_morph="boosted_control" in category_name, region_setting=region_setting))
         elif "cat2" in category_name:
-            cut_list.append(cuts.hh4b_boosted_category_2(txbb_morph="boosted_control" in category_name))
+            cut_list.append(cuts.hh4b_boosted_category_2(txbb_morph="boosted_control" in category_name, region_setting=region_setting))
         elif "cat3" in category_name:
-            cut_list.append(cuts.hh4b_boosted_category_3(txbb_morph="boosted_control" in category_name))
+            cut_list.append(cuts.hh4b_boosted_category_3(txbb_morph="boosted_control" in category_name, region_setting=region_setting))
 
     # mass cuts
     elif "VR1" not in category_name:
@@ -1505,53 +1529,48 @@ def define_categories(
     ggf_vbf_threshold=0.95,  # Only needed if using a vbf_discriminator
     high_score_reg=False,
     full_sideband=False,
+    lead_sublead="sublead",
     region_setting="40GeV"
 ):
     """Define the categories for the analysis."""
     categories_dict = {}
 
     if boosted:
+        # All ABCD regions must share the same region definition, otherwise the regions are inconsistent
+        region_kwargs = dict(full_sideband=full_sideband, region_setting=region_setting, lead_sublead=lead_sublead)
         # For reweighting, the different categories are all covered by the signal_region_A.
         # We split into 4 regions depending on:
         #     - Jet2 TXbb score (below 0.8 is control region)
         #     - JEt2 Mass (signal region defined as 110 < m_j2 < 150 GeV)
         # We train the reweighting from low TXbb score to hight TXbb score in the mass sideband (from from D -> B)
         # And then we apply it to the mass signal region (C -> A)
-        categories_dict |= define_single_category("boosted_signal_region_D")
-        categories_dict |= define_single_category("boosted_signal_sideband_region_C", full_sideband=full_sideband, region_setting=region_setting)
-        categories_dict |= define_single_category("boosted_control_region_B")
-        categories_dict |= define_single_category("boosted_control_sideband_region_A", full_sideband=full_sideband, region_setting=region_setting)
+        categories_dict |= define_single_category("boosted_signal_region_D", **region_kwargs)
+        categories_dict |= define_single_category("boosted_signal_sideband_region_C", **region_kwargs)
+        categories_dict |= define_single_category("boosted_control_region_B", **region_kwargs)
+        categories_dict |= define_single_category("boosted_control_sideband_region_A", **region_kwargs)
         if bkg_morphing_dnn:
-            categories_dict |= define_single_category("boosted_control_sideband_region_A_postW", full_sideband=full_sideband, region_setting=region_setting)
-            categories_dict |= define_single_category("boosted_control_sideband_region_A_cat1_postW", full_sideband=full_sideband, region_setting=region_setting)
-            categories_dict |= define_single_category("boosted_control_sideband_region_A_cat2_postW", full_sideband=full_sideband, region_setting=region_setting)
-            categories_dict |= define_single_category("boosted_control_sideband_region_A_cat3_postW", full_sideband=full_sideband, region_setting=region_setting)
-            categories_dict |= define_single_category("boosted_control_sideband_region_A_catvbf_postW", full_sideband=full_sideband, region_setting=region_setting)
-            categories_dict |= define_single_category("boosted_signal_region_D_cat1")
-            categories_dict |= define_single_category("boosted_signal_region_D_cat2")
-            categories_dict |= define_single_category("boosted_signal_region_D_cat3")
-            categories_dict |= define_single_category("boosted_signal_region_D_catvbf")
+            categories_dict |= define_single_category("boosted_control_sideband_region_A_postW", **region_kwargs)
+            categories_dict |= define_single_category("boosted_signal_region_D_cat1", **region_kwargs)
+            categories_dict |= define_single_category("boosted_signal_region_D_cat2", **region_kwargs)
+            categories_dict |= define_single_category("boosted_signal_region_D_cat3", **region_kwargs)
+            categories_dict |= define_single_category("boosted_signal_region_D_catvbf", **region_kwargs)
             if "mass" in bkg_morphing_dnn:
-                categories_dict |= define_single_category("boosted_signal_sideband_region_C_postW", full_sideband=full_sideband, region_setting=region_setting)
-                categories_dict |= define_single_category("boosted_signal_sideband_region_C_cat1_postW", full_sideband=full_sideband, region_setting=region_setting)
-                categories_dict |= define_single_category("boosted_signal_sideband_region_C_cat2_postW", full_sideband=full_sideband, region_setting=region_setting)
-                categories_dict |= define_single_category("boosted_signal_sideband_region_C_cat3_postW", full_sideband=full_sideband, region_setting=region_setting)
-                categories_dict |= define_single_category("boosted_signal_sideband_region_C_catvbf_postW", full_sideband=full_sideband)
-                categories_dict |= define_single_category("boosted_control_region_B_cat1")
-                categories_dict |= define_single_category("boosted_control_region_B_cat2")
-                categories_dict |= define_single_category("boosted_control_region_B_cat3")
-                categories_dict |= define_single_category("boosted_control_region_B_catvbf")
+                categories_dict |= define_single_category("boosted_signal_sideband_region_C_postW", **region_kwargs)
+                categories_dict |= define_single_category("boosted_signal_sideband_region_C_cat1_postW", **region_kwargs)
+                categories_dict |= define_single_category("boosted_signal_sideband_region_C_cat2_postW", **region_kwargs)
+                categories_dict |= define_single_category("boosted_signal_sideband_region_C_cat3_postW", **region_kwargs)
+                categories_dict |= define_single_category("boosted_signal_sideband_region_C_catvbf_postW", **region_kwargs)
+                categories_dict |= define_single_category("boosted_control_region_B_cat1", **region_kwargs)
+                categories_dict |= define_single_category("boosted_control_region_B_cat2", **region_kwargs)
+                categories_dict |= define_single_category("boosted_control_region_B_cat3", **region_kwargs)
+                categories_dict |= define_single_category("boosted_control_region_B_catvbf", **region_kwargs)
             elif "btag" in bkg_morphing_dnn:
-                categories_dict |= define_single_category("boosted_control_region_B_postW")
-                categories_dict |= define_single_category("boosted_control_region_B_cat1_postW")
-                categories_dict |= define_single_category("boosted_control_region_B_cat2_postW")
-                categories_dict |= define_single_category("boosted_control_region_B_cat3_postW")
-                categories_dict |= define_single_category("boosted_control_region_B_catvbf_postW")
-                categories_dict |= define_single_category("boosted_signal_sideband_region_C", full_sideband=full_sideband)
-                categories_dict |= define_single_category("boosted_signal_sideband_region_C_cat1", full_sideband=full_sideband)
-                categories_dict |= define_single_category("boosted_signal_sideband_region_C_cat2", full_sideband=full_sideband)
-                categories_dict |= define_single_category("boosted_signal_sideband_region_C_cat3", full_sideband=full_sideband)
-                categories_dict |= define_single_category("boosted_signal_sideband_region_C_catvbf", full_sideband=full_sideband)
+                categories_dict |= define_single_category("boosted_control_region_B_postW", **region_kwargs)
+                categories_dict |= define_single_category("boosted_control_region_B_cat1_postW", **region_kwargs)
+                categories_dict |= define_single_category("boosted_control_region_B_cat2_postW", **region_kwargs)
+                categories_dict |= define_single_category("boosted_control_region_B_cat3_postW", **region_kwargs)
+                categories_dict |= define_single_category("boosted_control_region_B_catvbf_postW", **region_kwargs)
+                categories_dict |= define_single_category("boosted_signal_sideband_region_C", **region_kwargs)
 
 
         # elif not vbf_discriminator:

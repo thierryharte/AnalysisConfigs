@@ -36,11 +36,17 @@ def _merge_sum_genweights(inputfiles):
 
 def get_columns_from_files(
     inputfiles, sel_var="nominal", filter_lambda=None, debug=False, novars=False, max_num_parquet_files=None, filter_mixed=False, ragged_pad_length=2,
+    category_filter=None,
 ):
+    """
+    category_filter: optional callable taking a category name and returning
+        True if the category should be loaded. Categories rejected by it are
+        never read (for parquet inputs their directories are not even opened).
+    """
     if not debug:
         logger.setLevel(level=logging.INFO)
     if novars:
-        return get_columns_from_files_novars(inputfiles, filter_lambda, debug, max_num_parquet_files)
+        return get_columns_from_files_novars(inputfiles, filter_lambda, debug, max_num_parquet_files, filter_mixed=filter_mixed, category_filter=category_filter)
     logger.info(f"Loading variations: {sel_var}")
     cat_col = {}
     total_datasets_list = []
@@ -50,7 +56,7 @@ def get_columns_from_files(
         samples = list(accumulator["columns"].keys())
         if accumulator["columns"] == {}:
             logger.info("Empty columns, trying to read from parquet files")
-            return get_columns_from_parquet(inputfiles, sel_var, filter_lambda, debug, _merge_sum_genweights(inputfiles), max_num_parquet_files=max_num_parquet_files, filter_mixed=True, ragged_pad_length=ragged_pad_length)
+            return get_columns_from_parquet(inputfiles, sel_var, filter_lambda, debug, _merge_sum_genweights(inputfiles), max_num_parquet_files=max_num_parquet_files, filter_mixed=True, ragged_pad_length=ragged_pad_length, category_filter=category_filter)
         if debug:
             logger.debug(f"inputfile {inputfile}")
         for sample in samples:
@@ -66,6 +72,8 @@ def get_columns_from_files(
                 for category in categories:
                     if debug:
                         logger.debug(f"category {category}")
+                    if category_filter is not None and not category_filter(category):
+                        continue
                     if filter_mixed and "Mixed" in dataset and category not in ["4b_control_region_preW", "4b_control_region_postW", "4b_signal_region_preW", "4b_signal_region_postW"]:
                         logger.debug(f"skipping category {category} for dataset {dataset} due to MixedData skipping")
                         continue
@@ -226,6 +234,7 @@ def get_columns_from_parquet(
     num_workers=4,
     filter_mixed=False,
     ragged_pad_length=2,
+    category_filter=None,
 ):
     """
     Fast Parquet loader using Arrow's to_table() (no batching overhead) and
@@ -281,6 +290,9 @@ def get_columns_from_parquet(
             for category in os.listdir(dataset_path):
                 category_path = os.path.join(dataset_path, category)
                 if not os.path.isdir(category_path):
+                    continue
+                if category_filter is not None and not category_filter(category):
+                    logger.debug(f"skipping category {category} (not requested)")
                     continue
                 if filter_mixed and "Mixed" in dataset and category not in ["4b_control_region_preW", "4b_control_region_postW", "4b_signal_region_preW", "4b_signal_region_postW"]:
                     logger.debug(f"skipping category {category} for dataset {dataset} due to MixedData skipping")
@@ -470,7 +482,7 @@ def get_parquet_save_directory(input_parquet):
     return col_dir, dataset
 
 
-def get_columns_from_files_novars(inputfiles, filter_lambda=None, debug=False, max_num_parquet_files=None):
+def get_columns_from_files_novars(inputfiles, filter_lambda=None, debug=False, max_num_parquet_files=None, filter_mixed=False, category_filter=None):
     cat_col = {}
     total_datasets_list = []
     # get the columns
@@ -482,7 +494,8 @@ def get_columns_from_files_novars(inputfiles, filter_lambda=None, debug=False, m
         if accumulator["columns"] == {}:
             logger.info("Empty columns, trying to read from parquet files")
             return get_columns_from_parquet(
-                inputfiles, "", filter_lambda, debug, _merge_sum_genweights(inputfiles), max_num_parquet_files=max_num_parquet_files
+                inputfiles, "", filter_lambda, debug, _merge_sum_genweights(inputfiles), max_num_parquet_files=max_num_parquet_files,
+                category_filter=category_filter,
             )
         for sample in samples:
             if debug:
@@ -497,6 +510,8 @@ def get_columns_from_files_novars(inputfiles, filter_lambda=None, debug=False, m
                 for category in categories:
                     if debug:
                         print(f"category {category}")
+                    if category_filter is not None and not category_filter(category):
+                        continue
                     if filter_mixed and "Mixed" in dataset and category not in ["4b_control_region_preW", "4b_control_region_postW", "4b_signal_region_preW", "4b_signal_region_postW"]:
                         logger.debug(f"skipping category {category} for dataset {dataset} due to MixedData skipping")
                         continue

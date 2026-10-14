@@ -1407,7 +1407,7 @@ class HH4bCommonProcessor(BaseProcessorABC):
             ) = self.define_boosted_dnn_variables(
                 self.events["FatJetGoodSelected"][:, 0],
                 self.events["FatJetGoodSelected"][:, 1],
-                self.events.JetGoodVBFEnergyOrdered,
+                self.events.JetGoodVBFGood,
                 vbf_variables=True,
             )
             self.build_boosted_variables()  # This is to define the Higgs variables we need for the Analysis.
