@@ -1,4 +1,5 @@
 import argparse
+import copy
 import json
 import logging
 import os
@@ -31,7 +32,7 @@ parser.add_argument(
     type=str,
     nargs="+",
     required=True,
-    help="Input directory for data with coffea files or coffea files themselves",
+    help="Input directory for data with coffea files or coffea files themselves (needs a '/' in the end, if not a single file)",
 )
 parser.add_argument(
     "-r2",
@@ -50,37 +51,92 @@ parser.add_argument(
 parser.add_argument(
     "-o", "--output", type=str, help="Output directory", default="./datacards"
 )
+parser.add_argument(
+    "-b",
+    "--boosted",
+    action="store_true",
+    help="If a boosted analysis is being performed",
+    default=False,
+)
+parser.add_argument(
+    "-sb",
+    "--single-bin",
+    action="store_true",
+    help="rebins fit histogram to only have a single bin",
+    default=False,
+)
+# parser.add_argument(
+#     "-vbf",
+#     "--vbf",
+#     action="store_true",
+#     help="If a VBF analysis is being performed (to be extended for resolved)",
+#     default=False,
+# )
+
 args = parser.parse_args()
 
 
-input_dir = os.path.dirname(args.input_data[0])
+input_dir = os.path.dirname(f"{args.input_data[0]}/")
 
 if not os.path.exists(args.output):
     os.makedirs(args.output)
-    
+
 
 # Define signal, background, and data datasets
-sig_bkg_dict = {
-        "signal": {
-            "ggHH_kl_1_kt_1_13p6TeV_hbbhbb": ["GluGlutoHHto4B_spanet_kl-1p00_kt-1p00_c2-0p00_2022_postEE"],
-            "ggHH_kl_2p45_kt_1_13p6TeV_hbbhbb": ["GluGlutoHHto4B_spanet_kl-2p45_kt-1p00_c2-0p00_2022_postEE"],
-            "ggHH_kl_5_kt_1_13p6TeV_hbbhbb": ["GluGlutoHHto4B_spanet_kl-5p00_kt-1p00_c2-0p00_2022_postEE"],
-            },
-        "data": {
-            # This needs to have this name, and only be one category
-            "data_obs": ["DATA_JetMET_JMENano_E_2022_postEE_EraE", "DATA_JetMET_JMENano_F_2022_postEE_EraF", "DATA_JetMET_JMENano_G_2022_postEE_EraG"]
-            },
-        "background": {
-            "bbbb_background": ["DATA_JetMET_JMENano_E_2022_postEE_EraE_background", "DATA_JetMET_JMENano_F_2022_postEE_EraF_background", "DATA_JetMET_JMENano_G_2022_postEE_EraG_background"]
+# == Layout:
+# sample
+# datasets
+# region: determines, from which region the data is taken ("signal": "sig_region_name", "background": "bkg_region_name")
+if not args.boosted:
+    # Needs to be edited from list items to dictionary (copy layout of boosted)
+    sig_bkg_dict = {
+            "signal": {
+                "ggHH_kl_1_kt_1_13p6TeV_hbbhbb": ["GluGlutoHHto4B_spanet_kl-1p00_kt-1p00_c2-0p00_2022_postEE"],
+                "ggHH_kl_2p45_kt_1_13p6TeV_hbbhbb": ["GluGlutoHHto4B_spanet_kl-2p45_kt-1p00_c2-0p00_2022_postEE"],
+                "ggHH_kl_5_kt_1_13p6TeV_hbbhbb": ["GluGlutoHHto4B_spanet_kl-5p00_kt-1p00_c2-0p00_2022_postEE"],
+                },
+            "data": {
+                # This needs to have this name, and only be one category
+                "data_obs": ["DATA_JetMET_JMENano_E_2022_postEE_EraE", "DATA_JetMET_JMENano_F_2022_postEE_EraF", "DATA_JetMET_JMENano_G_2022_postEE_EraG"]
+                },
+            "background": {
+                "bbbb_background": ["DATA_JetMET_JMENano_E_2022_postEE_EraE_background", "DATA_JetMET_JMENano_F_2022_postEE_EraF_background", "DATA_JetMET_JMENano_G_2022_postEE_EraG_background"]
+                }
             }
-        }
+else:
+    sig_bkg_dict = {
+            "signal": {
+                "HH4b_VBF_SM": ["VBFHHto4B_Par-CV-1-C2V-1-C3-1_TuneCP5_13p6TeV_madgraph-pythia8_2024"],
+                "HH4b_VBF_K2V0": ["VBFHHto4B_Par-CV-1-C2V-0-C3-1_TuneCP5_13p6TeV_madgraph-pythia8_2024"],
+            },
+            "data": {
+                # This needs toTTto2L2Nu_2024 have this name, and only be one category
+                "data_obs": ["DATA_JetMET0_HH4bBoosted_2024_EraC", "DATA_JetMET0_HH4bBoosted_2024_EraD", "DATA_JetMET0_HH4bBoosted_2024_EraE", "DATA_JetMET0_HH4bBoosted_2024_EraF", "DATA_JetMET0_HH4bBoosted_2024_EraG", "DATA_JetMET0_HH4bBoosted_2024_EraH", "DATA_JetMET0_HH4bBoosted_2024_EraI", "DATA_JetMET1_HH4bBoosted_2024_EraC", "DATA_JetMET1_HH4bBoosted_2024_EraD", "DATA_JetMET1_HH4bBoosted_2024_EraE", "DATA_JetMET1_HH4bBoosted_2024_EraF", "DATA_JetMET1_HH4bBoosted_2024_EraG", "DATA_JetMET1_HH4bBoosted_2024_EraH", "DATA_JetMET1_HH4bBoosted_2024_EraI"]
+            },
+            "background": {
+                "QCD_background": ["DATA_JetMET0_HH4bBoosted_2024_EraC", "DATA_JetMET0_HH4bBoosted_2024_EraD", "DATA_JetMET0_HH4bBoosted_2024_EraE", "DATA_JetMET0_HH4bBoosted_2024_EraF", "DATA_JetMET0_HH4bBoosted_2024_EraG", "DATA_JetMET0_HH4bBoosted_2024_EraH", "DATA_JetMET0_HH4bBoosted_2024_EraI", "DATA_JetMET1_HH4bBoosted_2024_EraC", "DATA_JetMET1_HH4bBoosted_2024_EraD", "DATA_JetMET1_HH4bBoosted_2024_EraE", "DATA_JetMET1_HH4bBoosted_2024_EraF", "DATA_JetMET1_HH4bBoosted_2024_EraG", "DATA_JetMET1_HH4bBoosted_2024_EraH", "DATA_JetMET1_HH4bBoosted_2024_EraI"],
+                "TTto2L2Nu": ["TTto2L2Nu_2024"],
+                "TTto4Q": ["TTto4Q_2024"],
+                "TTtoLNu2Q": ["TTtoLNu2Q_2024"],
+                }
+            }
+
 # Define the new region name
-region_name = "ggHH"
-suffix = "Run2" if args.run2 else ""
-sig_region_name=f"4b_signal_region{suffix}"
-bkg_region_name=f"2b_signal_region_postW{suffix}"
-control_region_name=f"4b_control_region{suffix}"
-bkg_control_region_name=f"2b_control_region_postW{suffix}"
+if args.boosted:
+    region_name = "VBFHH"
+    fit_variable = "BDTVBFScore"
+    sig_region_name="boosted_signal_region_D_catvbf"
+    bkg_region_name="boosted_control_region_B_catvbf_postW"
+    sig_control_region_name="boosted_signal_sideband_region_C"
+    bkg_control_region_name="boosted_control_sideband_region_A_postW"
+
+else:
+    region_name = "ggHH"
+    fit_variable = "sig_bkg_dnn_score"
+    sig_region_name="4b_signal_region"
+    bkg_region_name="2b_signal_region_postW"
+    sig_control_region_name="4b_control_region"
+    bkg_control_region_name="2b_control_region_postW"
 
 
 def get_year(pocketcoffea_year, year_type=0):
@@ -93,9 +149,9 @@ def get_year(pocketcoffea_year, year_type=0):
     """
     # Different categories for how to separated years/datataking periods
     dict_year_type = [
-            {"2022_preEE": "2022", "2022_postEE": "2022EE", "2023_preBPix": "2023", "2023_postBPix": "2023BPIX"},
-            {"2022_preEE": "2022", "2022_postEE": "2022", "2023_preBPix": "2023", "2023_postBPix": "2023"},
-            {"2022_preEE": "2022", "2022_postEE": "2022", "2023_preBPix": "2023", "2023_postBPix": "2023ParkingHH"}  # <-- Probably wrong. But used for background datadriven
+            {"2022_preEE": "2022", "2022_postEE": "2022EE", "2023_preBPix": "2023", "2023_postBPix": "2023BPIX", "2024": "2024"},
+            {"2022_preEE": "2022", "2022_postEE": "2022", "2023_preBPix": "2023", "2023_postBPix": "2023", "2024": "2024"},
+            {"2022_preEE": "2022", "2022_postEE": "2022", "2023_preBPix": "2023", "2023_postBPix": "2023ParkingHH", "2024": "2024"}  # <-- Probably wrong. But used for background datadriven
             ]
     try:
         return dict_year_type[year_type][pocketcoffea_year]
@@ -130,43 +186,73 @@ def get_uncertainty_name(pocketcoffea_name, year):
 
 def add_variation_axis(histogram):
     """Return a histogram with an extra variation axis ('nominal'), preserving values+variances."""
-    import hist
-
     # build new axes
     axes = list(histogram.axes)
     var_axis = hist.axis.StrCategory(["nominal"], name="variation", label="Variation")
 
     cat_idx = next((i for i, ax in enumerate(axes) if getattr(ax, "name", None) == "cat"), None)
     if cat_idx is None:
-        new_axes = axes + [var_axis]
-    else:
-        new_axes = axes[:cat_idx+1] + [var_axis] + axes[cat_idx+1:]
+        raise ValueError(f"Histogram has no 'cat' axis: {histogram.axes}")
+    var_idx = cat_idx + 1
+    new_axes = axes[:var_idx] + [var_axis] + axes[var_idx:]
 
     # create new histogram
     new_hist = hist.Hist(*new_axes, storage=hist.storage.Weight())
 
-    # --- copy content ---
-    for cat in histogram.axes[cat_idx]:
-        idx_old = histogram.axes[cat_idx].index(cat)
-        idx_new = new_hist.axes[cat_idx].index(cat)
-
-        sl_old = [slice(None)] * histogram.ndim
-        sl_new = [slice(None)] * new_hist.ndim
-        sl_old[cat_idx] = idx_old
-        sl_new[cat_idx] = idx_new
-        sl_new[1] = 0  # idx 1="variations", 0="nominal"
-
-        vals = histogram.view(flow=True)[tuple(sl_old)]
-        new_hist.view(flow=True)[tuple(sl_new)] = vals
+    # --- copy content (the variation axis only has 'nominal' at index 0) ---
+    sl_new = [slice(None)] * new_hist.ndim
+    sl_new[var_idx] = 0
+    new_hist.view(flow=True)[tuple(sl_new)] = histogram.view(flow=True)
 
     return new_hist
 
 
+def fold_flow(histogram, axis=-1):
+    """Return a copy of the histogram with under-/overflow of `axis` added to the first/last bin.
 
-def duplicate_category(histo, src_label, new_label, axis=0, rescale_label=False):
+    The Datacard only reads the in-range bins, so without folding events outside the axis range
+    (e.g. a score of exactly 1.0 for Regular(0, 1)) would silently be dropped.
+    """
+    new_hist = histogram.copy()
+    traits = new_hist.axes[axis].traits
+    view = new_hist.view(flow=True)
+    view_ax = np.moveaxis(view, axis, -1)  # still a view into new_hist
+    for field in ("value", "variance"):
+        if traits.underflow:
+            view_ax[field][..., 1] += view_ax[field][..., 0]
+            view_ax[field][..., 0] = 0
+        if traits.overflow:
+            view_ax[field][..., -2] += view_ax[field][..., -1]
+            view_ax[field][..., -1] = 0
+    return new_hist
+
+
+def compute_norm_factor(histograms, num_label, denom_label):
+    """Global normalisation factor sum(num_label) / sum(denom_label), summed over all data datasets.
+
+    :param histograms: histograms of a single variable, layout {sample: {dataset: hist}}
+    """
+    sum_num = 0.0
+    sum_denom = 0.0
+    for datasets in histograms.values():
+        for dataset, histogram in datasets.items():
+            if "DATA" not in dataset:
+                continue
+            sum_num += histogram[{"cat": num_label}].sum(flow=True).value
+            sum_denom += histogram[{"cat": denom_label}].sum(flow=True).value
+    if sum_denom == 0:
+        raise ValueError(f"No data events in normalisation region {denom_label!r}")
+    factor = sum_num / sum_denom
+    logger.info(f"Normalisation factor {num_label} / {denom_label} = {sum_num} / {sum_denom} = {factor:.5f}")
+    return factor
+
+
+def duplicate_category(histo, src_label, new_label, axis=0, scale=None):
     """Copy the histogram for a category from one region into a new one.
 
-    Essentially all the required datasets/regions for the analysis are to be copied into the newly created region
+    Essentially all the required datasets/regions for the analysis are to be copied into the newly created region.
+    If `scale` is given, the copied category is scaled by it and a 'nominal' variation axis is added
+    (needed, because the scaled data is treated as an MC process in the datacard).
     """
     cat_axis = histo.axes[axis]
     if not isinstance(cat_axis, hist.axis.StrCategory):
@@ -204,49 +290,43 @@ def duplicate_category(histo, src_label, new_label, axis=0, rescale_label=False)
     sl_src[axis] = idx_src
     sl_dst[axis] = idx_dst
 
-    vals = histo.view(flow=True)[tuple(sl_src)]
-    if not rescale_label:
+    # Copy, so that scaling does not modify the input histogram in place
+    vals = histo.view(flow=True)[tuple(sl_src)].copy()
+    if scale is None:
         new_histo.view(flow=True)[tuple(sl_dst)] = vals
     else:
-        idx_ref_num = histo.axes[axis].index(rescale_label[1])
-        sl_ref_num = [slice(None)] * histo.ndim
-        sl_ref_num[axis] = idx_ref_num
-        idx_ref_denom = histo.axes[axis].index(rescale_label[0])
-        sl_ref_denom = [slice(None)] * histo.ndim
-        sl_ref_denom[axis] = idx_ref_denom
-
-        ref_vals_num = histo.view(flow=True)[tuple(sl_ref_num)]
-        ref_sum_num = ref_vals_num["value"].sum()
-        ref_vals_denom = histo.view(flow=True)[tuple(sl_ref_denom)]
-        ref_sum_denom = ref_vals_denom["value"].sum()
-
-        factor = ref_sum_num / ref_sum_denom
-
-        vals["value"] *= factor
-        vals["variance"] *= factor**2
+        vals["value"] *= scale
+        vals["variance"] *= scale**2
 
         new_histo.view(flow=True)[tuple(sl_dst)] = vals
         new_histo = add_variation_axis(new_histo)
 
-    return new_histo
+    return fold_flow(new_histo)
 
 
 def create_new_region(coffea_file, cat_name):
     """Create a new region in the coffea file, that contains all the regions we need for the analysis."""
-    
+
     for key in ["sumw", "sumw2"]:
-        coffea_file[key][cat_name] = coffea_file[key][sig_region_name]
+        # Only works, if all MC are in the signal region (will hopefully stay this way...)
+        coffea_file[key][cat_name] = copy.deepcopy(coffea_file[key][sig_region_name])
     # == adding cutflow ==
     presel_samples = list(coffea_file["cutflow"]["presel"].keys())
     for key in presel_samples:
-        coffea_file["cutflow"]["presel"][f"{key}_background"] = coffea_file["cutflow"]["presel"][key]
-    coffea_file["cutflow"][cat_name] = coffea_file["cutflow"][sig_region_name]
+        coffea_file["cutflow"]["presel"][f"{key}_background"] = copy.deepcopy(coffea_file["cutflow"]["presel"][key])
+    # deepcopy, as otherwise the "_background" entries below would also be added to the signal region cutflow
+    coffea_file["cutflow"][cat_name] = copy.deepcopy(coffea_file["cutflow"][sig_region_name])
     for key in coffea_file["cutflow"][bkg_region_name].keys():
         if "DATA" in key:
             coffea_file["cutflow"][cat_name][f"{key}_background"] = {}
             for subkey, subvalue in coffea_file["cutflow"][bkg_region_name][key].items():
                 coffea_file["cutflow"][cat_name][f"{key}_background"][f"{subkey}_background"] = subvalue
     # == variables ==
+    # One global factor (from the fit variable, flow included) for all eras and variables
+    if args.separate_normalisation:
+        norm_factor = compute_norm_factor(coffea_file["variables"][fit_variable], sig_region_name, bkg_region_name)
+    else:
+        norm_factor = compute_norm_factor(coffea_file["variables"][fit_variable], sig_control_region_name, bkg_control_region_name)
     for column in coffea_file["variables"].keys():
         sample_list = list(coffea_file["variables"][column])  # I will change the samples and I am not sure, if it would otherwise also loop over changes.
         for sample in sample_list:
@@ -254,11 +334,11 @@ def create_new_region(coffea_file, cat_name):
             for dataset in dset_list:
                 histogram = coffea_file["variables"][column][sample][dataset]
                 # Copy the histgam of Data and MC from the signal region.
-                histogram_with_new = duplicate_category(histogram, sig_region_name, cat_name, axis=0, rescale_label=False)
+                histogram_with_new = duplicate_category(histogram, sig_region_name, cat_name, axis=0)
                 coffea_file["variables"][column][sample][dataset] = histogram_with_new
                 # If Data, also copy from the background region
                 if "DATA" in dataset:
-                    histogram_with_new = duplicate_category(histogram, bkg_region_name, cat_name, axis=0, rescale_label=([bkg_region_name, sig_region_name] if args.separate_normalisation else [bkg_control_region_name, control_region_name]))
+                    histogram_with_new = duplicate_category(histogram, bkg_region_name, cat_name, axis=0, scale=norm_factor)
                     coffea_file["variables"][column][f"{sample}_background"][f"{dataset}_background"] = histogram_with_new
     # == datasets_metadata : by_datataking_period ==
     for period in coffea_file["datasets_metadata"]["by_datataking_period"].keys():
@@ -296,22 +376,28 @@ if __name__ == "__main__":
     # -- Histograms --
     histograms_dict = {}
     for key, sob_hist in coffea_file["variables"].items():
-        if "sig_bkg" in key:
-            histograms_dict[key] = sob_hist
-            # "SoB": coffea_file["variables"]["sig_bkg_dnn_score"],
+        if fit_variable in key:
+            if not args.single_bin:
+                histograms_dict[key] = sob_hist
+            else:
+                histograms_dict[key] = sob_hist[{sob_hist.axes[-1].name: hist.rebin(sob_hist.axes[-1].size)}]
+        # TODO: Make sure, that the correct signal histograms are chosen
+        # if "sig_bkg" in key:
+        #     histograms_dict[key] = sob_hist
+        #     # "SoB": coffea_file["variables"]["sig_bkg_dnn_score"],
     # -- Create Processes
     meta_dict = coffea_file['datasets_metadata']['by_dataset']
 
-    for dataset_list in sig_bkg_dict["signal"].values():
-        for dataset in dataset_list:
+    for datasets in sig_bkg_dict["signal"].values():
+        for dataset in datasets:
             if dataset not in meta_dict.keys():
                 raise Exception(f"Signal dataset {dataset} not found in file")
-    for dataset in sig_bkg_dict["data"].values():
-        for dataset in dataset_list:
+    for datasets in sig_bkg_dict["data"].values():
+        for dataset in datasets:
             if dataset not in meta_dict.keys():
                 raise Exception(f"Data dataset {dataset} not found in file")
-    for dataset in sig_bkg_dict["background"].values():
-        for dataset in dataset_list:
+    for datasets in sig_bkg_dict["background"].values():
+        for dataset in datasets:
             if dataset not in meta_dict.keys():
                 raise Exception(f"Background dataset {dataset} not found in file")
 
@@ -321,31 +407,31 @@ if __name__ == "__main__":
 
     # -- Filling metadata into the respective objects --
     mc_process = []
-    for name, datasets in sig_bkg_dict["signal"].items():
+    for name, sigs in sig_bkg_dict["signal"].items():
         mc_process.append(MCProcess(
                 name=name,
                 # All these ugly catings are to get a list with unique values.
-                samples=set([meta_dict[dataset]["sample"] for dataset in datasets]),
-                years=set([meta_dict[dataset]["year"] for dataset in datasets]),
+                samples={meta_dict[dataset]["sample"] for dataset in sigs["datasets"]},
+                years={meta_dict[dataset]["year"] for dataset in sigs["datasets"]},
                 is_signal=True,
                 ))
-    data_bg_process = []
-    for name, datasets in sig_bkg_dict["background"].items():
-        data_bg_process.append(MCProcess(
+    bg_process = []
+    for name, bgs in sig_bkg_dict["background"].items():
+        bg_process.append(MCProcess(
                 name=name,
-                samples=set([meta_dict[dataset]["sample"] for dataset in datasets]),
-                years=set([meta_dict[dataset]["year"] for dataset in datasets]),
+                samples={meta_dict[dataset]["sample"] for dataset in bgs["datasets"]},
+                years={meta_dict[dataset]["year"] for dataset in bgs["datasets"]},
                 is_signal=False,
                 ))
-    mc_processes = MCProcesses(mc_process + data_bg_process)
+    mc_processes = MCProcesses(mc_process + bg_process)
 
-    if len(sig_bkg_dict["data"].keys()) > 1:
+    if len(sig_bkg_dict["data"].keys()) > 1 or "data_obs" not in sig_bkg_dict["data"].keys():
         raise Exception("Only one single data process is allowed with fixed name 'data_obs'")
-    for name, datasets in sig_bkg_dict["data"].items():
+    for name, datas in sig_bkg_dict["data"].items():
         data_process = DataProcess(
                 name=name,
-                samples=set([meta_dict[dataset]["sample"] for dataset in datasets]),
-                years=set([meta_dict[dataset]["year"] for dataset in datasets]),
+                samples={meta_dict[dataset]["sample"] for dataset in datas["datasets"]},
+                years={meta_dict[dataset]["year"] for dataset in datas["datasets"]},
                 )
     data_processes = DataProcesses([data_process])
 
@@ -354,7 +440,7 @@ if __name__ == "__main__":
     #     "JES_Total_AK4PFPuppi", "JER_AK4PFPuppi"
     # ]
 
-    # Trying to make this generic. Ideally, we want exactly one single set of variations at the moment because we are using MC only for signal. This has to be improved im some shape or form.
+    # Trying to make this generic. Ideally, we want exactly one single set of variations at the moment because we are using MC only for signal. This has to be improved in some shape or form.
     # Essentially, right now, all MC sets belong to "GluGluHHto4b"
     for hist_cat, sob_hist in histograms_dict.items():
         # Get to the variation infos in the histograms for MC signal:
@@ -367,7 +453,7 @@ if __name__ == "__main__":
                 sliced = sob_hist[meta_dict[datasets[0]]["sample"]][datasets[0]][{"variation": var, "cat": region_name}]
                 print(f"Variation: {var}")
                 print(sliced.values())
-            variations = set([re.sub(r'(Up|Down)$', '', var) for var in variations_updown])
+            variations = {re.sub(r'(Up|Down)$', '', var) for var in variations_updown}
             try:
                 variations.remove("nominal")
             except:
@@ -375,7 +461,24 @@ if __name__ == "__main__":
             logger.info(f"Found variations: {variations}")
             for syst in variations:
                 systematics_list.append(SystematicUncertainty(name=syst, datacard_name=get_uncertainty_name(syst, meta_dict[datasets[0]]['year']), typ="shape", processes=list(sig_bkg_dict["signal"].keys()), years=[meta_dict[datasets[0]]["year"]], value=1.0))
-            systematics = Systematics(systematics_list)
+        # At some point we will have a variation for the reweighting uncertainty, but right now, we only want variations on the MC processes
+        bg_mc = {k: v for k, v in sig_bkg_dict["background"].items() if "DATA" not in v[0]}
+        for sig_type, datasets in bg_mc.items():
+            # Iterate through the datasets in a particular background type (often a signle one)
+            variations_updown = list(sob_hist[meta_dict[datasets[0]]["sample"]][datasets[0]].axes['variation'])
+            for var in variations_updown:
+                sliced = sob_hist[meta_dict[datasets[0]]["sample"]][datasets[0]][{"variation": var, "cat": region_name}]
+                print(f"Variation: {var}")
+                print(sliced.values())
+            variations = {re.sub(r'(Up|Down)$', '', var) for var in variations_updown}
+            try:
+                variations.remove("nominal")
+            except:
+                raise ValueError(f"Variations list {variations} does not contain 'nominal'.")
+            logger.info(f"Found variations: {variations}")
+            for syst in variations:
+                systematics_list.append(SystematicUncertainty(name=syst, datacard_name=get_uncertainty_name(syst, meta_dict[datasets[0]]['year']), typ="shape", processes=list(bg_mc.keys()), years=[meta_dict[datasets[0]]["year"]], value=1.0))
+        systematics = Systematics(systematics_list)
 
         _label = "run3"
         _datacard_name = f"datacard_combined_{_label}"
@@ -393,7 +496,7 @@ if __name__ == "__main__":
                 cutflow=coffea_file["cutflow"],
                 systematics=systematics,
                 # This might have to change. Right now I am binding the year to the data year...
-                years=set([meta_dict[dataset]["year"] for dataset in sig_bkg_dict["data"]["data_obs"]]),
+                years={meta_dict[dataset]["year"] for dataset in sig_bkg_dict["data"]["data_obs"]},
                 mc_processes=mc_processes,
                 mcstat=auto_mc_stats,
                 data_processes=data_processes,
