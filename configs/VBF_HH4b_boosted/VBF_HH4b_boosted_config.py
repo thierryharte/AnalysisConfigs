@@ -140,12 +140,12 @@ sample_list = (
         # "DATA_JetMET_JMENano_E",
         # "DATA_JetMET_JMENano_F",
         # "DATA_JetMET_JMENano_G",
-        # "TTtoLNu2Q",
-        # "TTto2L2Nu",
-        # "TTto4Q",
-        # "DATA_ParkingHH",
-        # "DATA_JetMET0_HH4bBoosted",
-        # "DATA_JetMET1_HH4bBoosted",
+        "TTtoLNu2Q",
+        "TTto2L2Nu",
+        "TTto4Q",
+        "DATA_ParkingHH",
+        "DATA_JetMET0_HH4bBoosted",
+        "DATA_JetMET1_HH4bBoosted",
     ]
     + sample_ggF_list
     + sample_VBF_list
