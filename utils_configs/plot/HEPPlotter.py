@@ -569,7 +569,9 @@ class HEPPlotter:
 
     def _stack_plot_order(self, hist_1d, style):
         # reorder the histograms to be plotted in stack order (first is bottom)
-        if isinstance(hist_1d, list):
+        # Set style["stack_sort"] = False to keep the given list order
+        # instead (e.g. to always keep one component on top of the stack).
+        if isinstance(hist_1d, list) and style.get("stack_sort", True):
             # get the sorting indexes
             idxes = sorted(
                 range(len(hist_1d)),

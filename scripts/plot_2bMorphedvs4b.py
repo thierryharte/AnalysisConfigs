@@ -74,50 +74,98 @@ if args.run2:
         ],
     }
 elif args.boosted:
-    sub_regions = {
-        "signal":    "boosted_signal_region_D",
-        "sig_bkg_preW":  "boosted_signal_sideband_region_C",
-        "sig_bkg_postW": "boosted_signal_sideband_region_C_postW",
-        "control":    "boosted_control_region_B",
-        "con_bkg_preW":  "boosted_control_sideband_region_A",
-        "con_bkg_postW": "boosted_control_sideband_region_A_postW",
-    }
-    if args.bbtag_direction:
-        sub_regions["sig_bkg_preW"] = "boosted_control_region_B"
-        sub_regions["sig_bkg_postW"] = "boosted_control_region_B_postW"
-        sub_regions["control"] = "boosted_signal_sideband_region_C"
-    cat_dict |= {
-        f"CR_TT_{args.region_suffix}": [
-            [
-                sub_regions["control"],
-                sub_regions["con_bkg_postW"],
-                sub_regions["con_bkg_preW"],
-                sub_regions["control"] + "_TT",
+    new_definition = True
+    if new_definition:
+        sub_regions = {
+            "signal":    "boosted_signal_region_D",
+            "sig_bkg_preW":  "boosted_signal_sideband_region_C",
+            "sig_bkg_postW": "boosted_signal_sideband_region_C_postW",
+            "control":    "boosted_control_region_B",
+            "con_bkg_preW":  "boosted_control_sideband_region_A",
+            "con_bkg_postW": "boosted_control_sideband_region_A_postW",
+        }
+        if args.bbtag_direction:
+            sub_regions["sig_bkg_preW"] = "boosted_control_region_B"
+            sub_regions["sig_bkg_postW"] = "boosted_control_region_B_postW"
+            sub_regions["control"] = "boosted_signal_sideband_region_C"
+        cat_dict |= {
+            f"CR_TT_{args.region_suffix}": [
+                [
+                    sub_regions["control"],
+                    sub_regions["con_bkg_postW"],
+                    sub_regions["con_bkg_preW"],
+                    sub_regions["control"] + "_TT",
+                ]
+            ],
+            f"SR_TT_{args.region_suffix}": [
+                [
+                    sub_regions["signal"],
+                    sub_regions["sig_bkg_postW"],
+                    sub_regions["sig_bkg_preW"],
+                    sub_regions["signal"] + "_TT",
+                ]
+            ],
+            f"CR{args.region_suffix}": [
+                [
+                    sub_regions["control"],
+                    sub_regions["con_bkg_postW"],
+                    sub_regions["con_bkg_preW"],
+                ]
+            ],
+            f"SR{args.region_suffix}": [
+                [
+                    sub_regions["signal"],
+                    sub_regions["sig_bkg_postW"],
+                    sub_regions["sig_bkg_preW"],
+                ]
             ]
-        ],
-        f"SR_TT_{args.region_suffix}": [
-            [
-                sub_regions["signal"],
-                sub_regions["sig_bkg_postW"],
-                sub_regions["sig_bkg_preW"],
-                sub_regions["signal"] + "_TT",
+        }
+    else:
+        sub_regions = {
+            "signal":    "boosted_signal_region_A",
+            "sig_bkg_preW":  "boosted_signal_sideband_region_B",
+            "sig_bkg_postW": "boosted_signal_sideband_region_B_postW",
+            "control":    "boosted_control_region_C",
+            "con_bkg_preW":  "boosted_control_sideband_region_D",
+            "con_bkg_postW": "boosted_control_sideband_region_D_postW",
+        }
+        if args.bbtag_direction:
+            sub_regions["sig_bkg_preW"] = "boosted_control_region_C"
+            sub_regions["sig_bkg_postW"] = "boosted_control_region_C_postW"
+            sub_regions["control"] = "boosted_signal_sideband_region_B"
+        cat_dict |= {
+            f"CR_TT_{args.region_suffix}": [
+                [
+                    sub_regions["control"],
+                    sub_regions["con_bkg_postW"],
+                    sub_regions["con_bkg_preW"],
+                    sub_regions["control"] + "_TT",
+                ]
+            ],
+            f"SR_TT_{args.region_suffix}": [
+                [
+                    sub_regions["signal"],
+                    sub_regions["sig_bkg_postW"],
+                    sub_regions["sig_bkg_preW"],
+                    sub_regions["signal"] + "_TT",
+                ]
+            ],
+            f"CR{args.region_suffix}": [
+                [
+                    sub_regions["control"],
+                    sub_regions["con_bkg_postW"],
+                    sub_regions["con_bkg_preW"],
+                ]
+            ],
+            f"SR{args.region_suffix}": [
+                [
+                    sub_regions["signal"],
+                    sub_regions["sig_bkg_postW"],
+                    sub_regions["sig_bkg_preW"],
+                ]
             ]
-        ],
-        f"CR{args.region_suffix}": [
-            [
-                sub_regions["control"],
-                sub_regions["con_bkg_postW"],
-                sub_regions["con_bkg_preW"],
-            ]
-        ],
-        f"SR{args.region_suffix}": [
-            [
-                sub_regions["signal"],
-                sub_regions["sig_bkg_postW"],
-                sub_regions["sig_bkg_preW"],
-            ]
-        ]
-    }
+        }
+
 elif args.mixed:
     cat_dict |= {
         f"CR{args.region_suffix}": [
@@ -286,7 +334,23 @@ filter_lambda = (
     if args.spread
     else (lambda x: _keep_var(x) and "prov" not in x and "events_sigma" not in x and "era" not in x)
 )
-cat_col_data, total_datasets_list = get_columns_from_files(inputfiles, "nominal", filter_lambda, debug=False, novars=args.novars, filter_mixed=args.mixed)
+
+# In the boosted case the files contain many more categories (e.g. the
+# *_cat2 sub-categories) than the ones used for the reweighting plots.
+# Only load the base categories actually referenced in cat_dict.
+if args.boosted:
+    needed_categories = {
+        cat.replace("_MC", "").replace("_TT", "").replace("_SPREAD", "")
+        for cat_lists in cat_dict.values()
+        for cat_list in cat_lists
+        for cat in cat_list
+    }
+    print(f"Loading only categories: {sorted(needed_categories)}")
+    category_filter = lambda c: c in needed_categories
+else:
+    category_filter = None
+
+cat_col_data, total_datasets_list = get_columns_from_files(inputfiles, "nominal", filter_lambda, debug=False, novars=args.novars, filter_mixed=args.mixed, category_filter=category_filter)
 cat_col_tt = None
 inputfiles_tt = [
     os.path.join(input_dir, file)
@@ -298,6 +362,7 @@ if inputfiles_tt:
         inputfiles_tt, "nominal",
         lambda x: _keep_var(x) and "prov" not in x and "era" not in x,
         debug=False, novars=args.novars, filter_mixed=args.mixed,
+        category_filter=category_filter,
     )
 else:
     print("WARNING: no ttbar ('TT') files found in input_mc, ttbar stacking disabled")
@@ -314,7 +379,7 @@ if args.input_mc:
             if file.endswith(".coffea") and "DATA" not in file
         ]
 
-    cat_col_mc, _ = get_columns_from_files(inputfiles_mc, "nominal", lambda x: _keep_var(x) and "prov" not in x and "era" not in x, debug=False, novars=args.novars, filter_mixed=args.mixed)
+    cat_col_mc, _ = get_columns_from_files(inputfiles_mc, "nominal", lambda x: _keep_var(x) and "prov" not in x and "era" not in x, debug=False, novars=args.novars, filter_mixed=args.mixed, category_filter=category_filter)
 
     if args.run2:
         cols_sig_mc = cat_col_mc[f"4b{args.region_suffix}_signal_regionRun2"]
@@ -354,7 +419,7 @@ else:
 
 def plot_weights(weights_list, suffix, lumi, era_string):
 
-    hist_1d_dict = {}
+    cleaned_weights = []
     mean_std_list = []
     for i, weights in enumerate(weights_list):
         if any(weights == np.inf):
@@ -369,43 +434,72 @@ def plot_weights(weights_list, suffix, lumi, era_string):
             print("These weights are removed for plotting")
             weights = weights[~nan_events]
         # Calculating limits of the weights:
-        print(f"minimal weight in the collection is: {np.min(weights)} at index {np.where(weights == np.min(weights))}")
-        print(f"maximal weight in the collection is: {np.max(weights)} at index {np.where(weights == np.max(weights))}")
-        log_min = np.floor(np.log10(np.min(weights[weights > 0])))  # negative weights not possible to show in logspace
-        log_max = np.ceil(np.log10(np.max(weights)))  # negative weights not possible to show in logspace
-        hist_w = Hist.new.Var(
-            np.logspace(log_min, log_max, 100),
-            name=var_name,
-            flow=False,
-        ).Double()
-        hist_w.fill(weights)
-        hist_1d_dict[var_name] = {
-            "data": hist_w,
-        }
+        min_w = np.min(weights)
+        max_w = np.max(weights)
+        print(f"minimal weight in the collection is: {min_w} at index {np.where(weights == min_w)}")
+        print(f"maximal weight in the collection is: {max_w} at index {np.where(weights == max_w)}")
+        cleaned_weights.append((var_name, weights, min_w, max_w))
         mean_std_list.append(
             f"mean: {np.mean(weights):.2f}, std: {np.std(weights):.2f}"
         )
 
     output_base = os.path.join(outputdir, f"weights_{suffix}")
 
-    p = (
-        HEPPlotter()
-        .set_plot_config(
-            lumitext=f"{era_string}, {lumi}" + r" $fb^{-1}$, (13.6 TeV)", cmstext=args.cmstext,
-            figsize=[13, 13],
+    # Produce both a log-x and a linear-x version of the weight distribution,
+    # each with bin edges matched to that axis scale.
+    for axis_scale in ("log", "linear"):
+        hist_1d_dict = {}
+        for var_name, weights, min_w, max_w in cleaned_weights:
+            if axis_scale == "log":
+                # negative/zero weights cannot be shown on a log axis
+                pos_weights = weights[weights > 0]
+                if pos_weights.size == 0:
+                    print(f"WARNING: no positive weights for {var_name}, skipping log-x plot")
+                    continue
+                log_min = np.floor(np.log10(np.min(pos_weights)))
+                log_max = np.ceil(np.log10(np.max(pos_weights)))
+                if log_max <= log_min:
+                    # avoid degenerate (non-ascending) bin edges when all
+                    # positive weights fall within a single decade
+                    log_max = log_min + 1
+                bins = np.logspace(log_min, log_max, 100)
+            else:
+                if max_w <= min_w:
+                    print(f"WARNING: degenerate range for {var_name}, skipping linear-x plot")
+                    continue
+                bins = np.linspace(min_w, max_w, 100)
+
+            hist_w = Hist.new.Var(
+                bins,
+                name=var_name,
+                flow=False,
+            ).Double()
+            hist_w.fill(weights)
+            hist_1d_dict[var_name] = {
+                "data": hist_w,
+            }
+
+        if not hist_1d_dict:
+            continue
+
+        p = (
+            HEPPlotter()
+            .set_plot_config(
+                lumitext=f"{era_string}, {lumi}" + r" $fb^{-1}$, (13.6 TeV)", cmstext=args.cmstext,
+                figsize=[13, 13],
+            )
+            .set_output(f"{output_base}_{axis_scale}x")
+            .set_labels(
+                "Morphing weights",
+                "Events",
+            )
+            .set_options(y_log=True, x_log=(axis_scale == "log"), set_ylim=False, legend=False)
+            .set_data(hist_1d_dict, plot_type="1d")
+            .add_annotation(
+                x=0.05, y=0.95, s="\n".join(mean_std_list), fontsize=20, ha="left", va="top"
+            )
+            .run()
         )
-        .set_output(output_base)
-        .set_labels(
-            "Morphing weights",
-            "Events",
-        )
-        .set_options(y_log=True, x_log=True, set_ylim=False, legend=False)
-        .set_data(hist_1d_dict, plot_type="1d")
-        .add_annotation(
-            x=0.05, y=0.95, s="\n".join(mean_std_list), fontsize=20, ha="left", va="top"
-        )
-        .run()
-    )
 
 
 def get_median_hist(
@@ -675,6 +769,9 @@ def plot_single_var_from_columns(
                         "is_reference": False,
                         "histtype": "fill",
                         "stack": True,
+                        # keep TT last (top of stack) regardless of its
+                        # integral relative to the morphed background
+                        "stack_sort": False,
                         "legend_name": [cat_plot_name_bkg_stack, cat_plot_name],
                         "edgecolor": [color_bkg_stack[0], color_tt_stack[0]],
                         "facecolor": [color_bkg_stack[-1], color_tt_stack[-1]],
