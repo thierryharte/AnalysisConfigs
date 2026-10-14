@@ -1,0 +1,41 @@
+import configs.HH4b_common.dnn_input_variables as dnn_vars
+
+
+from configs.HH4b_common.config_files.default_config import default_onnx_model_dict as onnx_model_dict
+
+from configs.HH4b_common.config_files.default_config import default_config_options_dict as config_options_dict
+
+
+onnx_model_dict  |= {
+    # "vbf_discriminator": "/work/tharte/datasets/onnx_spanet_models_for_ggf_vs_vbf_boosted/1_16_4_boosted_vbf_ggf_classification_fixedworkflow.onnx"
+    "bkg_morphing_dnn": "/work/tharte/datasets/ML_pytorch_matteo/out/bkg_reweighting/boosted_vbf/1e-3_e20drop95_minDelta1em5_boosted_reweighting_mass_band_reweight_40GeV_full_sideband/best_models/average_model_from_onnx.onnx",
+    # "sig_bkg_dnn": "/work/tharte/datasets/ML_pytorch/out/sig_bkg_classifier/DHH_method_norm_e5drop75_postEE/state_dict/model_best_epoch_18.onnx",
+}
+
+
+config_options_dict |= {
+    "dnn_variables": True,
+    "sig_bkg_dnn_input_variables": dnn_vars.sig_bkg_boosted_dnn_input_variables,
+    "bkg_morphing_dnn_input_variables": dnn_vars.bkg_morphing_boosted_dnn_input_variables_other_group,
+    "vbf_discriminator_input_variables": dnn_vars.vbf_discriminator_boosted_dnn_input_variables,
+    "max_num_jets_vbf_discriminator": 2,
+    "run2": False,
+    "fifth_jet": "pt",
+    "pad_value": -999.0,
+    "add_jet_spanet": False,
+    "boosted": True,
+    "boosted_presel": True,
+    "split_qcd": True,
+    "approach": "boosted",
+    # VBF
+    "vbf_parton_matching": False,
+    "vbf_analysis": True,
+    "vbf_selection": True,
+    "ggf_vbf_threshold": 0.95,
+    "which_vbf_quark": "with_mothers_children",
+    "max_num_jets_add_vbf": 2,
+    "TXbb_order": True,
+    "boosted_full_sideband": True,
+    "bdt_model": "/work/tharte/datasets/bdts/boosted/bdt_trainings_run3/25Feb5_v13_glopartv2_rawmass/trained_bdt.model",
+    "save_chunk": "root://t3dcachedb03.psi.ch:1094//pnfs/psi.ch/cms/trivcat/store/user/tharte/HH4b/spanet_1_16_9_boosted_other_group_40GeV_full_sideband_mass_reweighting",
+} | onnx_model_dict

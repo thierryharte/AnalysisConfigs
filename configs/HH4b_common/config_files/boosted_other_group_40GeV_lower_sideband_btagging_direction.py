@@ -37,5 +37,5 @@ config_options_dict |= {
     "max_num_jets_add_vbf": 2,
     "TXbb_order": True,
     "bdt_model": "/work/tharte/datasets/bdts/boosted/bdt_trainings_run3/25Feb5_v13_glopartv2_rawmass/trained_bdt.model",
-    "save_chunk": "root://t3dcachedb03.psi.ch:1094//pnfs/psi.ch/cms/trivcat/store/user/tharte/HH4b/spanet_1_16_8_boosted_other_group_40GeV_lower_sideband_reweight_btagging_alpha_numerator",
+    "save_chunk": "root://t3dcachedb03.psi.ch:1094//pnfs/psi.ch/cms/trivcat/store/user/tharte/HH4b/spanet_1_16_8_boosted_other_group_40GeV_lower_sideband_reweight_btagging_alpha_numerator_reweight_fix_rerun",
 } | onnx_model_dict
