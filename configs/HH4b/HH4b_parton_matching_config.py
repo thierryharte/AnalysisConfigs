@@ -6,7 +6,6 @@ from configs.HH4b_common.config_files.__config_file__ import (
     config_options_dict,
     onnx_model_dict,
 )
-import pocket_coffea.lib.calibrators.legacy.legacy_calibrators as legacy_cal
 from pocket_coffea.lib.calibrators.common.common import JetsCalibrator
 
 
@@ -54,8 +53,6 @@ parameters = defaults.merge_parameters_from_files(
     f"{localdir}/../HH4b_common/params/variations.yaml",
     f"{localdir}/../HH4b_common/params/btagging_multipleWP.yaml",
     f"{localdir}/../HH4b_common/params/btagging_sampleGroups.yaml",
-    # f"{localdir}/../HH4b_common/params/jets_calibration_legacy_Calibrator_withoutVariations_withJERC.yaml",
-    # f"{localdir}/../HH4b_common/params/jets_calibration_legacy_Calibrator_withVariations.yaml",
     f"{localdir}/../HH4b_common/params/jets_calibration_regression_json.yaml",
     update=True,
 )
@@ -100,28 +97,28 @@ sample_ggF_list = [
       "GluGlutoHHto4B_spanet_kl-2p00_kt-1p00_c2-0p00_skimmed",
       "GluGlutoHHto4B_spanet_kl-1p50_kt-1p00_c2-0p00_skimmed",
       "GluGlutoHHto4B_spanet_kl-0p50_kt-1p00_c2-0p00_skimmed",
-      # "GluGluHHto4B_Par-c2-0p00-kl-0p00-kt-1p00_TuneCP5_13p6TeV_powheg-pythia9",
-      # "GluGluHHto4B_Par-c2-0p00-kl-1p00-kt-1p00_TuneCP5_13p6TeV_powheg-pythia8",
-      # "GluGluHHto4B_Par-c2-0p00-kl-2p45-kt-1p00_TuneCP5_13p6TeV_powheg-pythia8",
-      # "GluGluHHto4B_Par-c2-0p00-kl-5p00-kt-1p00_TuneCP5_13p6TeV_powheg-pythia8",
-      # "GluGluHHto4B_Par-c2-0p10-kl-1p00-kt-1p00_TuneCP5_13p6TeV_powheg-pythia8",
-      # "GluGluHHto4B_Par-c2-0p35-kl-1p00-kt-1p00_TuneCP5_13p6TeV_powheg-pythia8",
-      # "GluGluHHto4B_Par-c2-1p00-kl-0p00-kt-1p00_TuneCP5_13p6TeV_powheg-pythia8",
-      # "GluGluHHto4B_Par-c2-2p24-kl-m20p00-kt-1p00_TuneCP5_13p6TeV_powheg-pythia8",
-      # "GluGluHHto4B_Par-c2-3p00-kl-1p00-kt-1p00_TuneCP5_13p6TeV_powheg-pythia8",
-      # "GluGluHHto4B_Par-c2-m2p00-kl-1p00-kt-1p00_TuneCP5_13p6TeV_powheg-pythia8",
+      # "GluGlutoHHto4B_kl-0p00_kt-1p00_c2-0p00",
+      # "GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00",
+      # "GluGlutoHHto4B_kl-2p45_kt-1p00_c2-0p00",
+      # "GluGlutoHHto4B_kl-5p00_kt-1p00_c2-0p00",
+      # "GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p10",
+      # "GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p35",
+      # "GluGlutoHHto4B_kl-0p00_kt-1p00_c2-1p00",
+      # "GluGlutoHHto4B_kl-m20p00_kt-1p00_c2-2p24",
+      # "GluGlutoHHto4B_kl-1p00_kt-1p00_c2-3p00",
+      # "GluGlutoHHto4B_kl-1p00_kt-1p00_c2-m2p00",
 ]
 sample_vbf_list = [
-      "VBFHHto4B_Par-CV-1-C2V-0-C3-1_TuneCP5_13p6TeV_madgraph-pythia8",
-      "VBFHHto4B_Par-CV-1-C2V-1-C3-1_TuneCP5_13p6TeV_madgraph-pythia8",
-      "VBFHHto4B_Par-CV-1p74-C2V-1p37-C3-14p4_TuneCP5_13p6TeV_madgraph-pythia8",
-      "VBFHHto4B_Par-CV-2p12-C2V-3p87-C3-m5p96_TuneCP5_13p6TeV_madgraph-pythia8",
-      "VBFHHto4B_Par-CV-m0p012-C2V-0p030-C3-10p2_TuneCP5_13p6TeV_madgraph-pythia8",
-      "VBFHHto4B_Par-CV-m0p758-C2V-1p44-C3-m19p3_TuneCP5_13p6TeV_madgraph-pythia8",
-      "VBFHHto4B_Par-CV-m0p962-C2V-0p959-C3-m1p43_TuneCP5_13p6TeV_madgraph-pythia8",
-      "VBFHHto4B_Par-CV-m1p21-C2V-1p94-C3-m0p94_TuneCP5_13p6TeV_madgraph-pythia8",
-      "VBFHHto4B_Par-CV-m1p60-C2V-2p72-C3-m1p36_TuneCP5_13p6TeV_madgraph-pythia8",
-      "VBFHHto4B_Par-CV-m1p83-C2V-3p57-C3-m3p39_TuneCP5_13p6TeV_madgraph-pythia8",
+      "VBFHHto4B_CV_1_C2V_0_C3_1",
+      "VBFHHto4B_CV_1_C2V_1_C3_1",
+      "VBFHHto4B_CV_1p74_C2V_1p37_C3_14p4",
+      "VBFHHto4B_CV_pm2p12_C2V_3p87_C3_m5p96",
+      "VBFHHto4B_CV_m0p012_C2V_0p030_C3_10p2",
+      "VBFHHto4B_CV_m0p758_C2V_1p44_C3_m19p3",
+      "VBFHHto4B_CV_m0p962_C2V_0p959_C3_m1p43",
+      "VBFHHto4B_CV_m1p21_C2V_1p94_C3_m0p94",
+      "VBFHHto4B_CV_m1p60_C2V_2p72_C3_m1p36",
+      "VBFHHto4B_CV_m1p83_C2V_3p57_C3_m3p39",
 ]
 sample_mixed_list = [
     #  "MixedData_2022_preEE",
@@ -210,24 +207,24 @@ if config_options_dict["dnn_variables"]:
             "jet_eta": ["JetGoodFromHiggsOrdered5Jets", "eta", "norm"],
             "jet_phi": ["JetGoodFromHiggsOrdered5Jets", "phi", "norm"],
             "jet_log_mass": ["JetGoodFromHiggsOrdered5Jets", "mass", "log_norm"],
-            "jet_btag": ["JetGoodFromHiggsOrdered5Jets", "btagPNetB_5wp"],
+            "jet_btag": ["JetGoodFromHiggsOrdered5Jets", "btagB_5wp"],
             "h1_jet_log_pt": ["JetGoodFromHiggsOrderedLeading", "pt", "log_norm"],
             "h1_jet_eta": ["JetGoodFromHiggsOrderedLeading", "eta", "norm"],
             "h1_jet_phi": ["JetGoodFromHiggsOrderedLeading", "phi", "norm"],
             "h1_jet_log_mass": ["JetGoodFromHiggsOrderedLeading", "mass", "log_norm"],
-            "h1_jet_btag": ["JetGoodFromHiggsOrderedLeading", "btagPNetB_5wp"],
+            "h1_jet_btag": ["JetGoodFromHiggsOrderedLeading", "btagB_5wp"],
             "h1_jet_prov": ["JetGoodFromHiggsOrderedLeading", "reco_provenance"],
             "h2_jet_log_pt": ["JetGoodFromHiggsOrderedSubLeading", "pt", "log_norm"],
             "h2_jet_eta": ["JetGoodFromHiggsOrderedSubLeading", "eta", "norm"],
             "h2_jet_phi": ["JetGoodFromHiggsOrderedSubLeading", "phi", "norm"],
             "h2_jet_log_mass": ["JetGoodFromHiggsOrderedSubLeading", "mass", "log_norm"],
-            "h2_jet_btag": ["JetGoodFromHiggsOrderedSubLeading", "btagPNetB_5wp"],
+            "h2_jet_btag": ["JetGoodFromHiggsOrderedSubLeading", "btagB_5wp"],
             "h2_jet_prov": ["JetGoodFromHiggsOrderedSubLeading", "reco_provenance"],
             "a1_jet_log_pt": ["add_jet1pt", "pt", "log_norm"],
             "a1_jet_eta": ["add_jet1pt", "eta", "norm"],
             "a1_jet_phi": ["add_jet1pt", "phi", "norm"],
             "a1_jet_log_mass": ["add_jet1pt", "mass", "log_norm"],
-            "a1_jet_btag": ["add_jet1pt", "btagPNetB_5wp"],
+            "a1_jet_btag": ["add_jet1pt", "btagB_5wp"],
             "a1_jet_prov": ["add_jet1pt", "reco_provenance"],
             }
     )
@@ -258,7 +255,10 @@ if config_options_dict["dnn_variables"]:
         False, not config_options_dict["save_chunk"], total_input_variables, btag=True
     )
 elif all([model == "" for model in onnx_model_dict.values()]) and not (config_options_dict["boosted"]):
-    if "wp" in config_options_dict["spanet_input_name_list"][-1]:
+    spanet_input_name_list = config_options_dict["spanet_input_name_list"] or list(
+        config_options_dict["spanet_input_name"]["sequential"].keys()
+    )
+    if "wp" in spanet_input_name_list[-1]:
         print("Taking btag Working Points")
         column_list = get_columns_list(SPANET_TRAINING_DEFAULT_COLUMNS_BTWP, not config_options_dict["save_chunk"])
     else:
@@ -347,8 +347,8 @@ cfg = Configurator(
             f"{localdir}/../HH4b_common/datasets/DATA_JetMET_pnfs_redirector.json",
             f"{localdir}/../HH4b_common/datasets/DATA_ParkingHH_pnfs_redirector.json",
             f"{localdir}/../HH4b_common/datasets/background_TTtoX_pnfs_redirector.json",
-            f"{localdir}/../HH4b_common/datasets/signal_VBFHHto4B_Par_2024_pnfs_redirector.json",
-            f"{localdir}/../HH4b_common/datasets/signal_GluGluHHto4B_Par_2024_pnfs_redirector.json",
+            f"{localdir}/../HH4b_common/datasets/signal_VBF_HH4b_skimmed_pnfs_redirector.json",
+            f"{localdir}/../HH4b_common/datasets/signal_ggF_HH4b_official_skimmed_pnfs_redirector.json",
         ],
         "filter": {
             "samples": sample_list,

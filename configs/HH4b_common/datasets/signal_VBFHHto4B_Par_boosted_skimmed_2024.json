@@ -149,7 +149,7 @@
       "sample": "VBFHHto4B_Par-CV-m1p21-C2V-1p94-C3-m0p94_TuneCP5_13p6TeV_madgraph-pythia8",
       "year": "2024",
       "isMC": "True",
-      "xsec": "0.1126",
+      "xsec": "0.01126",
       "nevents": "262286",
       "size": "950147998",
       "skim_efficiency": "0.3974030303030303",

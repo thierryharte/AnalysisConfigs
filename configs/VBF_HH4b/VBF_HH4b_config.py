@@ -15,7 +15,6 @@ import utils_configs.quantile_transformer as quantile_transformer
 from configs.HH4b_common.config_files.configurator_tools import (
     DEFAULT_JET_COLUMNS_DICT,
     SPANET_VBF_TRAINING_DEFAULT_COLUMNS_BTWP,
-    SPANET_VBF_TRAINING_DEFAULT_COLUMNS_BTWP_RUN2,
     SPANET_TRAINING_DEFAULT_COLUMNS_BTWP,
     create_DNN_columns_list,
     define_categories,
@@ -32,6 +31,8 @@ from configs.VBF_HH4b.workflow import VBFHH4bProcessor
 
 BASELINE = False
 SPANET_TRAINING = True
+VBF_REGIONS = True
+SIGNAL_REGION = True
 
 
 localdir = os.path.dirname(os.path.abspath(__file__))
@@ -40,8 +41,11 @@ localdir = os.path.dirname(os.path.abspath(__file__))
 default_parameters = defaults.get_default_parameters()
 defaults.register_configuration_dir("config_dir", localdir)
 
+# year = ["2022_postEE", "2022_preEE", "2023_preBPix", "2023_postBPix", "2024"]
+year = ["2024"]
+# year = ["2022_postEE"]
+
 # adding object preselection
-year = ["2022_postEE"]
 parameters = defaults.merge_parameters_from_files(
     default_parameters,
     f"{localdir}/../HH4b_common/params/object_preselection_{config_options_dict['approach']}_approach.yaml",
@@ -49,11 +53,7 @@ parameters = defaults.merge_parameters_from_files(
     f"{localdir}/../HH4b_common/params/variations.yaml",
     f"{localdir}/../HH4b_common/params/btagging_multipleWP.yaml",
     f"{localdir}/../HH4b_common/params/btagging_sampleGroups.yaml",
-    # f"{localdir}/../HH4b_common/params/jets_calibration_legacy_Calibrator_withVariations.yaml",
-    # f"{localdir}/../HH4b_common/params/jets_calibration_legacy_Calibrator_withoutVariations_withJERC.yaml",
-    # f"{localdir}/../HH4b_common/params/jets_calibration_legacy_Calibrator_onlyJEC.yaml",
     f"{localdir}/../HH4b_common/params/jets_calibration_regression_json.yaml",
-    # f"{localdir}/../HH4b_common/params/jets_calibration_regression_json_onlyJEC.yaml",
     update=True,
 )
 
@@ -73,14 +73,13 @@ variables_dict = get_variables_dict(
     RUN2=config_options_dict["run2"],
     SPANET=bool(config_options_dict["spanet"]),
 )
-# variables_dict = {}
 
 # Define the preselection to apply
 preselection = define_preselection(config_options_dict)
 
 
 # Define the samples to process
-sample_ggF_list = [
+sample_spanet_ggF_list = [
     "GluGlutoHHto4B_spanet_kl-1p00_kt-1p00_c2-0p00_skimmed",
     "GluGlutoHHto4B_spanet_kl-m2p00_kt-1p00_c2-0p00_skimmed",
     "GluGlutoHHto4B_spanet_kl-m1p00_kt-1p00_c2-0p00_skimmed",
@@ -96,17 +95,48 @@ sample_ggF_list = [
 ]
 
 sample_VBF_list = [
-    "VBFHHto4B_CV-1p74_C2V-1p37_C3-14p4",
-    "VBFHHto4B_CV-m0p012_C2V-0p030_C3-10p2",
-    "VBFHHto4B_CV-m0p758_C2V-1p44_C3-m19p3",
-    "VBFHHto4B_CV-m0p962_C2V-0p959_C3-m1p43",
-    "VBFHHto4B_CV-m1p21_C2V-1p94_C3-m0p94",
-    "VBFHHto4B_CV-m1p60_C2V-2p72_C3-m1p36",
-    "VBFHHto4B_CV-m1p83_C2V-3p57_C3-m3p39",
-    "VBFHHto4B_CV-m2p12_C2V-3p87_C3-m5p96",
+    "VBFHHto4B_CV_1p74_C2V_1p37_C3_14p4",
+    "VBFHHto4B_CV_m0p012_C2V_0p030_C3_10p2",
+    "VBFHHto4B_CV_m0p758_C2V_1p44_C3_m19p3",
+    "VBFHHto4B_CV_m0p962_C2V_0p959_C3_m1p43",
+    "VBFHHto4B_CV_m1p21_C2V_1p94_C3_m0p94",
+    "VBFHHto4B_CV_m1p60_C2V_2p72_C3_m1p36",
+    "VBFHHto4B_CV_m1p83_C2V_3p57_C3_m3p39",
+    # ###################################################################### #
+    # !!!!!!!!!!!!!!!!!!!!!!!!!! HUGE WARNING !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! #
+    # The `pm` in `pm2p12` stands for plus/minus and is NOT a typo: the      #
+    # official production names this SAME physics point CV-m2p12 (MINUS) in  #
+    # 2022/2023 and CV-2p12 (PLUS) in 2024. To have a single sample across   #
+    # all the years, both are renamed to `pm2p12` in                         #
+    # configs/HH4b_common/datasets/signal_VBF_HH4b_skimmed_pnfs_redirector.  #
+    # json (dataset key + `sample` field only: `das_names` and the file      #
+    # paths keep the original per-year names).                               #
+    # ###################################################################### #
+    "VBFHHto4B_CV_pm2p12_C2V_3p87_C3_m5p96",
     "VBFHHto4B_CV_1_C2V_0_C3_1",
     "VBFHHto4B_CV_1_C2V_1_C3_1",
 ]
+
+sample_official_ggF_list = [
+    "GluGlutoHHto4B_kl-0p00_kt-1p00_c2-0p00",
+    "GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00",
+    "GluGlutoHHto4B_kl-2p45_kt-1p00_c2-0p00",
+    "GluGlutoHHto4B_kl-5p00_kt-1p00_c2-0p00",
+    # new samples for 2024
+#     "GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p10",
+#     "GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p35",
+#     "GluGlutoHHto4B_kl-0p00_kt-1p00_c2-1p00",
+#     "GluGlutoHHto4B_kl-m20p00_kt-1p00_c2-2p24",
+#     "GluGlutoHHto4B_kl-1p00_kt-1p00_c2-3p00",
+#     "GluGlutoHHto4B_kl-1p00_kt-1p00_c2-m2p00",
+]
+
+sample_ZZ_ZH_list = [
+    "ZZTo4B01j",
+    "ggZH_HToBB_ZToBB",
+    "ZH_ZToBB_HToBB"
+]
+
 sample_list = (
     [
         # 2022 preEE
@@ -117,15 +147,10 @@ sample_list = (
         # "DATA_JetMET_JMENano_F_skimmed",
         # "DATA_JetMET_JMENano_G_skimmed",
     ]
-    + sample_ggF_list
+    # + sample_spanet_ggF_list
+    + sample_official_ggF_list
     + sample_VBF_list
-    + (
-        [
-            #     "GluGlutoHHto4B_spanet_skimmed",
-            #     # "GluGlutoHHto4B",
-            # "GluGlutoHHto4B_spanet"
-        ]
-    )
+    + sample_ZZ_ZH_list
 )
 
 
@@ -144,10 +169,23 @@ if BASELINE:
     categories_dict = {"baseline": [passthrough]}
 
 if SPANET_TRAINING:
-    # categories_dict = define_single_category("hh4b_vbf_best_candidates_6_jets_nokincut_region")
-    # categories_dict |= define_single_category("hh4b_vbf_best_candidates_6_jets_region")
-    categories_dict |= define_single_category("4b_region")
-
+    categories_dict = {}
+    categories_dict = define_single_category("4b_region")
+    if SIGNAL_REGION:
+        categories_dict |= define_single_category("4b_signal_region")
+    if VBF_REGIONS:
+        categories_dict |= define_single_category(
+            "vbf_best_candidates_6_jets_nokincut_4b_region"
+        )
+        categories_dict |= define_single_category("vbf_best_candidates_6_jets_4b_region")
+        if SIGNAL_REGION:
+            categories_dict |= define_single_category(
+                "vbf_best_candidates_6_jets_nokincut_4b_signal_region"
+            )
+            categories_dict |= define_single_category(
+                "vbf_best_candidates_6_jets_4b_signal_region"
+            )
+            
 column_list = []
 
 # Add SPANet training inputs
@@ -170,7 +208,15 @@ elif (
     and not config_options_dict["run2"]
 ):
     column_list += get_columns_list(
-        SPANET_VBF_TRAINING_DEFAULT_COLUMNS_BTWP, not config_options_dict["save_chunk"]
+        with_fw_momenta_columns(
+            SPANET_VBF_TRAINING_DEFAULT_COLUMNS_BTWP,
+            config_options_dict["max_order_FW"],
+            config_options_dict["FW_momenta_norms"],
+        ),
+        not config_options_dict["save_chunk"],
+    )
+    column_list += get_columns_list(
+        SPANET_TRAINING_DEFAULT_COLUMNS_BTWP, not config_options_dict["save_chunk"]
     )
     if config_options_dict["dnn_variables"]:
         total_input_columns = (
@@ -179,7 +225,10 @@ elif (
             | {"year": ["events", "year"]}
         )
         column_list += create_DNN_columns_list(
-            False, not config_options_dict["save_chunk"], total_input_columns, btag=False
+            False,
+            not config_options_dict["save_chunk"],
+            total_input_columns,
+            btag=False,
         )
 
 else:
@@ -254,13 +303,15 @@ cfg = Configurator(
     parameters=parameters,
     datasets={
         "jsons": [
-            f"{localdir}/../HH4b_common/datasets/signal_VBF_HH4b_2022_postEE_user_pnfs_redirector.json",
+            f"{localdir}/../HH4b_common/datasets/signal_VBF_HH4b_skimmed_pnfs_redirector.json",
             f"{localdir}/../HH4b_common/datasets/signal_ggF_HH4b_spanet_skimmed_pnfs_redirector.json",
+            f"{localdir}/../HH4b_common/datasets/signal_ggF_HH4b_official_skimmed_pnfs_redirector.json",
+            f"{localdir}/../HH4b_common/datasets/background_ZZ_ZH_private_skimmed_22EE_23_24_hadd.json",
         ],
         "filter": {
             "samples": sample_list,
             "samples_exclude": [],
-            # "year": year,
+            "year": year,
         },
         "subsamples": {},
     },
@@ -293,7 +344,6 @@ cfg = Configurator(
         },
         # "shape": {
         #     "common": {
-        #         # "inclusive": ["jet_calibration_with_pt_regression_legacy"],
         #         # "inclusive": ["jet_calibration"]
         #         },
         #     }

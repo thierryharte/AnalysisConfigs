@@ -8,6 +8,10 @@ from configs.HH4b_common.config_files.default_config import default_config_optio
 
 
 config_options_dict |= {
+    # keep the old preselection (hh4b_presel) for reproducibility
+    "era_dependent_presel": False,
+    # keep the old jet pt (no regression) in the preselections for reproducibility
+    "preselection_pt_field": "pt_default",
     "dnn_variables": False,
     "run2": False,
     "sig_bkg_dnn_input_variables": None,
@@ -20,7 +24,8 @@ config_options_dict |= {
     "qt_postEE": None,
     "random_pt": True,
     "rand_type": 0.3,
-    "save_chunk":"root://t3dcachedb03.psi.ch:1094//pnfs/psi.ch/cms/trivcat/store/user/mmalucch/out_hh4b/VBF/out_ggf_vbf_spanet_input_SM_ptFlattenMatchedHiggs_AllKlambda_DetaMjj_SeparateHiggsVBF_AddVBFJetPtOrder_Fix/parquet_files/",
+    # "save_chunk":"root://t3dcachedb03.psi.ch:1094//pnfs/psi.ch/cms/trivcat/store/user/mmalucch/out_hh4b/VBF/out_ggf_vbf_spanet_input_SM_ptFlattenMatchedHiggs_AllKlambda_DetaMjj_SeparateHiggsVBF_AddVBFJetPtOrder_Fix/parquet_files/",
+    "save_chunk":"root://t3dcachedb03.psi.ch:1094//pnfs/psi.ch/cms/trivcat/store/user/mmalucch/out_hh4b/VBF/pt_vary_btagWP_VBF_SeparateHiggsVBF_AddVBFJetPtOrder/parquet_files/",
     # VBF
     "vbf_parton_matching": True,
     "vbf_presel": False,

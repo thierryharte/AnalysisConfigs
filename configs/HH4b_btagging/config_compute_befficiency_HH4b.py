@@ -5,7 +5,6 @@ from configs.HH4b_common.config_files.bWPeff_studies_spanet_alljets import (
     onnx_model_dict,
 )
 from histConfigBtagEfficiency import btag_sf_hist
-import pocket_coffea.lib.calibrators.legacy.legacy_calibrators as legacy_cal
 from pocket_coffea.lib.calibrators.common.common import JetsCalibrator
 from pocket_coffea.lib.weights.common.common import common_weights
 from pocket_coffea.parameters import defaults
@@ -43,14 +42,12 @@ parameters = defaults.merge_parameters_from_files(
     f"{localdir}/../HH4b_common/params/variations.yaml",
     f"{localdir}/../HH4b_common/params/btagging_multipleWP.yaml",
     f"{localdir}/../HH4b_common/params/btagging_sampleGroups.yaml",
-    # f"{localdir}/../HH4b_common/params/jets_calibration_legacy_Calibrator_withoutVariations_withJERC.yaml",
-    # f"{localdir}/../HH4b_common/params/jets_calibration_legacy_Calibrator_withVariations.yaml",
     f"{localdir}/../HH4b_common/params/jets_calibration_regression_json.yaml",
     update=True,
 )
 parameters["run_period"] = "Run3"
 config_options_dict["num_bins"] = 20
-preselection = define_preselection({"no_btag": True})
+preselection = define_preselection(config_options_dict | {"no_btag": True})
 
 # Defining the used samples
 sample_ggF_list = [
@@ -120,7 +117,7 @@ cfg = Configurator(
 
     workflow=HH4bbtagWPefficiencyProcessor,
     workflow_options=config_options_dict,
-    skim=cuts.skimming_cut_list({"noL1": False}),
+    skim=cuts.skimming_cut_list(config_options_dict),
     preselections=preselection,
     categories=categories_dict,
     # calibrators=default_calibrators_sequence,

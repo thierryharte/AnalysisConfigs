@@ -52,9 +52,6 @@ parameters = defaults.merge_parameters_from_files(
     f"{localdir}/../HH4b_common/params/variations.yaml",
     f"{localdir}/../HH4b_common/params/btagging_multipleWP.yaml",
     f"{localdir}/../HH4b_common/params/btagging_sampleGroups.yaml",
-    # f"{localdir}/../HH4b_common/params/jets_calibration_legacy_Calibrator_withVariations.yaml",
-    # f"{localdir}/../HH4b_common/params/jets_calibration_legacy_Calibrator_withoutVariations_withJERC.yaml",
-    # f"{localdir}/../HH4b_common/params/jets_calibration_legacy_Calibrator_onlyJEC.yaml",
     f"{localdir}/../HH4b_common/params/jets_calibration_regression_json.yaml",
     # f"{localdir}/../HH4b_common/params/jets_calibration_regression_json_onlyJEC.yaml",
     update=True,
@@ -110,14 +107,15 @@ sample_ggF_list = [
 ]
 
 sample_VBF_list=[
-    # "VBFHHto4B_CV-1p74_C2V-1p37_C3-14p4",
-    # "VBFHHto4B_CV-m0p012_C2V-0p030_C3-10p2",
-    # "VBFHHto4B_CV-m0p758_C2V-1p44_C3-m19p3",
-    # "VBFHHto4B_CV-m0p962_C2V-0p959_C3-m1p43",
-    # "VBFHHto4B_CV-m1p21_C2V-1p94_C3-m0p94",
-    # "VBFHHto4B_CV-m1p60_C2V-2p72_C3-m1p36",
-    # "VBFHHto4B_CV-m1p83_C2V-3p57_C3-m3p39",
-    # "VBFHHto4B_CV-m2p12_C2V-3p87_C3-m5p96",
+    # "VBFHHto4B_CV_1p74_C2V_1p37_C3_14p4",
+    # "VBFHHto4B_CV_m0p012_C2V_0p030_C3_10p2",
+    # "VBFHHto4B_CV_m0p758_C2V_1p44_C3_m19p3",
+    # "VBFHHto4B_CV_m0p962_C2V_0p959_C3_m1p43",
+    # "VBFHHto4B_CV_m1p21_C2V_1p94_C3_m0p94",
+    # "VBFHHto4B_CV_m1p60_C2V_2p72_C3_m1p36",
+    # "VBFHHto4B_CV_m1p83_C2V_3p57_C3_m3p39",
+    # "VBFHHto4B_CV_m2p12_C2V_3p87_C3_m5p96",
+    # "VBFHHto4B_CV_2p12_C2V_3p87_C3_m5p96",
     # "VBFHHto4B_CV_1_C2V_0_C3_1",
     # "VBFHHto4B_CV_1_C2V_1_C3_1",
     "VBFHHto4B_Par-CV-1-C2V-0-C3-1_TuneCP5_13p6TeV_madgraph-pythia8",
@@ -168,7 +166,11 @@ categories_dict = define_categories(
     boosted=config_options_dict["boosted"],
     split_qcd=config_options_dict["split_qcd"] if config_options_dict["boosted"] else False,
     # vbf_analysis=config_options_dict["vbf_analysis"],
-    vbf_analysis=config_options_dict["vbf_selection"] if "vbf_selection" in config_options_dict.keys() else config_options_dict["vbf_analysis"],
+    vbf_analysis=(
+        config_options_dict["vbf_selection"]
+        if config_options_dict.get("vbf_selection") is not None
+        else config_options_dict["vbf_analysis"]
+    ),
     vbf_discriminator=config_options_dict["vbf_discriminator"],
     ggf_vbf_threshold=config_options_dict["ggf_vbf_threshold"],
     full_sideband=config_options_dict["boosted_full_sideband"],
@@ -359,7 +361,6 @@ cfg = Configurator(
         },
         # "shape": {
         #     "common": {
-        #         # "inclusive": ["jet_calibration_with_pt_regression_legacy"],
         #         # "inclusive": ["jet_calibration"]
         #         },
         #     }

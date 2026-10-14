@@ -1,6 +1,8 @@
 import numpy as np
 import awkward as ak
 
+from utils_configs.custom_cut_functions import object_cleaning_mask
+
 
 def lepton_selection(events, lepton_flavour, params):
     leptons = events[lepton_flavour]
@@ -77,49 +79,35 @@ def jet_selection_nopu(
             & (np.abs(jets.eta) > cuts["eta_min"])
             & (np.abs(jets.eta) < cuts["eta_max"])
             & (jets.jetId >= cuts["jetId"])
-            & (jets.btagPNetB >= cuts["btagPNetB"])
+            & (jets.btagB >= cuts["btagB"])
         )
     else:
         mask_jets = (
             (jets.pt > cuts[pt_cut])
             & (np.abs(jets.eta) < cuts["eta"])
             & (jets.jetId >= cuts["jetId"])
-            & (jets.btagPNetB > cuts["btagPNetB"])
+            & (jets.btagB > cuts["btagB"])
         )
 
     return jets[mask_jets]
 
 
-def object_cleaning(object, cleaning_collection, dr_min=0.4):
-    # here I create a deltaR matrix between jets and cleaning collection the output shape is (njets, ncleaning)
-    dR = object[:, :, None].delta_r(cleaning_collection[:, None, :])
-
-    # then I check if the jets are within dR min of ANY cleaning object
-    dR_mask = dR < dr_min
-    dR_mask_jets = ak.any(dR_mask, axis=2)
-
-    # I then add to the mask the cleaning requirement
-    cleaned_object = object[~dR_mask_jets]
-
-    return cleaned_object
-
-
 def clean_ak4_boosted(obj, ak8jets, muons, electrons, dr_jets, dr_lep):
     """Clean the AK4 collection to not be inside an AK8 or lepton cone."""
     # Clean From AK8
-    cleaned_obj = object_cleaning(
+    cleaned_obj = object_cleaning_mask(
         obj,
         ak8jets,
         dr_min=dr_jets
     )
     # Clean From Electrons
-    cleaned_obj = object_cleaning(
+    cleaned_obj = object_cleaning_mask(
         cleaned_obj,
         electrons,
         dr_min=dr_lep
     )
     # Clean From Muons
-    cleaned_obj = object_cleaning(
+    cleaned_obj = object_cleaning_mask(
         cleaned_obj,
         electrons,
         dr_min=dr_lep

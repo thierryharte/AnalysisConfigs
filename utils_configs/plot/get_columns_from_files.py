@@ -56,7 +56,7 @@ def get_columns_from_files(
         samples = list(accumulator["columns"].keys())
         if accumulator["columns"] == {}:
             logger.info("Empty columns, trying to read from parquet files")
-            return get_columns_from_parquet(inputfiles, sel_var, filter_lambda, debug, _merge_sum_genweights(inputfiles), max_num_parquet_files=max_num_parquet_files, filter_mixed=True, ragged_pad_length=ragged_pad_length, category_filter=category_filter)
+            return get_columns_from_parquet(inputfiles, sel_var, filter_lambda, debug, _merge_sum_genweights(inputfiles), max_num_parquet_files=max_num_parquet_files, filter_mixed=filter_mixed, ragged_pad_length=ragged_pad_length, category_filter=category_filter)
         if debug:
             logger.debug(f"inputfile {inputfile}")
         for sample in samples:
@@ -494,7 +494,7 @@ def get_columns_from_files_novars(inputfiles, filter_lambda=None, debug=False, m
         if accumulator["columns"] == {}:
             logger.info("Empty columns, trying to read from parquet files")
             return get_columns_from_parquet(
-                inputfiles, "", filter_lambda, debug, _merge_sum_genweights(inputfiles), max_num_parquet_files=max_num_parquet_files,
+                inputfiles, "", filter_lambda, debug, _merge_sum_genweights(inputfiles), max_num_parquet_files=max_num_parquet_files, filter_mixed=filter_mixed,
                 category_filter=category_filter,
             )
         for sample in samples:
