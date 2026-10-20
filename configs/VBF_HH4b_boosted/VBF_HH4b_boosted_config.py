@@ -82,7 +82,7 @@ preselection = define_preselection(config_options_dict)
 
 # Define the samples to process
 sample_ggF_list = [
-    # "GluGlutoHHto4B_spanet_kl-1p00_kt-1p00_c2-0p00_skimmed",
+    "GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00"
     # "GluGlutoHHto4B_spanet_kl-m2p00_kt-1p00_c2-0p00_skimmed",
     # "GluGlutoHHto4B_spanet_kl-m1p00_kt-1p00_c2-0p00_skimmed",
     # "GluGlutoHHto4B_spanet_kl-5p00_kt-1p00_c2-0p00_skimmed",
@@ -142,7 +142,7 @@ sample_list = (
         # "TTto2L2Nu",
         # "TTto4Q",
         # "DATA_ParkingHH",
-        "DATA_JetMET0_HH4bBoosted",
+        # "DATA_JetMET0_HH4bBoosted",
         # "DATA_JetMET1_HH4bBoosted",
     ]
     + sample_ggF_list
@@ -311,7 +311,8 @@ cfg = Configurator(
             # f"{localdir}/../HH4b_common/datasets/background_TTtoX.json",
             # f"{localdir}/../HH4b_common/datasets/signal_VBFHHto4B_Par_2024.json",
             # f"{localdir}/../HH4b_common/datasets/signal_GluGluHHto4B_Par_2024.json",
-            f"{localdir}/../HH4b_common/datasets/DATA_JetMET_boosted_skimmed_2024_2023preBPix_lxplus.json",
+            f"{localdir}/../HH4b_common/datasets/signal_ggF_HH4b_official_lxplus.json",
+            # f"{localdir}/../HH4b_common/datasets/DATA_JetMET_boosted_skimmed_2024_2023preBPix_lxplus.json",
             # f"{localdir}/../HH4b_common/datasets/TT_boosted_skimmed.json",
             # f"{localdir}/../HH4b_common/datasets/TT_boosted_skimmed_local.json",
             # f"{localdir}/../HH4b_common/datasets/DATA_JetMET_boosted_skimmed_2024_2023preBPix_local.json",

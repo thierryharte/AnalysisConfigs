@@ -1,0 +1,6 @@
+scaleout: 40
+cores-per-worker: 1
+mem-per-worker: "6GB"
+disk-per-worker: "1GB"
+queue: "workday"
+chunksize: 25000
