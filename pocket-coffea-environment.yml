@@ -19,6 +19,8 @@ dependencies:
   - lz4
   - h5py
   - tqdm
+  - xgboost=2.0.3
+  - scikit-learn=1.5.0
   - pip
   - pip:
       - coffea==0.7.29
