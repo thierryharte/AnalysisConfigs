@@ -83,12 +83,10 @@ if not os.path.exists(args.output):
 
 
 # Define signal, background, and data datasets
-# == Layout:
-# sample
-# datasets
-# region: determines, from which region the data is taken ("signal": "sig_region_name", "background": "bkg_region_name")
+# == Layout: {"signal"/"data"/"background": {process_name: [dataset names as in the coffea file]}}
+# Data datasets listed under "background" are taken from bkg_region_name and reweighted (data-driven background);
+# they are listed with their plain names, the "_background" suffix is added internally.
 if not args.boosted:
-    # Needs to be edited from list items to dictionary (copy layout of boosted)
     sig_bkg_dict = {
             "signal": {
                 "ggHH_kl_1_kt_1_13p6TeV_hbbhbb": ["GluGlutoHHto4B_spanet_kl-1p00_kt-1p00_c2-0p00_2022_postEE"],
@@ -100,14 +98,18 @@ if not args.boosted:
                 "data_obs": ["DATA_JetMET_JMENano_E_2022_postEE_EraE", "DATA_JetMET_JMENano_F_2022_postEE_EraF", "DATA_JetMET_JMENano_G_2022_postEE_EraG"]
                 },
             "background": {
-                "bbbb_background": ["DATA_JetMET_JMENano_E_2022_postEE_EraE_background", "DATA_JetMET_JMENano_F_2022_postEE_EraF_background", "DATA_JetMET_JMENano_G_2022_postEE_EraG_background"]
+                "bbbb_background": ["DATA_JetMET_JMENano_E_2022_postEE_EraE", "DATA_JetMET_JMENano_F_2022_postEE_EraF", "DATA_JetMET_JMENano_G_2022_postEE_EraG"]
                 }
             }
 else:
     sig_bkg_dict = {
             "signal": {
-                "HH4b_VBF_SM": ["VBFHHto4B_Par-CV-1-C2V-1-C3-1_TuneCP5_13p6TeV_madgraph-pythia8_2024"],
-                "HH4b_VBF_K2V0": ["VBFHHto4B_Par-CV-1-C2V-0-C3-1_TuneCP5_13p6TeV_madgraph-pythia8_2024"],
+                "qqHH_CV_1_C2V_1_kl_1_13p6TeV_hbbhbb":              ["VBFHHto4B_Par-CV-1-C2V-1-C3-1_TuneCP5_13p6TeV_madgraph-pythia8_2024"],
+                "qqHH_CV_1_C2V_0_kl_1_13p6TeV_hbbhbb":              ["VBFHHto4B_Par-CV-1-C2V-0-C3-1_TuneCP5_13p6TeV_madgraph-pythia8_2024"],
+                "qqHH_CV_m0p758_C2V_1p44_kl_m19p3_13p6TeV_hbbhbb":  ["VBFHHto4B_Par-CV-m0p758-C2V-1p44-C3-m19p3_TuneCP5_13p6TeV_madgraph-pythia8_2024"],
+                "qqHH_CV_1p74_C2V_1p37_kl_14p4_13p6TeV_hbbhbb":     ["VBFHHto4B_Par-CV-1p74-C2V-1p37-C3-14p4_TuneCP5_13p6TeV_madgraph-pythia8_2024"],
+                "qqHH_CV_m0p962_C2V_0p959_kl_m1p43_13p6TeV_hbbhbb": ["VBFHHto4B_Par-CV-m0p962-C2V-0p959-C3-m1p43_TuneCP5_13p6TeV_madgraph-pythia8_2024"],
+                "qqHH_CV_m1p60_C2V_2p72_kl_m1p36_13p6TeV_hbbhbb":   ["VBFHHto4B_Par-CV-m1p60-C2V-2p72-C3-m1p36_TuneCP5_13p6TeV_madgraph-pythia8_2024"],
             },
             "data": {
                 # This needs toTTto2L2Nu_2024 have this name, and only be one category
@@ -124,7 +126,8 @@ else:
 # Define the new region name
 if args.boosted:
     region_name = "VBFHH"
-    fit_variable = "BDTVBFScore"
+    # fit_variable = "BDTVBFScore"
+    fit_variable = "SubLeadingHiggsMass"
     sig_region_name="boosted_signal_region_D_catvbf"
     bkg_region_name="boosted_control_region_B_catvbf_postW"
     sig_control_region_name="boosted_signal_sideband_region_C"
@@ -161,8 +164,8 @@ def get_year(pocketcoffea_year, year_type=0):
 
 def get_uncertainty_name(pocketcoffea_name, year):
     """Get conventional datacard name for systematic uncertainties"""
-    # Try to remove unnecessary things in front (e.g. "AK4PFPuppi")
-    if "Puppi" in pocketcoffea_name:
+    # Try to remove unnecessary things in front (e.g. "AK4PFPuppi", "AK8PFPuppi")
+    if "Puppi" in pocketcoffea_name or "AK" in pocketcoffea_name:
         pocketcoffea_name = pocketcoffea_name.split("_", 1)[-1]
     unc_map = {
         "JES_Total": f"CMS_scale_j_{get_year(year, year_type=0)}",
@@ -362,16 +365,24 @@ def create_new_region(coffea_file, cat_name):
 
 if __name__ == "__main__":
     # I want to use the coffea file with all outputs. Therefore, it should be merged beforehand.
-    coffea_list = [file for file in os.listdir(input_dir) if file.endswith(".coffea")]
-    if "output_all.coffea" in coffea_list:
-        coffea_file = os.path.join(input_dir, "output_all.coffea")
+    if "output_all.coffea" in input_dir:
+        coffea_file = input_dir
     else:
-        raise NameError(f"No combined coffea file found in {coffea_list}")
+        coffea_list = [file for file in os.listdir(input_dir) if file.endswith(".coffea")]
+        if "output_all.coffea" in coffea_list:
+            coffea_file = os.path.join(input_dir, "output_all.coffea")
+        else:
+            raise NameError(f"No combined coffea file found in {coffea_list}")
 
     # -- Load Coffea file and config.json --
     coffea_file = load(coffea_file)
 
     coffea_file = create_new_region(coffea_file, cat_name=region_name)
+
+    # Data-driven backgrounds are listed with the plain data dataset names. Their reweighted copies
+    # (created in create_new_region) carry the "_background" suffix, so point to those instead.
+    for name, datasets in sig_bkg_dict["background"].items():
+        sig_bkg_dict["background"][name] = [f"{d}_background" if "DATA" in d else d for d in datasets]
 
     # -- Histograms --
     histograms_dict = {}
@@ -380,7 +391,15 @@ if __name__ == "__main__":
             if not args.single_bin:
                 histograms_dict[key] = sob_hist
             else:
-                histograms_dict[key] = sob_hist[{sob_hist.axes[-1].name: hist.rebin(sob_hist.axes[-1].size)}]
+                # Rebin the variable axis (last axis) of every histogram into a single bin.
+                # Flow bins were already folded in create_new_region, so no events are lost.
+                histograms_dict[key] = {
+                    sample: {
+                        dataset: h[{h.axes[-1].name: hist.rebin(h.axes[-1].size)}]
+                        for dataset, h in datasets.items()
+                    }
+                    for sample, datasets in sob_hist.items()
+                }
         # TODO: Make sure, that the correct signal histograms are chosen
         # if "sig_bkg" in key:
         #     histograms_dict[key] = sob_hist
@@ -407,31 +426,30 @@ if __name__ == "__main__":
 
     # -- Filling metadata into the respective objects --
     mc_process = []
-    for name, sigs in sig_bkg_dict["signal"].items():
+    for name, datasets in sig_bkg_dict["signal"].items():
         mc_process.append(MCProcess(
                 name=name,
-                # All these ugly catings are to get a list with unique values.
-                samples={meta_dict[dataset]["sample"] for dataset in sigs["datasets"]},
-                years={meta_dict[dataset]["year"] for dataset in sigs["datasets"]},
+                samples={meta_dict[dataset]["sample"] for dataset in datasets},
+                years={meta_dict[dataset]["year"] for dataset in datasets},
                 is_signal=True,
                 ))
     bg_process = []
-    for name, bgs in sig_bkg_dict["background"].items():
+    for name, datasets in sig_bkg_dict["background"].items():
         bg_process.append(MCProcess(
                 name=name,
-                samples={meta_dict[dataset]["sample"] for dataset in bgs["datasets"]},
-                years={meta_dict[dataset]["year"] for dataset in bgs["datasets"]},
+                samples={meta_dict[dataset]["sample"] for dataset in datasets},
+                years={meta_dict[dataset]["year"] for dataset in datasets},
                 is_signal=False,
                 ))
     mc_processes = MCProcesses(mc_process + bg_process)
 
     if len(sig_bkg_dict["data"].keys()) > 1 or "data_obs" not in sig_bkg_dict["data"].keys():
         raise Exception("Only one single data process is allowed with fixed name 'data_obs'")
-    for name, datas in sig_bkg_dict["data"].items():
+    for name, datasets in sig_bkg_dict["data"].items():
         data_process = DataProcess(
                 name=name,
-                samples={meta_dict[dataset]["sample"] for dataset in datas["datasets"]},
-                years={meta_dict[dataset]["year"] for dataset in datas["datasets"]},
+                samples={meta_dict[dataset]["sample"] for dataset in datasets},
+                years={meta_dict[dataset]["year"] for dataset in datasets},
                 )
     data_processes = DataProcesses([data_process])
 
@@ -460,6 +478,8 @@ if __name__ == "__main__":
                 raise ValueError(f"Variations list {variations} does not contain 'nominal'.")
             logger.info(f"Found variations: {variations}")
             for syst in variations:
+                if args.boosted and "AK4" in syst:
+                    continue
                 systematics_list.append(SystematicUncertainty(name=syst, datacard_name=get_uncertainty_name(syst, meta_dict[datasets[0]]['year']), typ="shape", processes=list(sig_bkg_dict["signal"].keys()), years=[meta_dict[datasets[0]]["year"]], value=1.0))
         # At some point we will have a variation for the reweighting uncertainty, but right now, we only want variations on the MC processes
         bg_mc = {k: v for k, v in sig_bkg_dict["background"].items() if "DATA" not in v[0]}
