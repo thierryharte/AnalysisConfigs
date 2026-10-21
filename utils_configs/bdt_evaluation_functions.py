@@ -10,8 +10,11 @@ import xgboost as xgb
 
 
 
-def disc_TXbb(txbb_array):
-    bins = np.array([0, 0.8, 0.9, 0.94, 0.97, 0.99, 1])
+def disc_TXbb(txbb_array, wps="old"):
+    if wps=="old":
+        bins = np.array([0, 0.8, 0.9, 0.94, 0.97, 0.99, 1])
+    else:
+        bins = np.array([0.0, 0.65, 0.8, 0.95, 0.975, 0.99, 1])
     is_valid = ~ak.is_none(txbb_array)
     digitized = np.digitize(ak.fill_none(txbb_array, -1), bins)
     digitized = ak.Array(digitized)

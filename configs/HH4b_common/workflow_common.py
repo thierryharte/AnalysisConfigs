@@ -409,12 +409,10 @@ class HH4bCommonProcessor(BaseProcessorABC):
             "mass",
         )
 
-    def generate_btag_workingpoints(self, jets, num_wp):
+    def generate_btag_workingpoints(self, jets, num_wp, btag="btagB"):
         if hasattr(jets, "btagBB"):
-            btag = "btagBB"
-            wps = {"M": 0.95, "T": 0.975, "XT": 0.99}
+            wps = {"VL": 0.65, "L": 0.8, "M": 0.95, "T": 0.975, "XT": 0.99}
         else:
-            btag = "btagB"
             # L, M, T, XT, XXT of the algorithm chosen for the year
             wps = get_btag_working_points(self.params, self._year)
         btag_wp = ak.zeros_like(jets[btag], dtype=np.int32) - (

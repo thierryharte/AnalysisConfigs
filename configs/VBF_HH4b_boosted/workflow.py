@@ -42,7 +42,7 @@ class VBFHH4bProcessor(HH4bCommonProcessor):
             # here we propagate the btagging scores to the FatJetGood collection as is done in the pocket coffea jet_selection
             # if we're interested in other taggers, we need to add them here or swap to the mass correlated ones ("particleNetWithMass_HbbvsQCD", "particleNetWithMass_HccvsQCD")
 
-            if "2022" not in self._year:
+            if "2024" in self._year:
                 self.events["FatJetGood"] = ak.with_field(
                     self.events["FatJetGood"],
                     (self.events["FatJetGood"]["globalParT3_Xbb"] / (self.events["FatJetGood"]["globalParT3_Xbb"] + self.events["FatJetGood"]["globalParT3_QCD"])),
@@ -55,11 +55,11 @@ class VBFHH4bProcessor(HH4bCommonProcessor):
                     b_low = 0.05
                     b_thresh = 0.65
                 self.events["FatJetGood"] = ak.with_field(self.events["FatJetGood"], ak.where(self.events["FatJetGood"]["btagBBTXbb"] > b_thresh, (self.events["FatJetGood"]["btagBBTXbb"]), (self.events["FatJetGood"]["btagBBTXbb"] - b_low) * (1-b_thresh) / (b_thresh - b_low) + b_thresh), "btagBBTXbb_morph")
-                self.events["FatJetGood"] = ak.with_field(
-                    self.events["FatJetGood"],
-                    (self.events["FatJetGood"]["particleNetLegacy_Xbb"] / (self.events["FatJetGood"]["particleNetLegacy_Xbb"] + self.events["FatJetGood"]["particleNetLegacy_QCD"])),
-                    "btagBBPNetLegacy",
-                )
+                # self.events["FatJetGood"] = ak.with_field(
+                #     self.events["FatJetGood"],
+                #     (self.events["FatJetGood"]["particleNetLegacy_Xbb"] / (self.events["FatJetGood"]["particleNetLegacy_Xbb"] + self.events["FatJetGood"]["particleNetLegacy_QCD"])),
+                #     "btagBBPNetLegacy",
+                # )
                 self.events["FatJetGood"] = ak.with_field(
                     self.events["FatJetGood"],
                     self.events["FatJetGood"]["globalParT3_Xbb"],
@@ -76,10 +76,7 @@ class VBFHH4bProcessor(HH4bCommonProcessor):
                 self.events["FatJetGood"]["particleNet_XccVsQCD"],
                 "btagCC",
             )
-            # Add btag WP
-            self.events["FatJetGood"] = self.generate_btag_workingpoints(
-                self.events["FatJetGood"], 3
-            )
+            self.events["FatJetGood"] = self.generate_btag_workingpoints(self.events["FatJetGood"], 5, "btagBBTXbb_morph")
             # jet ordered in btagging score
             if not self.TXbb_order:
                 self.events["FatJetGood"] = self.events["FatJetGood"][
