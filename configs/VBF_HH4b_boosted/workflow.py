@@ -35,17 +35,24 @@ class VBFHH4bProcessor(HH4bCommonProcessor):
     def apply_object_preselection(self, variation):
         super().apply_object_preselection(variation=variation)
         if self.boosted:
-            # Select FatJets for the boosted category
-            self.events["FatJetGood"] = self.events.FatJet
+            # Uncorrected softdrop mass for the comparison with the MiniAOD ntuples: the msoftdrop
+            # calibrator overwrites msoftdrop in place, so rebuild it from the raw subjets
+            subjets = self.events["FatJet"].subjets
+            msoftdrop_raw = (subjets * (1 - subjets.rawFactor)).sum(axis=-1).mass
+            self.events["FatJet"] = ak.with_field(
+                self.events["FatJet"],
+                ak.where(self.events["FatJet"].msoftdrop > 0, msoftdrop_raw, self.events["FatJet"].msoftdrop),
+                "msoftdrop_raw",
+            )
 
             # ===== BB-tagging =====
-            # here we propagate the btagging scores to the FatJetGood collection as is done in the pocket coffea jet_selection
+            # here we propagate the btagging scores to the FatJet collection as is done in the pocket coffea jet_selection
             # if we're interested in other taggers, we need to add them here or swap to the mass correlated ones ("particleNetWithMass_HbbvsQCD", "particleNetWithMass_HccvsQCD")
 
             if "2024" in self._year:
-                self.events["FatJetGood"] = ak.with_field(
-                    self.events["FatJetGood"],
-                    (self.events["FatJetGood"]["globalParT3_Xbb"] / (self.events["FatJetGood"]["globalParT3_Xbb"] + self.events["FatJetGood"]["globalParT3_QCD"])),
+                self.events["FatJet"] = ak.with_field(
+                    self.events["FatJet"],
+                    (self.events["FatJet"]["globalParT3_Xbb"] / (self.events["FatJet"]["globalParT3_Xbb"] + self.events["FatJet"]["globalParT3_QCD"])),
                     "btagBBTXbb",
                 )
                 if self.region_setting == "40GeV":
@@ -54,38 +61,67 @@ class VBFHH4bProcessor(HH4bCommonProcessor):
                 elif self.region_setting == "50GeV":
                     b_low = 0.05
                     b_thresh = 0.65
-                self.events["FatJetGood"] = ak.with_field(self.events["FatJetGood"], ak.where(self.events["FatJetGood"]["btagBBTXbb"] > b_thresh, (self.events["FatJetGood"]["btagBBTXbb"]), (self.events["FatJetGood"]["btagBBTXbb"] - b_low) * (1-b_thresh) / (b_thresh - b_low) + b_thresh), "btagBBTXbb_morph")
-                # self.events["FatJetGood"] = ak.with_field(
-                #     self.events["FatJetGood"],
-                #     (self.events["FatJetGood"]["particleNetLegacy_Xbb"] / (self.events["FatJetGood"]["particleNetLegacy_Xbb"] + self.events["FatJetGood"]["particleNetLegacy_QCD"])),
+                self.events["FatJet"] = ak.with_field(self.events["FatJet"], ak.where(self.events["FatJet"]["btagBBTXbb"] > b_thresh, (self.events["FatJet"]["btagBBTXbb"]), (self.events["FatJet"]["btagBBTXbb"] - b_low) * (1-b_thresh) / (b_thresh - b_low) + b_thresh), "btagBBTXbb_morph")
+                # self.events["FatJet"] = ak.with_field(
+                #     self.events["FatJet"],
+                #     (self.events["FatJet"]["particleNetLegacy_Xbb"] / (self.events["FatJet"]["particleNetLegacy_Xbb"] + self.events["FatJet"]["particleNetLegacy_QCD"])),
                 #     "btagBBPNetLegacy",
                 # )
-                self.events["FatJetGood"] = ak.with_field(
-                    self.events["FatJetGood"],
-                    self.events["FatJetGood"]["globalParT3_Xbb"],
+                self.events["FatJet"] = ak.with_field(
+                    self.events["FatJet"],
+                    self.events["FatJet"]["globalParT3_Xbb"],
                     "btagBB",
                 )
             else:
-                self.events["FatJetGood"] = ak.with_field(
-                    self.events["FatJetGood"],
-                    self.events["FatJetGood"]["particleNet_XbbVsQCD"],
+                self.events["FatJet"] = ak.with_field(
+                    self.events["FatJet"],
+                    self.events["FatJet"]["particleNet_XbbVsQCD"],
                     "btagBB",
                 )
-            self.events["FatJetGood"] = ak.with_field(
-                self.events["FatJetGood"],
-                self.events["FatJetGood"]["particleNet_XccVsQCD"],
+            self.events["FatJet"] = ak.with_field(
+                self.events["FatJet"],
+                self.events["FatJet"]["particleNet_XccVsQCD"],
                 "btagCC",
             )
-            self.events["FatJetGood"] = self.generate_btag_workingpoints(self.events["FatJetGood"], 5, "btagBBTXbb_morph")
+            self.events["FatJet"] = self.generate_btag_workingpoints(self.events["FatJet"], 5, "btagBBTXbb_morph")
             # jet ordered in btagging score
             if not self.TXbb_order:
-                self.events["FatJetGood"] = self.events["FatJetGood"][
-                    ak.argsort(self.events["FatJetGood"]["btagBB"], axis=1, ascending=False)
+                self.events["FatJet"] = self.events["FatJet"][
+                    ak.argsort(self.events["FatJet"]["btagBB"], axis=1, ascending=False)
                 ]
             else:
-                self.events["FatJetGood"] = self.events["FatJetGood"][
-                    ak.argsort(self.events["FatJetGood"]["btagBBTXbb"], axis=1, ascending=False)
+                self.events["FatJet"] = self.events["FatJet"][
+                    ak.argsort(self.events["FatJet"]["btagBBTXbb"], axis=1, ascending=False)
                 ]
+            # ===== Regressions (needed for additional cuts) ===== 
+            if self._year == "2024":
+                self.events["FatJet"] = ak.with_field(self.events["FatJet"], self.events["FatJet"]["mass"], "mass_orig")
+                self.events["FatJet"] = ak.with_field(
+                    self.events["FatJet"],
+                    self.events["FatJet"].mass_raw * self.events["FatJet"].globalParT3_massCorrGeneric,  # Check, if we should use globalParT3_massCorrGeneric
+                    "mass"
+                )
+                # self.events["FatJet"] = ak.with_field(
+                #     self.events["FatJet"],
+                #     self.events["FatJet"].pt_raw * self.events["FatJet"].globalParT3_massCorrGeneric,
+                #     "pt_regr"
+                # )
+            else:
+                self.events["FatJet"] = ak.with_field(self.events["FatJet"], self.events["FatJet"]["mass"], "mass_orig")
+                self.events["FatJet"] = ak.with_field(
+                    self.events["FatJet"],
+                    self.events["FatJet"].mass * self.events["FatJet"].particleNet_massCorr,
+                    "mass"
+                )
+                # self.events["FatJetGood"] = ak.with_field(
+                #     self.events["FatJetGood"],
+                #     self.events["FatJetGood"].pt_raw * self.events["FatJetGood"].particleNet_massCorr,
+                #     "pt_regr"
+                # )
+
+            # Select FatJets for the boosted category
+            self.events["FatJetGood"] = copy.copy(self.events.FatJet)
+
             # We do only take the masks from the leading and subleading jets. Then we apply the masks to FatJetGood
             # This does require the additional fields we add to the FatJet collection inside the function to be also added to the final collection
             _, mask_fat_lead = custom_jet_selection(
@@ -108,31 +144,6 @@ class VBFHH4bProcessor(HH4bCommonProcessor):
                 pt_type="pt",
                 pt_cut_name="pt",
             )
-            # ===== Regressions (needed for additional cuts) ===== 
-            if self._year == "2024":
-                self.events["FatJetGood"] = ak.with_field(self.events["FatJetGood"], self.events["FatJetGood"]["mass"], "mass_orig")
-                self.events["FatJetGood"] = ak.with_field(
-                    self.events["FatJetGood"],
-                    self.events["FatJetGood"].mass_raw * self.events["FatJetGood"].globalParT3_massCorrGeneric,  # Check, if we should use globalParT3_massCorrGeneric
-                    "mass"
-                )
-                # self.events["FatJetGood"] = ak.with_field(
-                #     self.events["FatJetGood"],
-                #     self.events["FatJetGood"].pt_raw * self.events["FatJetGood"].globalParT3_massCorrGeneric,
-                #     "pt_regr"
-                # )
-            else:
-                self.events["FatJetGood"] = ak.with_field(self.events["FatJetGood"], self.events["FatJetGood"]["mass"], "mass_orig")
-                self.events["FatJetGood"] = ak.with_field(
-                    self.events["FatJetGood"],
-                    self.events["FatJetGood"].mass * self.events["FatJetGood"].particleNet_massCorr,
-                    "mass"
-                )
-                # self.events["FatJetGood"] = ak.with_field(
-                #     self.events["FatJetGood"],
-                #     self.events["FatJetGood"].pt_raw * self.events["FatJetGood"].particleNet_massCorr,
-                #     "pt_regr"
-                # )
             fatjet_obj_presel_lead = self.params.object_preselection["FatJetLeading"]
             fatjet_obj_presel_sublead = self.params.object_preselection["FatJetSubLeading"]
             if "mass_regr_min" in fatjet_obj_presel_lead.keys() and "mass_regr_max" in fatjet_obj_presel_lead.keys():
@@ -161,6 +172,8 @@ class VBFHH4bProcessor(HH4bCommonProcessor):
 
             self.events["FatJetGoodSelected"] = ak.concatenate([self.events["FatJetGoodLeading"], self.events["FatJetGoodSubLeading"]], axis=1)
             self.events["nFatJetGoodSelected"] = ak.num(self.events["FatJetGoodSelected"], axis=1)
+            self.events["nFatJet"] = ak.num(self.events["FatJet"], axis=1)
+            self.events["nFatJetGood"] = ak.num(self.events["FatJetGood"], axis=1)
 
             # mask_pt = self.events["FatJetGood"]["pt"] > 250
             # mask_eta = abs(self.events["FatJetGood"]["eta"]) < 2.5
@@ -223,6 +236,7 @@ class VBFHH4bProcessor(HH4bCommonProcessor):
                 self.events["JetVBF"] = copy.copy(self.events.Jet)
                 self.events["HT_jetJetGoodVBF"] = ak.sum(self.events.JetGoodVBF.pt, axis=1)
                 self.events["HT_jetJetGood"] = ak.sum(self.events.JetGood.pt, axis=1)
+                self.events["HT_jetJet"] = ak.sum(self.events.Jet.pt, axis=1)
                 self.events["HT"] = ak.sum(self.events.Jet.pt, axis=1)
 
                 self.events["JetGoodCloseToFatJet"], mask_jet_close_to_fatjet = custom_jet_selection(
@@ -305,6 +319,7 @@ class VBFHH4bProcessor(HH4bCommonProcessor):
             self.events["nJetGoodCloseToFatJet"] = ak.num(self.events.JetGoodCloseToFatJet, axis=1)
             self.events["nJetGoodVBFEnergyOrderedPadded"] = ak.sum(~ak.is_none(self.events.JetGoodVBFEnergyOrderedPadded, axis=1), axis=1)
             self.events["nJetGoodVBFGood"] = ak.num(self.events.JetGoodVBF, axis=1)
+            self.events["nJet"] = ak.num(self.events.JetGoodVBF, axis=1)
 
     def process_extra_after_presel(self, variation):  # -> ak.Array:
         if self.vbf_analysis and not self.boosted:
@@ -373,4 +388,9 @@ class VBFHH4bProcessor(HH4bCommonProcessor):
             self.events["HiggsLeading"],
             ak.fill_none(disc_TXbb(self.events.HiggsLeading.btagBBTXbb), -999),
             "btagBBTXbb_dig",
+            )
+        self.events["HiggsLeading"] = ak.with_field(
+            self.events["HiggsLeading"],
+            ak.fill_none(disc_TXbb(self.events.HiggsLeading.btagBBTXbb, "old"), -999),
+            "btagBBTXbb_dig_old",
             )

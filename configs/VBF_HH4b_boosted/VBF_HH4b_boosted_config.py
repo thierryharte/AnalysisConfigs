@@ -7,7 +7,8 @@ from configs.HH4b_common.config_files.__config_file__ import (
 from pocket_coffea.lib.cut_functions import (
     eventFlags,
 )
-from pocket_coffea.lib.calibrators.common.common import JetsCalibrator
+from pocket_coffea.lib.calibrators.common.common import JetsCalibrator, default_calibrators_sequence
+from utils_configs.custom_calibrators import JetsSoftdropMassFieldCalibrator
 from pocket_coffea.lib.weights.common.common import common_weights
 from pocket_coffea.parameters import defaults
 from pocket_coffea.parameters.cuts import passthrough
@@ -94,16 +95,16 @@ sample_ggF_list = [
     # "GluGlutoHHto4B_spanet_kl-2p00_kt-1p00_c2-0p00_skimmed",
     # "GluGlutoHHto4B_spanet_kl-1p50_kt-1p00_c2-0p00_skimmed",
     # "GluGlutoHHto4B_spanet_kl-0p50_kt-1p00_c2-0p00_skimmed",
-    "GluGluHHto4B_Par-c2-0p00-kl-0p00-kt-1p00_TuneCP5_13p6TeV_powheg-pythia8",
-    "GluGluHHto4B_Par-c2-0p00-kl-1p00-kt-1p00_TuneCP5_13p6TeV_powheg-pythia8",
-    "GluGluHHto4B_Par-c2-0p00-kl-2p45-kt-1p00_TuneCP5_13p6TeV_powheg-pythia8",
-    "GluGluHHto4B_Par-c2-0p00-kl-5p00-kt-1p00_TuneCP5_13p6TeV_powheg-pythia8",
-    "GluGluHHto4B_Par-c2-0p10-kl-1p00-kt-1p00_TuneCP5_13p6TeV_powheg-pythia8",
-    "GluGluHHto4B_Par-c2-0p35-kl-1p00-kt-1p00_TuneCP5_13p6TeV_powheg-pythia8",
-    "GluGluHHto4B_Par-c2-1p00-kl-0p00-kt-1p00_TuneCP5_13p6TeV_powheg-pythia8",
-    "GluGluHHto4B_Par-c2-2p24-kl-m20p00-kt-1p00_TuneCP5_13p6TeV_powheg-pythia8",
-    "GluGluHHto4B_Par-c2-3p00-kl-1p00-kt-1p00_TuneCP5_13p6TeV_powheg-pythia8",
-    "GluGluHHto4B_Par-c2-m2p00-kl-1p00-kt-1p00_TuneCP5_13p6TeV_powheg-pythia8",
+    # "GluGluHHto4B_Par-c2-0p00-kl-0p00-kt-1p00_TuneCP5_13p6TeV_powheg-pythia8",
+    # "GluGluHHto4B_Par-c2-0p00-kl-1p00-kt-1p00_TuneCP5_13p6TeV_powheg-pythia8",
+    # "GluGluHHto4B_Par-c2-0p00-kl-2p45-kt-1p00_TuneCP5_13p6TeV_powheg-pythia8",
+    # "GluGluHHto4B_Par-c2-0p00-kl-5p00-kt-1p00_TuneCP5_13p6TeV_powheg-pythia8",
+    # "GluGluHHto4B_Par-c2-0p10-kl-1p00-kt-1p00_TuneCP5_13p6TeV_powheg-pythia8",
+    # "GluGluHHto4B_Par-c2-0p35-kl-1p00-kt-1p00_TuneCP5_13p6TeV_powheg-pythia8",
+    # "GluGluHHto4B_Par-c2-1p00-kl-0p00-kt-1p00_TuneCP5_13p6TeV_powheg-pythia8",
+    # "GluGluHHto4B_Par-c2-2p24-kl-m20p00-kt-1p00_TuneCP5_13p6TeV_powheg-pythia8",
+    # "GluGluHHto4B_Par-c2-3p00-kl-1p00-kt-1p00_TuneCP5_13p6TeV_powheg-pythia8",
+    # "GluGluHHto4B_Par-c2-m2p00-kl-1p00-kt-1p00_TuneCP5_13p6TeV_powheg-pythia8",
 ]
 
 sample_VBF_list=[
@@ -118,16 +119,16 @@ sample_VBF_list=[
     # "VBFHHto4B_CV_2p12_C2V_3p87_C3_m5p96",
     # "VBFHHto4B_CV_1_C2V_0_C3_1",
     # "VBFHHto4B_CV_1_C2V_1_C3_1",
-    "VBFHHto4B_Par-CV-1-C2V-0-C3-1_TuneCP5_13p6TeV_madgraph-pythia8",
-    "VBFHHto4B_Par-CV-1-C2V-1-C3-1_TuneCP5_13p6TeV_madgraph-pythia8",
-    "VBFHHto4B_Par-CV-1p74-C2V-1p37-C3-14p4_TuneCP5_13p6TeV_madgraph-pythia8",
-    "VBFHHto4B_Par-CV-2p12-C2V-3p87-C3-m5p96_TuneCP5_13p6TeV_madgraph-pythia8",
-    "VBFHHto4B_Par-CV-m0p012-C2V-0p030-C3-10p2_TuneCP5_13p6TeV_madgraph-pythia8",
-    "VBFHHto4B_Par-CV-m0p758-C2V-1p44-C3-m19p3_TuneCP5_13p6TeV_madgraph-pythia8",
-    "VBFHHto4B_Par-CV-m0p962-C2V-0p959-C3-m1p43_TuneCP5_13p6TeV_madgraph-pythia8",
-    "VBFHHto4B_Par-CV-m1p21-C2V-1p94-C3-m0p94_TuneCP5_13p6TeV_madgraph-pythia8",
-    "VBFHHto4B_Par-CV-m1p60-C2V-2p72-C3-m1p36_TuneCP5_13p6TeV_madgraph-pythia8",
-    "VBFHHto4B_Par-CV-m1p83-C2V-3p57-C3-m3p39_TuneCP5_13p6TeV_madgraph-pythia8",
+    # "VBFHHto4B_Par-CV-1-C2V-0-C3-1_TuneCP5_13p6TeV_madgraph-pythia8",
+    # "VBFHHto4B_Par-CV-1-C2V-1-C3-1_TuneCP5_13p6TeV_madgraph-pythia8",
+    # "VBFHHto4B_Par-CV-1p74-C2V-1p37-C3-14p4_TuneCP5_13p6TeV_madgraph-pythia8",
+    # "VBFHHto4B_Par-CV-2p12-C2V-3p87-C3-m5p96_TuneCP5_13p6TeV_madgraph-pythia8",
+    # "VBFHHto4B_Par-CV-m0p012-C2V-0p030-C3-10p2_TuneCP5_13p6TeV_madgraph-pythia8",
+    # "VBFHHto4B_Par-CV-m0p758-C2V-1p44-C3-m19p3_TuneCP5_13p6TeV_madgraph-pythia8",
+    # "VBFHHto4B_Par-CV-m0p962-C2V-0p959-C3-m1p43_TuneCP5_13p6TeV_madgraph-pythia8",
+    # "VBFHHto4B_Par-CV-m1p21-C2V-1p94-C3-m0p94_TuneCP5_13p6TeV_madgraph-pythia8",
+    # "VBFHHto4B_Par-CV-m1p60-C2V-2p72-C3-m1p36_TuneCP5_13p6TeV_madgraph-pythia8",
+    # "VBFHHto4B_Par-CV-m1p83-C2V-3p57-C3-m3p39_TuneCP5_13p6TeV_madgraph-pythia8",
 ]
 sample_list = (
     [
@@ -138,10 +139,10 @@ sample_list = (
         # "DATA_JetMET_JMENano_E",
         # "DATA_JetMET_JMENano_F",
         # "DATA_JetMET_JMENano_G",
-        "TTtoLNu2Q",
-        "TTto2L2Nu",
-        "TTto4Q",
-        "DATA_ParkingHH",
+        # "TTtoLNu2Q",
+        # "TTto2L2Nu",
+        # "TTto4Q",
+        # "DATA_ParkingHH",
         "DATA_JetMET0_HH4bBoosted",
         "DATA_JetMET1_HH4bBoosted",
     ]
@@ -237,14 +238,14 @@ else:
             {
                 # "JetGood": ["pt", "eta", "phi", "mass"],
                 # "JetGoodVBF": ["pt", "eta", "phi", "mass"],
-                "JetGoodCloseToFatJet": ["pt", "eta", "phi", "mass"],
+                # "JetGoodCloseToFatJet": ["pt", "eta", "phi", "mass"],
                 "JetGoodVBFGood": ["pt", "eta", "phi", "mass"],
                 "events": ["HT_jetJetGoodVBF", "HT_jetJetGood", "nJetGood", "event", "boosted_bdt_score", "boosted_bdt_vbf_score", "mjjJetGoodVBFGood", "detaJetGoodVBFGood", "HiggsLeadingByHiggsSubLeadingPt", "era", "nJetGoodVBFGood"],
                 # "JetGoodVBFNearHiggsLeading": ["pt", "eta", "phi", "mass"],
                 # "JetGoodVBFNearHiggsSubLeading": ["pt", "eta", "phi", "mass"],
                 # "FatJetGoodSelected": ["pt", "eta", "phi", "msoftdrop", "mass_orig", "mass", "btagBBTXbb"],
-                "HiggsLeading": ["pt", "eta", "phi", "msoftdrop", "mass_orig", "mass", "btagBBTXbb", "btagBBTXbb_dig", "btagBBTXbb_morph", "Tau3OverTau2", "dRclosestVBF", "massclosestVBF", "divHHmass"],
-                "HiggsSubLeading": ["pt", "eta", "phi", "msoftdrop", "mass_orig", "mass", "btagBBTXbb", "btagBBTXbb_morph", "Tau3OverTau2", "dRclosestVBF", "massclosestVBF", "divHHmass"],
+                "HiggsLeading": ["pt", "eta", "phi", "msoftdrop", "mass_orig", "mass", "btagBBTXbb", "btagBBTXbb_morph_5wp", "btagBBTXbb_morph", "Tau3OverTau2", "dRclosestVBF", "massclosestVBF", "divHHmass"],
+                "HiggsSubLeading": ["pt", "eta", "phi", "msoftdrop", "mass_orig", "mass", "btagBBTXbb", "btagBBTXbb_morph_5wp", "btagBBTXbb_morph", "Tau3OverTau2", "dRclosestVBF", "massclosestVBF", "divHHmass"],
                 "HH": ["pt", "eta", "mass", "phi", "dR", "dEta", "dPhi"],
                 "PuppiMET": ["pt", "sumEt"],
                 # "PFMET": ["pt"],
@@ -340,12 +341,14 @@ cfg = Configurator(
                 "lumi",
                 "XS",
                 "pileup",
+
             ],
             "bycategory": {},
         },
         "bysample": bysample_bycategory_weight_dict,
     },
     # calibrators=[JetsCalibrator],
+    calibrators=default_calibrators_sequence + [JetsSoftdropMassFieldCalibrator],
     variations={
         "weights": {
             "common": {
@@ -359,11 +362,11 @@ cfg = Configurator(
             },
             "bysample": {},
         },
-        # "shape": {
-        #     "common": {
-        #         # "inclusive": ["jet_calibration"]
-        #         },
-        #     }
+        "shape": {
+            "common": {
+                "inclusive": ["jet_calibration"]
+                },
+            }
     },
     variables=variables_dict,
     columns={

@@ -11,7 +11,8 @@ from pocket_coffea.lib.cut_functions import (
     eventFlags,
     get_nPVgood,
 )
-from pocket_coffea.lib.calibrators.common.common import JetsCalibrator
+from pocket_coffea.lib.calibrators.common.common import JetsCalibrator, default_calibrators_sequence
+from utils_configs.custom_calibrators import JetsSoftdropMassFieldCalibrator
 from pocket_coffea.lib.weights.common.common import common_weights
 from pocket_coffea.parameters import defaults
 from pocket_coffea.parameters.cuts import passthrough
@@ -56,15 +57,16 @@ parameters = defaults.merge_parameters_from_files(
     f"{localdir}/../HH4b_common/params/variations.yaml",
     f"{localdir}/../HH4b_common/params/btagging_multipleWP.yaml",
     f"{localdir}/../HH4b_common/params/btagging_sampleGroups.yaml",
-    f"{localdir}/../HH4b_common/params/jets_calibration_regression_json.yaml",
+    # no JER on AK8 jets, to align with the other group (JER on AK4 only)
+    f"{localdir}/../HH4b_common/params/jets_calibration_regression_json_noAK8JER.yaml",
     # f"{localdir}/../HH4b_common/params/jets_calibration_regression_json_onlyJEC.yaml",
     update=True,
 )
 
-if config_options_dict["save_chunk"]:
-    config_options_dict["dump_columns_as_arrays_per_chunk"] = config_options_dict[
-        "save_chunk"
-    ]
+# if config_options_dict["save_chunk"]:
+#     config_options_dict["dump_columns_as_arrays_per_chunk"] = config_options_dict[
+#         "save_chunk"
+#     ]
 
 print(config_options_dict)
 # Define the variables to save
@@ -87,18 +89,18 @@ preselection = define_preselection(config_options_dict)
 
 # Define the samples to process
 sample_ggF_list = [
-    # "GluGlutoHHto4B_spanet_kl-1p00_kt-1p00_c2-0p00_skimmed",
-    # "GluGlutoHHto4B_spanet_kl-m2p00_kt-1p00_c2-0p00_skimmed",
-    # "GluGlutoHHto4B_spanet_kl-m1p00_kt-1p00_c2-0p00_skimmed",
-    # "GluGlutoHHto4B_spanet_kl-5p00_kt-1p00_c2-0p00_skimmed",
-    # "GluGlutoHHto4B_spanet_kl-2p45_kt-1p00_c2-0p00_skimmed",
-    # "GluGlutoHHto4B_spanet_kl-0p00_kt-0p00_c2-0p00_skimmed",
-    # "GluGlutoHHto4B_spanet_kl-3p50_kt-1p00_c2-0p00_skimmed",
-    # "GluGlutoHHto4B_spanet_kl-4p00_kt-1p00_c2-0p00_skimmed",
-    # "GluGlutoHHto4B_spanet_kl-3p00_kt-1p00_c2-0p00_skimmed",
-    # "GluGlutoHHto4B_spanet_kl-2p00_kt-1p00_c2-0p00_skimmed",
-    # "GluGlutoHHto4B_spanet_kl-1p50_kt-1p00_c2-0p00_skimmed",
-    # "GluGlutoHHto4B_spanet_kl-0p50_kt-1p00_c2-0p00_skimmed",
+    "GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00",
+    # "GluGlutoHHto4B_kl-m2p00_kt-1p00_c2-0p00_skimmed",
+    # "GluGlutoHHto4B_kl-m1p00_kt-1p00_c2-0p00_skimmed",
+    # "GluGlutoHHto4B_kl-5p00_kt-1p00_c2-0p00_skimmed",
+    # "GluGlutoHHto4B_kl-2p45_kt-1p00_c2-0p00_skimmed",
+    # "GluGlutoHHto4B_kl-0p00_kt-0p00_c2-0p00_skimmed",
+    # "GluGlutoHHto4B_kl-3p50_kt-1p00_c2-0p00_skimmed",
+    # "GluGlutoHHto4B_kl-4p00_kt-1p00_c2-0p00_skimmed",
+    # "GluGlutoHHto4B_kl-3p00_kt-1p00_c2-0p00_skimmed",
+    # "GluGlutoHHto4B_kl-2p00_kt-1p00_c2-0p00_skimmed",
+    # "GluGlutoHHto4B_kl-1p50_kt-1p00_c2-0p00_skimmed",
+    # "GluGlutoHHto4B_kl-0p50_kt-1p00_c2-0p00_skimmed",
     # "GluGlutoHHto4B_kl-0p00_kt-1p00_c2-0p00",
     # "GluGlutoHHto4B_kl-1p00_kt-1p00_c2-0p00",
     # "GluGlutoHHto4B_kl-2p45_kt-1p00_c2-0p00",
@@ -137,7 +139,7 @@ sample_list = (
         # "TTto2L2Nu",
         # "TTto4Q",
         # "DATA_ParkingHH",
-        "DATA_JetMET0_HH4bBoosted"
+        # "DATA_JetMET0_HH4bBoosted"
     ]
     + sample_ggF_list
     + sample_VBF_list
@@ -262,18 +264,22 @@ sample_list = (
 #                 ]
 column_list = get_columns_list(
     {
-        "JetGood": ["pt_regressed", "pt_default", "pt", "eta", "phi", "mass"],
-        "JetGoodVBF": ["pt", "eta", "phi", "mass"],
-        "JetGoodCloseToFatJet": ["pt_regressed", "pt_default", "pt", "eta", "phi", "mass"],
-        "Jet": ["pt_regressed", "pt_default", "eta"],
-        "JetGoodVBFEnergyOrdered": ["pt", "eta", "phi", "mass"],
-        "events": ["HT_jetJetGoodVBF", "HT_jetJetGood", "nJetGood", "nFatJetGoodSelected", "event", "boosted_bdt_score", "boosted_bdt_vbf_score", "mjjJetGoodVBFEnergyOrdered", "mjjJetGoodVBF", "mjjJetGoodVBF", "detaJetGoodVBF", "detaJetGoodVBFEnergyOrdered", "HiggsLeadingByHiggsSubLeadingPt"],
-        "JetGoodVBFNearHiggsLeading": ["pt", "eta", "phi", "mass"],
-        "JetGoodVBFNearHiggsSubLeading": ["pt", "eta", "phi", "mass"],
-        "FatJetGoodSelected": ["pt", "eta", "phi", "msoftdrop", "mass_orig", "mass", "btagBBTXbb"],
-        "HiggsLeading": ["pt", "eta", "phi", "msoftdrop", "mass_orig", "mass", "btagBBTXbb", "btagBBTXbb_dig", "Tau3OverTau2", "dRclosestVBF", "massclosestVBF", "divHHmass"],
-        "HiggsSubLeading": ["pt", "eta", "phi", "msoftdrop", "mass_orig", "mass", "btagBBTXbb", "Tau3OverTau2", "dRclosestVBF", "massclosestVBF", "divHHmass"],
-        "HH": ["pt", "eta", "mass"],
+        # "JetGood": ["pt_regressed", "pt_default", "pt", "eta", "phi", "mass"],
+        # "JetGoodVBF": ["pt", "eta", "phi", "mass"],
+        # "JetGoodCloseToFatJet": ["pt_regressed", "pt_default", "pt", "eta", "phi", "mass"],
+        # "Jet": ["pt_regressed", "pt_default", "eta"],
+        # "JetGoodVBFGood": ["pt", "eta", "phi", "mass"],
+        "Jet": ["pt", "eta", "phi", "mass", "pt_raw", "mass_raw", "pt_gen"],
+        "FatJet": ["pt", "eta", "phi", "msoftdrop", "mass_orig", "mass", "btagBBTXbb", "pt_raw", "mass_raw", "pt_gen", "msoftdrop_raw"],
+        "JetGood": ["pt", "eta", "phi", "mass", "pt_raw", "mass_raw", "pt_gen"],
+        "FatJetGood": ["pt", "eta", "phi", "msoftdrop", "mass_orig", "mass", "btagBBTXbb", "pt_raw", "mass_raw", "pt_gen", "msoftdrop_raw"],
+        "events": ["HT_jetJetGood", "nJetGood", "HT_jetJet", "nJet", "nFatJet", "nFatJetGood", "event"],
+        # "events": ["HT_jetJetGoodVBF", "HT_jetJetGood", "nJetGood", "nFatJetGoodSelected", "event", "boosted_bdt_score", "boosted_bdt_vbf_score", "mjjJetGoodVBFGood", "mjjJetGoodVBF", "mjjJetGoodVBF", "detaJetGoodVBF", "detaJetGoodVBFGood", "HiggsLeadingByHiggsSubLeadingPt"],
+        # "JetGoodVBFNearHiggsLeading": ["pt", "eta", "phi", "mass"],
+        # "JetGoodVBFNearHiggsSubLeading": ["pt", "eta", "phi", "mass"],
+        # "HiggsLeading": ["pt", "eta", "phi", "msoftdrop", "mass_orig", "mass", "btagBBTXbb", "btagBBTXbb_dig", "Tau3OverTau2", "dRclosestVBF", "massclosestVBF", "divHHmass"],
+        # "HiggsSubLeading": ["pt", "eta", "phi", "msoftdrop", "mass_orig", "mass", "btagBBTXbb", "Tau3OverTau2", "dRclosestVBF", "massclosestVBF", "divHHmass"],
+        # "HH": ["pt", "eta", "mass"],
         "PuppiMET": ["pt"],
         "PFMET": ["pt"],
     }
@@ -292,7 +298,8 @@ cfg = Configurator(
             # f"{localdir}/../HH4b_common/datasets/background_TTtoX.json",
             # f"{localdir}/../HH4b_common/datasets/signal_VBF_HH4b_pnfs_redirector.json",
             # f"{localdir}/../HH4b_common/datasets/signal_ggF_HH4b_official_pnfs_redirector.json",
-            f"{localdir}/../HH4b_common/datasets/DATA_JetMET_boosted_test_24EraD.json",
+            # f"{localdir}/../HH4b_common/datasets/DATA_JetMET_boosted_test_24EraD.json",
+            f"{localdir}/../HH4b_common/datasets/GluGluHHto4B_comparison_file_boosted.json",
         ],
         "filter": {
             "samples": sample_list,
@@ -306,12 +313,13 @@ cfg = Configurator(
     skim=[],  # cuts.skimming_cut_list(config_options_dict),
     preselections=[],  # preselection,
     categories={
+        "passthrough": [passthrough],
         "MET_filter": [eventFlags],
         "Jet_Veto_map": [eventFlags, cuts.hh4b_JetVetoMap],
         "2AK8Jetsonly": [cuts.hh4b_boosted_2fatjets],
         "2AK8Jets": [eventFlags, cuts.hh4b_JetVetoMap, cuts.hh4b_boosted_2fatjets],
         "0lep": [eventFlags, cuts.hh4b_JetVetoMap, cuts.hh4b_boosted_2fatjets, cuts.hh4b_boosted_lepton_veto],
-        "ak8bbcut": [eventFlags, cuts.hh4b_JetVetoMap, cuts.hh4b_boosted_2fatjets, cuts.hh4b_boosted_lepton_veto, cuts.hh4b_boosted_baseline],
+        "ak8bbcut": [eventFlags, cuts.hh4b_JetVetoMap, cuts.hh4b_boosted_2fatjets, cuts.hh4b_boosted_lepton_veto, cuts.hh4b_boosted_baseline(config_options_dict["region_setting"])],
         },
     weights_classes=common_weights
     + [bkg_morphing_dnn_weight],
@@ -327,6 +335,7 @@ cfg = Configurator(
         "bysample": {},
     },
     # calibrators=[JetsCalibrator],
+    calibrators=default_calibrators_sequence + [JetsSoftdropMassFieldCalibrator],
     variations={
         "weights": {
             "common": {
@@ -346,7 +355,7 @@ cfg = Configurator(
         "common": {
             "inclusive": [],
             "bycategory": {
-                "ak8bbcut": column_list,
+                "passthrough": column_list,
                 },
         },
         "bysample": {},
