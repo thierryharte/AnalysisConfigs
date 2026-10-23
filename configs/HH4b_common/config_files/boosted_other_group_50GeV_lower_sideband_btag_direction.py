@@ -41,5 +41,5 @@ config_options_dict |= {
     "region_setting": "50GeV",  # This defines the size of the signal and control regions in the boosted topology
     "lead_sublead": "lead",
     "bdt_model": "/work/tharte/datasets/bdts/boosted/bdt_trainings_run3/25Feb5_v13_glopartv2_rawmass/trained_bdt.model",
-    "save_chunk": "root://t3dcachedb03.psi.ch:1094//pnfs/psi.ch/cms/trivcat/store/user/tharte/HH4b/spanet_1_16_9_boosted_other_group_50GeV_lower_sideband_leading_higgs_region_btagging_fixed_njets",
+    "save_chunk": "root://t3dcachedb03.psi.ch:1094//pnfs/psi.ch/cms/trivcat/store/user/tharte/HH4b/spanet_1_16_9_boosted_other_group_50GeV_lower_sideband_leading_higgs_region_btagging_fixed_njets_optimal_cuts_newbdt",
 } | onnx_model_dict

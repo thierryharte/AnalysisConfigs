@@ -58,14 +58,13 @@ def get_default_bdt_inputs(events):
             "H1T32": to_col(events.HiggsLeading.Tau3OverTau2, "99999"),
             "H2T32": to_col(events.HiggsSubLeading.Tau3OverTau2, "99999"),
             # fatjet mass
-            # To Check with new bdt!!!!
             "H1Mass": to_col(events.HiggsLeading.mass, "99999"),
             # fatjet kinematics
             "H1Pt": to_col(events.HiggsLeading.pt, "99999"),
             "H2Pt": to_col(events.HiggsSubLeading.pt, "99999"),
             "H1eta": to_col(events.HiggsLeading.eta, "99999"),
             # xbb
-            "H1Xbb": to_col(events.HiggsLeading.btagBBTXbb_dig, "1").astype(np.int64),
+            "H1Xbb": to_col(events.HiggsLeading.btagBBTXbb_dig_old, "1").astype(np.int64),
             # ratios
             "H1Pt_HHmass": to_col(events.HiggsLeading.divHHmass),
             "H2Pt_HHmass": to_col(events.HiggsSubLeading.divHHmass),

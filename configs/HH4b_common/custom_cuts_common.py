@@ -265,7 +265,7 @@ def hh4b_boosted_mass_sideband_lower(region_setting, lead_sublead):
 
 def _get_params(txbb_morph, region_setting="50GeV"):
     if region_setting == "50GeV":
-        return {"txbb_morph": txbb_morph, "txbb_c1": 0.935, "bdt_ggf_c1": 0.955, "txbb_vbf": 0.8125, "bdt_vbf": 0.9875, "txbb_c2a": 0.81, "bdt_ggf_c2b": 0.845, "bdt_ggf_bkg": 0.03}
+        return {"txbb_morph": txbb_morph, "txbb_c1": 0.96, "bdt_ggf_c1": 0.965, "txbb_vbf": 0.855, "bdt_vbf": 0.9825, "txbb_c2a": 0.85, "bdt_ggf_c2b": 0.88, "bdt_ggf_bkg": 0.03}
     else:
         return {"txbb_morph": txbb_morph, "txbb_c1": 0.945, "bdt_ggf_c1": 0.94, "txbb_vbf": 0.8, "bdt_vbf": 0.9825, "txbb_c2a": 0.85, "bdt_ggf_c2b": 0.755, "bdt_ggf_bkg": 0.03}
 
