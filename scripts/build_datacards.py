@@ -5,6 +5,8 @@ import logging
 import os
 import numpy as np
 import re
+import yaml
+from pathlib import Path
 
 import hist
 from coffea.util import load
@@ -17,7 +19,6 @@ from pocket_coffea.utils.stat import (
     Systematics,
     SystematicUncertainty,
 )
-
 
 logging.basicConfig(format='%(asctime)s,%(msecs)03d %(name)s %(levelname)s %(message)s',
                     datefmt='%Y-%m-%d %H:%M:%S',
@@ -87,11 +88,38 @@ parser.add_argument(
     help="Minimum-statistics rebinning: additionally require at least this total background yield per bin (e.g. 1.0)",
     default=None,
 )
+parser.add_argument(
+    "-fr",
+    "--fit-range",
+    type=float,
+    nargs=2,
+    metavar=("LOW", "HIGH"),
+    help="Cut the fit variable histogram to the range [LOW, HIGH] (e.g. 60 200). Events outside are dropped. "
+         "Applied before --nbins and the minimum-statistics rebinning.",
+    default=None,
+)
 
 args = parser.parse_args()
+if args.fit_range is not None and args.fit_range[0] >= args.fit_range[1]:
+    parser.error(f"--fit-range: LOW must be smaller than HIGH, got {args.fit_range}")
 if args.single_bin:
     args.nbins = 1
 
+LUMI_YAML = Path(__file__).parent / "configs" / "HH4b_common" / "params" / "lumi_systematics.yaml"
+with open(LUMI_YAML) as f:
+    lumi_cfg = yaml.safe_load(f)
+lumi_sys_values = lumi_cfg["lumi_systematics"]
+
+# Values taken from previous datacard:
+# https://gitlab.cern.ch/cms-analysis/hig/HIG-24-010/datacards/-/blob/master/AN-23-184/merged_channel/vbf/combined.txt?ref_type=heads
+# Recommendations in case of update:
+# https://twiki.cern.ch/twiki/bin/view/LHCPhysics/LHCHWGHHRecommendations
+BR_HBB = (0.975, 1.025)  # <-- not found
+PDF_HIGGS_QQHH = 1.021  # <-- not found
+PDF_HIGGS_GGHH = 1.030  # 1.0192
+ALPHAS_GGHH = 1.021  # 1.0149
+SCALE_GGHH = (1.021, 0.951)  # (1.0207, 0.9515)
+MTOP_GGHH = (1.04, 0.82)  # (1.05, 0.84)
 
 input_dir = os.path.dirname(f"{args.input_data[0]}/")
 
@@ -121,7 +149,11 @@ if not args.boosted:
 else:
     sig_bkg_dict = {
             "signal": {
-                "qqHH_CV_1_C2V_1_kl_1_13p6TeV_hbbhbb":              ["VBFHHto4B_Par-CV-1-C2V-1-C3-1_TuneCP5_13p6TeV_madgraph-pythia8_2024"],
+                # ggF samples must match the ggf basis of hh_model_13p6TeV:model_default (kl = 1, 2.45, 5)
+                "ggHH_kl_1_kt_1_13p6TeV_hbbhbb":    ["GluGluHHto4B_Par-c2-0p00-kl-1p00-kt-1p00_TuneCP5_13p6TeV_powheg-pythia8_2024"],
+                "ggHH_kl_2p45_kt_1_13p6TeV_hbbhbb": ["GluGluHHto4B_Par-c2-0p00-kl-2p45-kt-1p00_TuneCP5_13p6TeV_powheg-pythia8_2024"],
+                "ggHH_kl_5_kt_1_13p6TeV_hbbhbb":    ["GluGluHHto4B_Par-c2-0p00-kl-5p00-kt-1p00_TuneCP5_13p6TeV_powheg-pythia8_2024"],
+                "qqHH_CV_1_C2V_1_kl_1_13p6TeV_hbbhbb":             ["VBFHHto4B_Par-CV-1-C2V-1-C3-1_TuneCP5_13p6TeV_madgraph-pythia8_2024"],
                 "qqHH_CV_1_C2V_0_kl_1_13p6TeV_hbbhbb":              ["VBFHHto4B_Par-CV-1-C2V-0-C3-1_TuneCP5_13p6TeV_madgraph-pythia8_2024"],
                 "qqHH_CV_m0p758_C2V_1p44_kl_m19p3_13p6TeV_hbbhbb":  ["VBFHHto4B_Par-CV-m0p758-C2V-1p44-C3-m19p3_TuneCP5_13p6TeV_madgraph-pythia8_2024"],
                 "qqHH_CV_1p74_C2V_1p37_kl_14p4_13p6TeV_hbbhbb":     ["VBFHHto4B_Par-CV-1p74-C2V-1p37-C3-14p4_TuneCP5_13p6TeV_madgraph-pythia8_2024"],
@@ -187,14 +219,16 @@ def get_year(pocketcoffea_year, year_type=0):
         raise ValueError(f"Wrong values for either input year: {pocketcoffea_year} or year_type: {year_type}")
 
 
-def get_uncertainty_name(pocketcoffea_name, year):
+def get_uncertainty_name(pocketcoffea_name, year, jettype=None):
     """Get conventional datacard name for systematic uncertainties"""
     # Try to remove unnecessary things in front (e.g. "AK4PFPuppi", "AK8PFPuppi")
     if "Puppi" in pocketcoffea_name or "AK" in pocketcoffea_name:
         pocketcoffea_name = pocketcoffea_name.split("_", 1)[-1]
+    if jettype:  # In the boosted case, we have AK4 and AK8. This is not seen in datacards of HIG 24-010, so I am not sure how to handle it otherwise.
+        jettype = f"{jettype}_"
     unc_map = {
-        "JES_Total": f"CMS_scale_j_{get_year(year, year_type=0)}",
-        "JER": f"CMS_res_j_{get_year(year, year_type=0)}",
+        "JES_Total": f"CMS_scale_j_{jettype}{get_year(year, year_type=0)}",
+        "JER": f"CMS_res_j_{jettype}{get_year(year, year_type=0)}",
         "pileup": f"CMS_pileup_{get_year(year, year_type=0)}",
         "luminosity": f"lumi_13TeV_{get_year(year, year_type=1)}",
         }
@@ -255,6 +289,28 @@ def fold_flow(histogram, axis=-1):
         if traits.overflow:
             view_ax[field][..., -2] += view_ax[field][..., -1]
             view_ax[field][..., -1] = 0
+    return new_hist
+
+
+def cut_range(histogram, low, high):
+    """Return the histogram restricted to [low, high] on the variable axis (last axis).
+
+    Slicing in hist moves the removed content into the flow bins, so these are zeroed afterwards
+    to really drop the events outside the range. If `low`/`high` are not on a bin edge, the bin
+    containing them is kept.
+    """
+    axis = histogram.axes[-1]
+    new_hist = histogram[{axis.name: slice(hist.loc(low), hist.loc(high))}]
+    edges = new_hist.axes[-1].edges
+    if not (np.isclose(edges[0], low) and np.isclose(edges[-1], high)):
+        logger.warning(f"Fit range [{low}, {high}] does not match the bin edges of {axis.name}, using [{edges[0]}, {edges[-1]}]")
+    traits = new_hist.axes[-1].traits
+    view_ax = np.moveaxis(new_hist.view(flow=True), -1, 0)
+    for field in ("value", "variance"):
+        if traits.underflow:
+            view_ax[field][0] = 0
+        if traits.overflow:
+            view_ax[field][-1] = 0
     return new_hist
 
 
@@ -319,23 +375,34 @@ def compute_min_stat_edges(histograms, category, bkg_datasets, meta_dict, max_re
     return new_edges
 
 
-def compute_norm_factor(histograms, num_label, denom_label):
-    """Global normalisation factor sum(num_label) / sum(denom_label), summed over all data datasets.
+def compute_norm_factor(histograms, num_label, denom_label, mc_bkg_datasets=()):
+    """Global normalisation factor (sum(data, num_label) - sum(MC bkg, num_label)) / sum(data, denom_label).
+
+    The reweighted data in denom_label only estimates the data-driven (QCD) part, so the MC backgrounds
+    (e.g. ttbar) are subtracted in num_label: data-driven estimate + MC backgrounds = data in num_label.
 
     :param histograms: histograms of a single variable, layout {sample: {dataset: hist}}
+    :param mc_bkg_datasets: MC background datasets subtracted from the data in num_label
     """
     sum_num = 0.0
+    sum_mc = 0.0
     sum_denom = 0.0
     for datasets in histograms.values():
         for dataset, histogram in datasets.items():
+            if dataset in mc_bkg_datasets:
+                selection = {"cat": num_label}
+                if "variation" in histogram.axes.name:
+                    selection["variation"] = "nominal"
+                sum_mc += histogram[selection].sum(flow=True).value
+                continue
             if "DATA" not in dataset or dataset.endswith("_background"):
                 continue
             sum_num += histogram[{"cat": num_label}].sum(flow=True).value
             sum_denom += histogram[{"cat": denom_label}].sum(flow=True).value
     if sum_denom == 0:
         raise ValueError(f"No data events in normalisation region {denom_label!r}")
-    factor = sum_num / sum_denom
-    logger.info(f"Normalisation factor {num_label} / {denom_label} = {sum_num} / {sum_denom} = {factor:.5f}")
+    factor = (sum_num - sum_mc) / sum_denom
+    logger.info(f"Normalisation factor ({num_label} - MC bkg) / {denom_label} = ({sum_num} - {sum_mc}) / {sum_denom} = {factor:.5f}")
     return factor
 
 
@@ -416,10 +483,11 @@ def create_new_region(coffea_file, cat_name, sig_region_name, bkg_region_name, f
                 coffea_file["cutflow"][cat_name][f"{key}_background"][f"{subkey}_background"] = subvalue
     # == variables ==
     # One global factor (from the fit variable, flow included) for all eras and variables
+    mc_bkg_datasets = [d for datasets in sig_bkg_dict["background"].values() for d in datasets if "DATA" not in d]
     if args.separate_normalisation:
-        norm_factor = compute_norm_factor(coffea_file["variables"][fit_variable], sig_region_name, bkg_region_name)
+        norm_factor = compute_norm_factor(coffea_file["variables"][fit_variable], sig_region_name, bkg_region_name, mc_bkg_datasets)
     else:
-        norm_factor = compute_norm_factor(coffea_file["variables"][fit_variable], sig_control_region_name, bkg_control_region_name)
+        norm_factor = compute_norm_factor(coffea_file["variables"][fit_variable], sig_control_region_name, bkg_control_region_name, mc_bkg_datasets)
     for column in coffea_file["variables"].keys():
         sample_list = [s for s in coffea_file["variables"][column] if not s.endswith("_background")]
         for sample in sample_list:
@@ -485,6 +553,11 @@ if __name__ == "__main__":
         histograms_dict = {}
         for key, sob_hist in coffea_file["variables"].items():
             if value["fit_variable"] in key:
+                if args.fit_range is not None:
+                    sob_hist = {
+                        sample: {dataset: cut_range(h, *args.fit_range) for dataset, h in datasets.items()}
+                        for sample, datasets in sob_hist.items()
+                    }
                 if args.nbins is None:
                     histograms_dict[key] = sob_hist
                 else:
@@ -566,6 +639,7 @@ if __name__ == "__main__":
             # Get to the variation infos in the histograms for MC signal:
             systematics_list = []
             # Iterate through different signal types
+            card_year = meta_dict[datasets[0]]['year']
             for sig_type, datasets in sig_bkg_dict["signal"].items():
                 # Iterate through the datasets in a particular signal type (often a signle one)
                 variations_updown = list(sob_hist[meta_dict[datasets[0]]["sample"]][datasets[0]].axes['variation'])
@@ -580,9 +654,12 @@ if __name__ == "__main__":
                     raise ValueError(f"Variations list {variations} does not contain 'nominal'.")
                 logger.info(f"Found variations: {variations}")
                 for syst in variations:
-                    if args.boosted and "AK4" in syst:
-                        continue
-                    systematics_list.append(SystematicUncertainty(name=syst, datacard_name=get_uncertainty_name(syst, meta_dict[datasets[0]]['year']), typ="shape", processes=list(sig_bkg_dict["signal"].keys()), years=[meta_dict[datasets[0]]["year"]], value=1.0))
+                    if args.boosted: 
+                        if "AK4" in syst:
+                            systematics_list.append(SystematicUncertainty(name=syst, datacard_name=get_uncertainty_name(syst, card_year, jettype="AK4"), typ="shape", processes=list(sig_bkg_dict["signal"].keys()), years=[card_year], value=1.0))
+                        if "AK8" in syst:
+                            systematics_list.append(SystematicUncertainty(name=syst, datacard_name=get_uncertainty_name(syst, card_year, jettype="AK8"), typ="shape", processes=list(sig_bkg_dict["signal"].keys()), years=[card_year], value=1.0))
+                    systematics_list.append(SystematicUncertainty(name=syst, datacard_name=get_uncertainty_name(syst, card_year), typ="shape", processes=list(sig_bkg_dict["signal"].keys()), years=[card_year], value=1.0))
             # At some point we will have a variation for the reweighting uncertainty, but right now, we only want variations on the MC processes
             bg_mc = {k: v for k, v in sig_bkg_dict["background"].items() if "DATA" not in v[0]}
             for sig_type, datasets in bg_mc.items():
@@ -599,7 +676,20 @@ if __name__ == "__main__":
                     raise ValueError(f"Variations list {variations} does not contain 'nominal'.")
                 logger.info(f"Found variations: {variations}")
                 for syst in variations:
-                    systematics_list.append(SystematicUncertainty(name=syst, datacard_name=get_uncertainty_name(syst, meta_dict[datasets[0]]['year']), typ="shape", processes=list(bg_mc.keys()), years=[meta_dict[datasets[0]]["year"]], value=1.0))
+                    systematics_list.append(SystematicUncertainty(name=syst, datacard_name=get_uncertainty_name(syst, card_year), typ="shape", processes=list(bg_mc.keys()), years=[card_year], value=1.0))
+            
+            # ====== Other systematics / basically theory =======
+            systematics_list.append(SystematicUncertainty(name="lumi", datacard_name=get_uncertainty_name("lumi", card_year), typ="lnN", processes=list(bg_mc.keys()) + list(sig_bkg_dict["signal"].keys()), value=lumi_sys_values[card_year], years=[card_year]))
+            systematics_list.append(SystematicUncertainty(name="BR_hbb", datacard_name="BR_hbb", typ="lnN", processes=list(sig_bkg_dict["signal"].keys()), value=BR_HBB, years=[card_year]))
+            systematics_list.append(SystematicUncertainty(name="pdf_Higgs_ggHH", datacard_name="pdf_Higgs_ggHH", typ="lnN", processes=list(sig_bkg_dict["signal"].keys()), value=PDF_HIGGS_GGHH, years=[card_year]))
+            systematics_list.append(SystematicUncertainty(name="pdf_Higgs_qqHH", datacard_name="pdf_Higgs_qqHH", typ="lnN", processes=list(sig_bkg_dict["signal"].keys()), value=PDF_HIGGS_QQHH, years=[card_year]))
+            systematics_list.append(SystematicUncertainty(name="alphaS_ggHH", datacard_name="alphaS_ggHH", typ="lnN", processes=list(sig_bkg_dict["signal"].keys()), value=ALPHAS_GGHH, years=[card_year]))
+            systematics_list.append(SystematicUncertainty(name="Scale_ggHH", datacard_name="Scale_ggHH", typ="lnN", processes=list(sig_bkg_dict["signal"].keys()), value=SCALE_GGHH, years=[card_year]))
+            systematics_list.append(SystematicUncertainty(name="mtop_ggHH", datacard_name="mtop_ggHH", typ="lnN", processes=list(sig_bkg_dict["signal"].keys()), value=MTOP_GGHH, years=[card_year]))
+
+
+
+
             systematics = Systematics(systematics_list)
 
             _label = "run3"

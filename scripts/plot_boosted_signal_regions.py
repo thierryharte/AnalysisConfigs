@@ -1,0 +1,238 @@
+"""Plot the boosted background prediction (reweighted QCD estimate + ttbar MC)
+in each boosted signal-region category (catvbf, cat1, cat2, cat3).
+
+The QCD estimate is the reweighted data of boosted_control_region_B_<cat>_postW,
+scaled with one global factor such that QCD estimate + ttbar MC matches the data in C:
+    (sum_w(data, C) - sum_w(ttbar MC, C)) / sum_w(data, boosted_control_sideband_region_A_postW)
+with C = boosted_signal_sideband_region_C.
+The ttbar component is taken from the TT MC in boosted_signal_region_D_<cat>.
+Data is only shown in the categories passed with --unblind (default: cat3).
+
+Example:
+    python scripts/plot_boosted_signal_regions.py -i /path/to/output_dir -o plots_boosted_SR
+"""
+
+import os
+import argparse
+import numpy as np
+from multiprocessing import Pool
+from hist import Hist
+
+from utils_configs.plot.get_era_lumi import get_era_lumi
+from utils_configs.plot.get_columns_from_files import get_columns_from_files
+from utils_configs.plot.HEPPlotter import HEPPlotter
+
+
+parser = argparse.ArgumentParser(description="Plot boosted background prediction in the signal-region categories")
+parser.add_argument("-i", "--input-dir", type=str, required=True, help="Directory with the coffea output files")
+parser.add_argument("-o", "--output", type=str, default="plots_boosted_SR", help="Output directory")
+parser.add_argument("-c", "--categories", type=str, nargs="+", default=["catvbf", "cat1", "cat2", "cat3"], help="Signal-region categories to plot")
+parser.add_argument("-u", "--unblind", type=str, nargs="*", default=["cat3"], help="Categories in which data is shown")
+parser.add_argument("-w", "--workers", type=int, default=8, help="Number of workers")
+parser.add_argument("-l", "--linear", action="store_true", help="Linear y scale", default=False)
+parser.add_argument("-ov", "--only-vars", type=str, nargs="+", default=None, help="Only plot columns containing one of these substrings")
+parser.add_argument("-mw", "--mask-large-weights", action="store_true", default=False,
+                    help="Remove reweighted events with NaN, weight > 100 or weight < 0 (also in the normalisation region)")
+parser.add_argument("-cms", "--cmstext", type=str, default="Private", help="Text shown on CMS plot")
+args = parser.parse_args()
+
+NUMBER_OF_BINS = 20
+PAD_VALUE = -999
+
+SIG_REGION = "boosted_signal_region_D_{}"
+BKG_REGION = "boosted_control_region_B_{}_postW"
+NORM_NUM_REGION = "boosted_signal_sideband_region_C"
+NORM_DEN_REGION = "boosted_control_sideband_region_A_postW"
+
+COLOR_DATA = "black"
+COLOR_QCD = ("red", "salmon")
+COLOR_TT = ("darkorange", "navajowhite")
+
+SKIP_VARS = ("weight", "events_event", "year")
+
+outputdir = args.output
+os.makedirs(outputdir, exist_ok=True)
+
+
+def _keep_var(x):
+    if "weight" in x:
+        return True
+    if "prov" in x or "era" in x or "events_sigma" in x:
+        return False
+    return args.only_vars is None or any(s in x for s in args.only_vars)
+
+
+def _list_files(selector):
+    return sorted(
+        os.path.join(args.input_dir, f)
+        for f in os.listdir(args.input_dir)
+        if f.endswith(".coffea") and selector(f)
+    )
+
+
+data_categories = {NORM_NUM_REGION, NORM_DEN_REGION}
+data_categories |= {BKG_REGION.format(c) for c in args.categories}
+data_categories |= {SIG_REGION.format(c) for c in args.categories if c in args.unblind}
+tt_categories = {NORM_NUM_REGION} | {SIG_REGION.format(c) for c in args.categories}
+
+print(f"Loading data categories: {sorted(data_categories)}")
+cat_col_data, total_datasets_list = get_columns_from_files(
+    _list_files(lambda f: "DATA" in f), "nominal", _keep_var,
+    category_filter=lambda c: c in data_categories,
+)
+print(f"Loading ttbar categories: {sorted(tt_categories)}")
+cat_col_tt, _ = get_columns_from_files(
+    _list_files(lambda f: "_TT" in f), "nominal", _keep_var,
+    category_filter=lambda c: c in tt_categories,
+)
+
+
+def clean_weights(cols, is_reweighted):
+    """Return a mask removing events with non-finite (and optionally large/negative) weights."""
+    w = cols["weight"]
+    mask = np.isfinite(w)
+    if is_reweighted and args.mask_large_weights:
+        mask &= (w <= 100) & (w >= 0)
+    n_cut = int((~mask).sum())
+    if n_cut:
+        print(f"  removing {n_cut}/{len(w)} events ({100 * n_cut / len(w):.3f}%) with bad weights")
+    return mask
+
+
+masks_data = {cat: clean_weights(cols, "postW" in cat) for cat, cols in cat_col_data.items()}
+masks_tt = {cat: clean_weights(cols, False) for cat, cols in cat_col_tt.items()}
+
+# Global normalisation of the reweighted QCD estimate: QCD_est(A_postW) + ttbar MC(C) = data(C)
+sum_data = cat_col_data[NORM_NUM_REGION]["weight"][masks_data[NORM_NUM_REGION]].sum()
+sum_tt = cat_col_tt[NORM_NUM_REGION]["weight"][masks_tt[NORM_NUM_REGION]].sum()
+sum_den = cat_col_data[NORM_DEN_REGION]["weight"][masks_data[NORM_DEN_REGION]].sum()
+NORM_FACTOR = (sum_data - sum_tt) / sum_den
+print(
+    f"Normalisation factor (data - ttbar)({NORM_NUM_REGION}) / {NORM_DEN_REGION} = "
+    f"({sum_data} - {sum_tt}) / {sum_den} = {NORM_FACTOR:.5f}"
+)
+
+
+def get_bins(col):
+    if np.issubdtype(col.dtype, np.integer):
+        return np.arange(col.min() - 0.5, col.max() + 1.5, 1)
+    low, high = np.quantile(col, [0.001, 0.999])
+    return np.linspace(low, high, NUMBER_OF_BINS + 1)
+
+
+def make_hist(col, weight, bins, var):
+    histo = Hist.new.Var(bins, name=var, flow=False).Weight()
+    histo.fill(col, weight=weight)
+    return histo
+
+
+def get_column(cat_col, masks, region, var):
+    col = cat_col[region][var][masks[region]]
+    w = cat_col[region]["weight"][masks[region]]
+    pad = col != PAD_VALUE
+    return col[pad], w[pad]
+
+
+def plot_single_var(category, var, lumi, era_string):
+    col_qcd, w_qcd = get_column(cat_col_data, masks_data, BKG_REGION.format(category), var)
+    col_tt, w_tt = get_column(cat_col_tt, masks_tt, SIG_REGION.format(category), var)
+    w_qcd = w_qcd * NORM_FACTOR
+    show_data = category in args.unblind
+
+    if len(col_qcd) == 0:
+        print(f"WARNING: no background events for {var} in {category}, skipping")
+        return
+    # binning from the background prediction, so it doesn't depend on unblinding
+    bins = get_bins(col_qcd)
+    if not (np.all(np.isfinite(bins)) and np.all(np.diff(bins) > 0)):
+        print(f"WARNING: degenerate bin edges for {var} in {category}, skipping")
+        return
+
+    hist_1d_dict = {}
+    if show_data:
+        col_data, w_data = get_column(cat_col_data, masks_data, SIG_REGION.format(category), var)
+        hist_1d_dict["Data"] = {
+            "data": make_hist(col_data, w_data, bins, var),
+            "style": {
+                "is_reference": True,
+                "histtype": "errorbar",
+                "color": COLOR_DATA,
+            },
+        }
+    hist_1d_dict["QCD (reweighted) + TT"] = {
+        "data": [make_hist(col_qcd, w_qcd, bins, var), make_hist(col_tt, w_tt, bins, var)],
+        "style": {
+            "is_reference": False,
+            "histtype": "fill",
+            "stack": True,
+            # keep TT on top of the stack
+            "stack_sort": False,
+            "legend_name": ["QCD (reweighted)", r"$t\bar{t}$"],
+            "edgecolor": [COLOR_QCD[0], COLOR_TT[0]],
+            "facecolor": [COLOR_QCD[1], COLOR_TT[1]],
+            "alpha": [0.5, 0.5],
+        },
+    }
+
+    dir_cat = os.path.join(outputdir, f"SR_{category}")
+    os.makedirs(dir_cat, exist_ok=True)
+    p = (
+        HEPPlotter()
+        .set_plot_config(
+            lumitext=f"SR {category}, {era_string}, {lumi}" + r" $fb^{-1}$, (13.6 TeV)", cmstext=args.cmstext,
+            figsize=[13, 13],
+        )
+        .set_output(os.path.join(dir_cat, var))
+        .set_labels(var, "Events", ratio_label="Data/Pred.")
+        .set_options(y_log=not args.linear, reference_to_den=False, set_ylim_ratio=0.5)
+        .set_data(hist_1d_dict, plot_type="1d")
+    )
+    if show_data:
+        p = p.add_chi_square()
+    p.run()
+
+
+def print_yields():
+    print(f"\n{'category':<10} {'QCD (rew.)':>14} {'TT':>12} {'total':>14} {'data':>10}")
+    for category in args.categories:
+        bkg_reg, sig_reg = BKG_REGION.format(category), SIG_REGION.format(category)
+        y_qcd = cat_col_data[bkg_reg]["weight"][masks_data[bkg_reg]].sum() * NORM_FACTOR
+        y_tt = cat_col_tt[sig_reg]["weight"][masks_tt[sig_reg]].sum()
+        y_data = (
+            f"{cat_col_data[sig_reg]['weight'][masks_data[sig_reg]].sum():10.1f}"
+            if category in args.unblind else f"{'blind':>10}"
+        )
+        print(f"{category:<10} {y_qcd:14.2f} {y_tt:12.2f} {y_qcd + y_tt:14.2f} {y_data}")
+    print()
+
+
+if __name__ == "__main__":
+    lumi, era_string = get_era_lumi(total_datasets_list)
+
+    missing = [
+        c for c in args.categories
+        if BKG_REGION.format(c) not in cat_col_data or SIG_REGION.format(c) not in cat_col_tt
+    ]
+    if missing:
+        raise KeyError(f"Missing background or ttbar columns for categories {missing}")
+
+    print_yields()
+
+    jobs = []
+    for category in args.categories:
+        vars_bkg = set(cat_col_data[BKG_REGION.format(category)].keys())
+        vars_tt = set(cat_col_tt[SIG_REGION.format(category)].keys())
+        variables = sorted(
+            v for v in vars_bkg & vars_tt
+            if not any(s in v for s in SKIP_VARS) and not v.endswith("_N")
+        )
+        jobs += [(category, var, lumi, era_string) for var in variables]
+
+    if args.workers > 1:
+        with Pool(args.workers) as p:
+            p.starmap(plot_single_var, jobs)
+    else:
+        for job in jobs:
+            plot_single_var(*job)
+
+    print(f"\nPlots saved in {outputdir}")

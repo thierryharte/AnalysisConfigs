@@ -1096,22 +1096,104 @@ variable_dict_bkg_morphing = {
 }
 
 
-def get_variables_dict_sig_bkg_score(transformed_bins, y=""):
-    score_histograms = {
-        "sig_bkg_dnn_score": HistConf(
-            [
-                Axis(
-                    coll="events",
-                    field="sig_bkg_dnn_score",
-                    bins=20,
-                    start=0,
-                    stop=1,
-                    label="Signal vs Background DNN score",
-                )
-            ],
-            storage="weight",
-        ),
-    }
+def get_variables_dict_sig_bkg_score(transformed_bins, y="", boosted=False):
+    if not boosted:
+        score_histograms = {
+            "sig_bkg_dnn_score": HistConf(
+                [
+                    Axis(
+                        coll="events",
+                        field="sig_bkg_dnn_score",
+                        bins=20,
+                        start=0,
+                        stop=1,
+                        label="Signal vs Background DNN score",
+                    )
+                ],
+                storage="weight",
+            ),
+        }
+    else:
+        score_histograms = {
+            "sig_bkg_dnn_score_QCD": HistConf(
+                [
+                    Axis(
+                        coll="events",
+                        field="sig_bkg_dnn_score_QCD",
+                        bins=20,
+                        start=0,
+                        stop=1,
+                        label="Signal vs Background DNN score QCD",
+                    )
+                ],
+                storage="weight",
+            ),
+            "sig_bkg_dnn_score_TTbar": HistConf(
+                [
+                    Axis(
+                        coll="events",
+                        field="sig_bkg_dnn_score_TTbar",
+                        bins=20,
+                        start=0,
+                        stop=1,
+                        label="Signal vs Background DNN score TTbar",
+                    )
+                ],
+                storage="weight",
+            ),
+            "sig_bkg_dnn_score_VBF": HistConf(
+                [
+                    Axis(
+                        coll="events",
+                        field="sig_bkg_dnn_score_VBF",
+                        bins=20,
+                        start=0,
+                        stop=1,
+                        label="Signal vs Background DNN score VBF",
+                    )
+                ],
+                storage="weight",
+            ),
+            "sig_bkg_dnn_score_ggF": HistConf(
+                [
+                    Axis(
+                        coll="events",
+                        field="sig_bkg_dnn_score_ggF",
+                        bins=20,
+                        start=0,
+                        stop=1,
+                        label="Signal vs Background DNN score ggF",
+                    )
+                ],
+                storage="weight",
+            ),
+            "sig_bkg_dnn_score_VBFvsBKG": HistConf(
+                [
+                    Axis(
+                        coll="events",
+                        field="sig_bkg_dnn_score_VBFvsBKG",
+                        bins=20,
+                        start=0,
+                        stop=1,
+                        label="Signal vs Background DNN score VBFvsBKG",
+                    )
+                ],
+                storage="weight",
+            ),
+            "sig_bkg_dnn_score_ggFvsBKG": HistConf(
+                [
+                    Axis(
+                        coll="events",
+                        field="sig_bkg_dnn_score_ggFvsBKG",
+                        bins=20,
+                        start=0,
+                        stop=1,
+                        label="Signal vs Background DNN score ggFvsBKG",
+                    )
+                ],
+                storage="weight",
+            ),
+        }
     if transformed_bins:
         score_histograms[f"sig_bkg_dnn_score_transformed{y}"] = HistConf(
             [

@@ -1,0 +1,39 @@
+{
+  "DATA_JetMET0_HH4bBoosted_2024_EraC": {
+    "metadata": {
+      "das_names": "['/JetMET0/Run2024C-MINIv6NANOv15-v1/NANOAOD']",
+      "sample": "DATA_JetMET0_HH4bBoosted",
+      "year": "2024",
+      "isMC": "False",
+      "primaryDataset": "JetMET0",
+      "era": "C",
+      "nevents": "10231429",
+      "size": "22336569561",
+      "skim_efficiency": "0.14753562462466044",
+      "isSkim": "True"
+    },
+    "files": [
+      "root://t3dcachedb03.psi.ch:1094//pnfs/psi.ch/cms/trivcat/store/user/tharte/HH4b/ntuples/skimmed_files/vbf_boosted_hadded/DATA_JetMET0_HH4bBoosted_2024_EraC/DATA_JetMET0_HH4bBoosted_2024_EraC_1.root",
+      "root://t3dcachedb03.psi.ch:1094//pnfs/psi.ch/cms/trivcat/store/user/tharte/HH4b/ntuples/skimmed_files/vbf_boosted_hadded/DATA_JetMET0_HH4bBoosted_2024_EraC/DATA_JetMET0_HH4bBoosted_2024_EraC_2.root",
+      "root://t3dcachedb03.psi.ch:1094//pnfs/psi.ch/cms/trivcat/store/user/tharte/HH4b/ntuples/skimmed_files/vbf_boosted_hadded/DATA_JetMET0_HH4bBoosted_2024_EraC/DATA_JetMET0_HH4bBoosted_2024_EraC_3.root",
+      "root://t3dcachedb03.psi.ch:1094//pnfs/psi.ch/cms/trivcat/store/user/tharte/HH4b/ntuples/skimmed_files/vbf_boosted_hadded/DATA_JetMET0_HH4bBoosted_2024_EraC/DATA_JetMET0_HH4bBoosted_2024_EraC_4.root",
+      "root://t3dcachedb03.psi.ch:1094//pnfs/psi.ch/cms/trivcat/store/user/tharte/HH4b/ntuples/skimmed_files/vbf_boosted_hadded/DATA_JetMET0_HH4bBoosted_2024_EraC/DATA_JetMET0_HH4bBoosted_2024_EraC_5.root",
+      "root://t3dcachedb03.psi.ch:1094//pnfs/psi.ch/cms/trivcat/store/user/tharte/HH4b/ntuples/skimmed_files/vbf_boosted_hadded/DATA_JetMET0_HH4bBoosted_2024_EraC/DATA_JetMET0_HH4bBoosted_2024_EraC_6.root",
+      "root://t3dcachedb03.psi.ch:1094//pnfs/psi.ch/cms/trivcat/store/user/tharte/HH4b/ntuples/skimmed_files/vbf_boosted_hadded/DATA_JetMET0_HH4bBoosted_2024_EraC/DATA_JetMET0_HH4bBoosted_2024_EraC_7.root",
+      "root://t3dcachedb03.psi.ch:1094//pnfs/psi.ch/cms/trivcat/store/user/tharte/HH4b/ntuples/skimmed_files/vbf_boosted_hadded/DATA_JetMET0_HH4bBoosted_2024_EraC/DATA_JetMET0_HH4bBoosted_2024_EraC_8.root",
+      "root://t3dcachedb03.psi.ch:1094//pnfs/psi.ch/cms/trivcat/store/user/tharte/HH4b/ntuples/skimmed_files/vbf_boosted_hadded/DATA_JetMET0_HH4bBoosted_2024_EraC/DATA_JetMET0_HH4bBoosted_2024_EraC_9.root",
+      "root://t3dcachedb03.psi.ch:1094//pnfs/psi.ch/cms/trivcat/store/user/tharte/HH4b/ntuples/skimmed_files/vbf_boosted_hadded/DATA_JetMET0_HH4bBoosted_2024_EraC/DATA_JetMET0_HH4bBoosted_2024_EraC_10.root",
+      "root://t3dcachedb03.psi.ch:1094//pnfs/psi.ch/cms/trivcat/store/user/tharte/HH4b/ntuples/skimmed_files/vbf_boosted_hadded/DATA_JetMET0_HH4bBoosted_2024_EraC/DATA_JetMET0_HH4bBoosted_2024_EraC_11.root",
+      "root://t3dcachedb03.psi.ch:1094//pnfs/psi.ch/cms/trivcat/store/user/tharte/HH4b/ntuples/skimmed_files/vbf_boosted_hadded/DATA_JetMET0_HH4bBoosted_2024_EraC/DATA_JetMET0_HH4bBoosted_2024_EraC_12.root",
+      "root://t3dcachedb03.psi.ch:1094//pnfs/psi.ch/cms/trivcat/store/user/tharte/HH4b/ntuples/skimmed_files/vbf_boosted_hadded/DATA_JetMET0_HH4bBoosted_2024_EraC/DATA_JetMET0_HH4bBoosted_2024_EraC_13.root",
+      "root://t3dcachedb03.psi.ch:1094//pnfs/psi.ch/cms/trivcat/store/user/tharte/HH4b/ntuples/skimmed_files/vbf_boosted_hadded/DATA_JetMET0_HH4bBoosted_2024_EraC/DATA_JetMET0_HH4bBoosted_2024_EraC_14.root",
+      "root://t3dcachedb03.psi.ch:1094//pnfs/psi.ch/cms/trivcat/store/user/tharte/HH4b/ntuples/skimmed_files/vbf_boosted_hadded/DATA_JetMET0_HH4bBoosted_2024_EraC/DATA_JetMET0_HH4bBoosted_2024_EraC_15.root",
+      "root://t3dcachedb03.psi.ch:1094//pnfs/psi.ch/cms/trivcat/store/user/tharte/HH4b/ntuples/skimmed_files/vbf_boosted_hadded/DATA_JetMET0_HH4bBoosted_2024_EraC/DATA_JetMET0_HH4bBoosted_2024_EraC_16.root",
+      "root://t3dcachedb03.psi.ch:1094//pnfs/psi.ch/cms/trivcat/store/user/tharte/HH4b/ntuples/skimmed_files/vbf_boosted_hadded/DATA_JetMET0_HH4bBoosted_2024_EraC/DATA_JetMET0_HH4bBoosted_2024_EraC_17.root",
+      "root://t3dcachedb03.psi.ch:1094//pnfs/psi.ch/cms/trivcat/store/user/tharte/HH4b/ntuples/skimmed_files/vbf_boosted_hadded/DATA_JetMET0_HH4bBoosted_2024_EraC/DATA_JetMET0_HH4bBoosted_2024_EraC_18.root",
+      "root://t3dcachedb03.psi.ch:1094//pnfs/psi.ch/cms/trivcat/store/user/tharte/HH4b/ntuples/skimmed_files/vbf_boosted_hadded/DATA_JetMET0_HH4bBoosted_2024_EraC/DATA_JetMET0_HH4bBoosted_2024_EraC_19.root",
+      "root://t3dcachedb03.psi.ch:1094//pnfs/psi.ch/cms/trivcat/store/user/tharte/HH4b/ntuples/skimmed_files/vbf_boosted_hadded/DATA_JetMET0_HH4bBoosted_2024_EraC/DATA_JetMET0_HH4bBoosted_2024_EraC_20.root",
+      "root://t3dcachedb03.psi.ch:1094//pnfs/psi.ch/cms/trivcat/store/user/tharte/HH4b/ntuples/skimmed_files/vbf_boosted_hadded/DATA_JetMET0_HH4bBoosted_2024_EraC/DATA_JetMET0_HH4bBoosted_2024_EraC_21.root"
+    ]
+  }
+}

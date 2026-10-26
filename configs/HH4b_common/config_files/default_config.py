@@ -69,6 +69,8 @@ default_config_options_dict = {
     # Run the boosted (AK8 / FatJet) analysis: builds the `FatJetGood`
     # collection, the boosted categories and the boosted DNN variables.
     "boosted": False,
+    # The cuts used for separating the boosted signal regions. if empty, only the ABCD regions are produced.
+    "optimised_signal_cuts": False,
     # Use the Run-2 D_HH pairing algorithm instead of SPANet.
     # Mutually exclusive with `random_pt`.
     "run2": False,

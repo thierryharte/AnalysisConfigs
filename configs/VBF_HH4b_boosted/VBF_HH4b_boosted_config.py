@@ -95,16 +95,16 @@ sample_ggF_list = [
     # "GluGlutoHHto4B_spanet_kl-2p00_kt-1p00_c2-0p00_skimmed",
     # "GluGlutoHHto4B_spanet_kl-1p50_kt-1p00_c2-0p00_skimmed",
     # "GluGlutoHHto4B_spanet_kl-0p50_kt-1p00_c2-0p00_skimmed",
-    # "GluGluHHto4B_Par-c2-0p00-kl-0p00-kt-1p00_TuneCP5_13p6TeV_powheg-pythia8",
-    # "GluGluHHto4B_Par-c2-0p00-kl-1p00-kt-1p00_TuneCP5_13p6TeV_powheg-pythia8",
-    # "GluGluHHto4B_Par-c2-0p00-kl-2p45-kt-1p00_TuneCP5_13p6TeV_powheg-pythia8",
-    # "GluGluHHto4B_Par-c2-0p00-kl-5p00-kt-1p00_TuneCP5_13p6TeV_powheg-pythia8",
-    # "GluGluHHto4B_Par-c2-0p10-kl-1p00-kt-1p00_TuneCP5_13p6TeV_powheg-pythia8",
-    # "GluGluHHto4B_Par-c2-0p35-kl-1p00-kt-1p00_TuneCP5_13p6TeV_powheg-pythia8",
-    # "GluGluHHto4B_Par-c2-1p00-kl-0p00-kt-1p00_TuneCP5_13p6TeV_powheg-pythia8",
-    # "GluGluHHto4B_Par-c2-2p24-kl-m20p00-kt-1p00_TuneCP5_13p6TeV_powheg-pythia8",
-    # "GluGluHHto4B_Par-c2-3p00-kl-1p00-kt-1p00_TuneCP5_13p6TeV_powheg-pythia8",
-    # "GluGluHHto4B_Par-c2-m2p00-kl-1p00-kt-1p00_TuneCP5_13p6TeV_powheg-pythia8",
+    "GluGluHHto4B_Par-c2-0p00-kl-0p00-kt-1p00_TuneCP5_13p6TeV_powheg-pythia8",
+    "GluGluHHto4B_Par-c2-0p00-kl-1p00-kt-1p00_TuneCP5_13p6TeV_powheg-pythia8",
+    "GluGluHHto4B_Par-c2-0p00-kl-2p45-kt-1p00_TuneCP5_13p6TeV_powheg-pythia8",
+    "GluGluHHto4B_Par-c2-0p00-kl-5p00-kt-1p00_TuneCP5_13p6TeV_powheg-pythia8",
+    "GluGluHHto4B_Par-c2-0p10-kl-1p00-kt-1p00_TuneCP5_13p6TeV_powheg-pythia8",
+    "GluGluHHto4B_Par-c2-0p35-kl-1p00-kt-1p00_TuneCP5_13p6TeV_powheg-pythia8",
+    "GluGluHHto4B_Par-c2-1p00-kl-0p00-kt-1p00_TuneCP5_13p6TeV_powheg-pythia8",
+    "GluGluHHto4B_Par-c2-2p24-kl-m20p00-kt-1p00_TuneCP5_13p6TeV_powheg-pythia8",
+    "GluGluHHto4B_Par-c2-3p00-kl-1p00-kt-1p00_TuneCP5_13p6TeV_powheg-pythia8",
+    "GluGluHHto4B_Par-c2-m2p00-kl-1p00-kt-1p00_TuneCP5_13p6TeV_powheg-pythia8",
 ]
 
 sample_VBF_list=[
@@ -119,16 +119,16 @@ sample_VBF_list=[
     # "VBFHHto4B_CV_2p12_C2V_3p87_C3_m5p96",
     # "VBFHHto4B_CV_1_C2V_0_C3_1",
     # "VBFHHto4B_CV_1_C2V_1_C3_1",
-    # "VBFHHto4B_Par-CV-1-C2V-0-C3-1_TuneCP5_13p6TeV_madgraph-pythia8",
-    # "VBFHHto4B_Par-CV-1-C2V-1-C3-1_TuneCP5_13p6TeV_madgraph-pythia8",
-    # "VBFHHto4B_Par-CV-1p74-C2V-1p37-C3-14p4_TuneCP5_13p6TeV_madgraph-pythia8",
-    # "VBFHHto4B_Par-CV-2p12-C2V-3p87-C3-m5p96_TuneCP5_13p6TeV_madgraph-pythia8",
-    # "VBFHHto4B_Par-CV-m0p012-C2V-0p030-C3-10p2_TuneCP5_13p6TeV_madgraph-pythia8",
-    # "VBFHHto4B_Par-CV-m0p758-C2V-1p44-C3-m19p3_TuneCP5_13p6TeV_madgraph-pythia8",
-    # "VBFHHto4B_Par-CV-m0p962-C2V-0p959-C3-m1p43_TuneCP5_13p6TeV_madgraph-pythia8",
-    # "VBFHHto4B_Par-CV-m1p21-C2V-1p94-C3-m0p94_TuneCP5_13p6TeV_madgraph-pythia8",
-    # "VBFHHto4B_Par-CV-m1p60-C2V-2p72-C3-m1p36_TuneCP5_13p6TeV_madgraph-pythia8",
-    # "VBFHHto4B_Par-CV-m1p83-C2V-3p57-C3-m3p39_TuneCP5_13p6TeV_madgraph-pythia8",
+    "VBFHHto4B_Par-CV-1-C2V-0-C3-1_TuneCP5_13p6TeV_madgraph-pythia8",
+    "VBFHHto4B_Par-CV-1-C2V-1-C3-1_TuneCP5_13p6TeV_madgraph-pythia8",
+    "VBFHHto4B_Par-CV-1p74-C2V-1p37-C3-14p4_TuneCP5_13p6TeV_madgraph-pythia8",
+    "VBFHHto4B_Par-CV-2p12-C2V-3p87-C3-m5p96_TuneCP5_13p6TeV_madgraph-pythia8",
+    "VBFHHto4B_Par-CV-m0p012-C2V-0p030-C3-10p2_TuneCP5_13p6TeV_madgraph-pythia8",
+    "VBFHHto4B_Par-CV-m0p758-C2V-1p44-C3-m19p3_TuneCP5_13p6TeV_madgraph-pythia8",
+    "VBFHHto4B_Par-CV-m0p962-C2V-0p959-C3-m1p43_TuneCP5_13p6TeV_madgraph-pythia8",
+    "VBFHHto4B_Par-CV-m1p21-C2V-1p94-C3-m0p94_TuneCP5_13p6TeV_madgraph-pythia8",
+    "VBFHHto4B_Par-CV-m1p60-C2V-2p72-C3-m1p36_TuneCP5_13p6TeV_madgraph-pythia8",
+    "VBFHHto4B_Par-CV-m1p83-C2V-3p57-C3-m3p39_TuneCP5_13p6TeV_madgraph-pythia8",
 ]
 sample_list = (
     [
@@ -139,9 +139,9 @@ sample_list = (
         # "DATA_JetMET_JMENano_E",
         # "DATA_JetMET_JMENano_F",
         # "DATA_JetMET_JMENano_G",
-        # "TTtoLNu2Q",
-        # "TTto2L2Nu",
-        # "TTto4Q",
+        "TTtoLNu2Q",
+        "TTto2L2Nu",
+        "TTto4Q",
         # "DATA_ParkingHH",
         "DATA_JetMET0_HH4bBoosted",
         "DATA_JetMET1_HH4bBoosted",
@@ -177,6 +177,7 @@ categories_dict = define_categories(
     full_sideband=config_options_dict["boosted_full_sideband"],
     region_setting=config_options_dict["region_setting"],
     lead_sublead=config_options_dict["lead_sublead"],
+    optimised_cuts=config_options_dict["optimised_signal_cuts"],
 )
 
 if BASELINE:
@@ -252,6 +253,12 @@ else:
             },
             not config_options_dict["save_chunk"],
         )
+        if config_options_dict["sig_bkg_dnn"]:
+            column_list += get_columns_list(
+                    {
+                        "events": ["sig_bkg_dnn_score_VBF", "sig_bkg_dnn_score_ggF", "sig_bkg_dnn_score_TTbar", "sig_bkg_dnn_score_QCD", "sig_bkg_dnn_score_VBFvsBKG", "sig_bkg_dnn_score_ggFvsBKG", ]
+                }
+            )
         # column_list += get_columns_list(
         #     {
         #         "events": [
@@ -267,7 +274,7 @@ else:
         False, not config_options_dict["save_chunk"], total_input_columns, btag=False
     )
     # Add special columns
-    if config_options_dict["sig_bkg_dnn"]:
+    if not config_options_dict["boosted"] and config_options_dict["sig_bkg_dnn"]:
         column_list += get_columns_list({"events": ["sig_bkg_dnn_score"]})
 
 bysample_bycategory_column_dict = {}
@@ -341,7 +348,10 @@ cfg = Configurator(
                 "lumi",
                 "XS",
                 "pileup",
-
+                "sf_partonshower_isr",
+                "sf_partonshower_fsr",
+                # "sf_trigger_prescale" / "trigger_scale_factor"
+                # "TXbb_scale_factor"
             ],
             "bycategory": {},
         },
@@ -353,18 +363,24 @@ cfg = Configurator(
         "weights": {
             "common": {
                 "inclusive": [
-                    "genWeight",
-                    "lumi",
-                    "XS",
-                    "pileup",
+                    # "genWeight",
+                    # "lumi",
+                    # "XS",
+                    # "pileup",
+                    # "sf_partonshower_isr",
+                    # "sf_partonshower_fsr"
+                    # "trigger_scale_factor"
+                    # "TXbb_scale_factor"
                 ],
                 "bycategory": {},
+                    # "reweighting uncertainties"
             },
             "bysample": {},
         },
         "shape": {
             "common": {
-                "inclusive": ["jet_calibration"]
+                # "inclusive": ["jet_calibration"]
+                "inclusive": []
                 },
             }
     },

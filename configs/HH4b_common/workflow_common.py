@@ -2038,14 +2038,23 @@ class HH4bCommonProcessor(BaseProcessorABC):
                 # signal-vs-background discriminant out of the first two.
                 # NOTE: this assumes classes 0 and 1 are the ones to discriminate;
                 # adapt it if the model orders its classes differently.
-                for i in range(onnx_output.shape[1]):
-                    self.events[f"sig_bkg_dnn_score_{i}"] = onnx_output[:, i]
-                self.events["sig_bkg_dnn_score"] = self.events[
-                    "sig_bkg_dnn_score_0"
-                ] / (
-                    self.events["sig_bkg_dnn_score_0"]
-                    + self.events["sig_bkg_dnn_score_1"]
-                )
+                if not self.boosted:
+                    for i in range(onnx_output.shape[1]):
+                        self.events[f"sig_bkg_dnn_score_{i}"] = onnx_output[:, i]
+                    self.events["sig_bkg_dnn_score"] = self.events[
+                        "sig_bkg_dnn_score_0"
+                    ] / (
+                        self.events["sig_bkg_dnn_score_0"]
+                        + self.events["sig_bkg_dnn_score_1"]
+                    )
+                else:
+                    self.events["sig_bkg_dnn_score_QCD"] = onnx_output[:, 0]
+                    self.events["sig_bkg_dnn_score_TTbar"] = onnx_output[:, 1]
+                    self.events["sig_bkg_dnn_score_VBF"] = onnx_output[:, 2]
+                    self.events["sig_bkg_dnn_score_ggF"] = onnx_output[:, 3]
+
+                    self.events["sig_bkg_dnn_score_VBFvsBKG"] = self.events["sig_bkg_dnn_score_VBF"] / (self.events["sig_bkg_dnn_score_VBF"] + self.events["sig_bkg_dnn_score_QCD"] + self.events["sig_bkg_dnn_score_TTbar"])
+                    self.events["sig_bkg_dnn_score_ggFvsBKG"] = self.events["sig_bkg_dnn_score_ggF"] / (self.events["sig_bkg_dnn_score_ggF"] + self.events["sig_bkg_dnn_score_QCD"] + self.events["sig_bkg_dnn_score_TTbar"])
 
             del (
                 model_session_SIG_BKG_DNN,
