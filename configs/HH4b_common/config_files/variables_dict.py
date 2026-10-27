@@ -121,6 +121,10 @@ variables_dict_fatjets = {
             )
         ],
     ),
+}
+
+
+variables_dict_boosted_bdt = {
     "BDTggFScore": HistConf(
         [
             Axis(

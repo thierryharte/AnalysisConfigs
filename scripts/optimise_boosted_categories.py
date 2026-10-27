@@ -3,10 +3,10 @@ plus the subleading TXbb score.
 
 The category logic mirrors configs/HH4b_common/custom_cut_functions_common.py (hh4b_boosted_category_*),
 with the BDT scores replaced by a ggF and a VBF discriminant:
-    cat1   : txbb > txbb_c1 & D_ggF > ggf_c1
-    catvbf : !cat1 & txbb > txbb_vbf & D_VBF > vbf
-    cat2   : !cat1 & !catvbf & ( (txbb_c2a < txbb < txbb_c1 & D_ggF > ggf_c1) | (txbb > txbb_c1 & ggf_c2b < D_ggF < ggf_c1) )
-    cat3   : !cat1 & !catvbf & !cat2 & txbb > txbb_c2a & D_ggF > ggf_bkg
+    cat1   : txbb > txbb_c1 & D_ggF > bdt_ggf_c1
+    catvbf : !cat1 & txbb > txbb_vbf & D_VBF > bdt_vbf
+    cat2   : !cat1 & !catvbf & ( (txbb_c2a < txbb < txbb_c1 & D_ggF > bdt_ggf_c1) | (txbb > txbb_c1 & bdt_ggf_c2b < D_ggF < bdt_ggf_c1) )
+    cat3   : !cat1 & !catvbf & !cat2 & txbb > txbb_c2a & D_ggF > bdt_ggf_bkg
 
 Processes:
     - ggF / VBF signal and ttbar: MC in boosted_signal_region_D (TXbb not morphed)
@@ -77,13 +77,11 @@ parser.add_argument("--norm-denom-region", type=str, default="boosted_control_si
 args = parser.parse_args()
 
 CATEGORIES = ["none", "cat1", "catvbf", "cat2", "cat3"]
-# Parameter names follow _get_params in configs/HH4b_common/custom_cuts_common.py
-PARAMS = ["txbb_c1", "bdt_ggf_c1", "txbb_vbf", "bdt_vbf", "txbb_c2a", "bdt_ggf_c2b", "ggf_bkg"]
+# Parameter names follow _get_params in configs/HH4b_common/custom_cuts_common.py, so that the optimised cuts
+# can be copied directly into the `optimised_signal_cuts` config option
+PARAMS = ["txbb_c1", "bdt_ggf_c1", "txbb_vbf", "bdt_vbf", "txbb_c2a", "bdt_ggf_c2b", "bdt_ggf_bkg"]
 # Which grid axis each parameter lives on
-PARAM_AXIS = {"txbb_c1": "t", "txbb_vbf": "t", "txbb_c2a": "t", "ggf_c1": "g", "ggf_c2b": "g", "ggf_bkg": "g", "vbf": "v"}
-# Mapping onto the BDT keys in _get_params
-BDT_PARAM_KEYS = {"txbb_c1": "txbb_c1", "ggf_c1": "bdt_ggf_c1", "txbb_vbf": "txbb_vbf", "vbf": "bdt_vbf",
-                  "txbb_c2a": "txbb_c2a", "ggf_c2b": "bdt_ggf_c2b", "ggf_bkg": "bdt_ggf_bkg"}
+PARAM_AXIS = {"txbb_c1": "t", "txbb_vbf": "t", "txbb_c2a": "t", "bdt_ggf_c1": "g", "bdt_ggf_c2b": "g", "bdt_ggf_bkg": "g", "bdt_vbf": "v"}
 Z_CL = 1.96  # Z of the expected 95% CL limit (2*sqrt(B)/S convention uses ~2)
 
 SCORE_COLUMNS = {
@@ -182,7 +180,7 @@ def select_events(proc, parity):
 def assign_categories(t, g, v, cuts):
     """Category index (see CATEGORIES) for each entry. Works on values with value cuts, or on grid indices
     with cuts = index - 0.5 (then x > cut <=> index >= k)."""
-    cat1 = (t > cuts["txbb_c1"]) & (g > cuts["ggf_c1"])
+    cat1 = (t > cuts["txbb_c1"]) & (g > cuts["bdt_ggf_c1"])
     catvbf = ~cat1 & (t > cuts["txbb_vbf"]) & (v > cuts["bdt_vbf"])
     cat2 = ~cat1 & ~catvbf & (
         ((t > cuts["txbb_c2a"]) & (t < cuts["txbb_c1"]) & (g > cuts["bdt_ggf_c1"]))
@@ -354,8 +352,8 @@ def initial_cuts(grids, processes):
         except (OSError, KeyError, StopIteration) as e:
             from configs.HH4b_common.custom_cuts_common import _get_params
             logger.info(f"No BDT cuts found in config.json of the input ({e!r}), starting from _get_params({args.region_setting})")
-            params = _get_params(True, args.region_setting)
-        return {p: params[BDT_PARAM_KEYS[p]] for p in PARAMS}
+            params = _get_params(args.region_setting)
+        return {p: params[p] for p in PARAMS}
 
     def at_eff(axis, signal, eff):
         return weighted_quantile(processes[signal][axis], [1 - eff], weights=processes[signal]["w"])[0]
@@ -375,13 +373,13 @@ def to_values(indices, grids):
 
 
 def valid(indices):
-    return indices["txbb_c2a"] <= indices["txbb_c1"] and indices["ggf_bkg"] <= indices["ggf_c2b"] <= indices["ggf_c1"]
+    return indices["txbb_c2a"] <= indices["txbb_c1"] and indices["bdt_ggf_bkg"] <= indices["bdt_ggf_c2b"] <= indices["bdt_ggf_c1"]
 
 
 def optimise(binned, grids, start):
-    pairs = [("txbb_c1", "ggf_c1"), ("txbb_vbf", "bdt_vbf"), ("txbb_c2a", "ggf_c2b")]
+    pairs = [("txbb_c1", "bdt_ggf_c1"), ("txbb_vbf", "bdt_vbf"), ("txbb_c2a", "bdt_ggf_c2b")]
     if args.scan_cat3:
-        pairs.append(("ggf_bkg",))
+        pairs.append(("bdt_ggf_bkg",))
     best = dict(start)
     best_fom = evaluate(binned.yields(best))[0]
     logger.info(f"Start: F = {best_fom:.4g}")

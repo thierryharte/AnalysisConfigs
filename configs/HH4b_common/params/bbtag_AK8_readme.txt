@@ -1,0 +1,2 @@
+The correction file is copied from:
+/work/tharte/datasets/mutag-calib/rundir/18102026_fit_template_VLP-VHP_2pTbins/combine_plots_10relerr/SFb_plots/bbtag_AK8_scale_factors_for_globalParT3_XbbVsQCD_multi_purities_2pt_bins_5purities_internalised.json

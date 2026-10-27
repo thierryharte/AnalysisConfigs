@@ -18,12 +18,24 @@ parser.add_argument(
     help="Input coffea files monte carlo",
     default=None,
 )
-parser.add_argument(
+# For Boosted only: direction of the background morphing in the ABCD plane, same as the
+# `bkg_morphing_direction` config option
+morphing_direction_group = parser.add_mutually_exclusive_group()
+morphing_direction_group.add_argument(
     "--bbtag-direction",
-    action="store_true",
-    help="For Boosted only: If true, the ABCD method is intended in the other direction (from low to high bbtag).",
-    default=False,
+    action="store_const",
+    const="btag",
+    dest="morphing_direction",
+    help="For Boosted only: the morphing goes along the TXbb (trained A -> C, applied to B). This is the default.",
 )
+morphing_direction_group.add_argument(
+    "--mass-direction",
+    action="store_const",
+    const="mass",
+    dest="morphing_direction",
+    help="For Boosted only: the morphing goes along the Higgs mass (trained A -> B, applied to C).",
+)
+parser.set_defaults(morphing_direction="btag")
 parser.add_argument(
     "-ir",
     "--input-rew",

@@ -328,4 +328,10 @@ default_config_options_dict = {
     "region_setting": "40GeV",
     # Boosted region definition either by the leading or subleading Higgs mass
     "lead_sublead": "sublead",
+    # Direction of the boosted background morphing in the ABCD plane:
+    #   "btag" : along the subleading TXbb, trained A -> C (mass sideband) and applied to B
+    #            (defines `boosted_control_region_B_postW`)
+    #   "mass" : along the Higgs mass, trained A -> B (low TXbb) and applied to C
+    #            (defines `boosted_signal_sideband_region_C_postW`)
+    "bkg_morphing_direction": "btag",
 } | default_onnx_model_dict

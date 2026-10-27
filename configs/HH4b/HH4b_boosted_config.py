@@ -164,6 +164,7 @@ categories_dict = define_categories(
     vr1=config_options_dict["vr1"],
     boosted=config_options_dict["boosted"],
     split_qcd=config_options_dict["split_qcd"] if config_options_dict["boosted"] else False,
+    morphing_direction=config_options_dict["bkg_morphing_direction"],
 )
 # AKA if no model is applied
 # print(onnx_model_dict)

@@ -84,7 +84,7 @@ elif args.boosted:
             "con_bkg_preW":  "boosted_control_sideband_region_A",
             "con_bkg_postW": "boosted_control_sideband_region_A_postW",
         }
-        if args.bbtag_direction:
+        if args.morphing_direction == "btag":
             sub_regions["sig_bkg_preW"] = "boosted_control_region_B"
             sub_regions["sig_bkg_postW"] = "boosted_control_region_B_postW"
             sub_regions["control"] = "boosted_signal_sideband_region_C"
@@ -129,7 +129,7 @@ elif args.boosted:
             "con_bkg_preW":  "boosted_control_sideband_region_D",
             "con_bkg_postW": "boosted_control_sideband_region_D_postW",
         }
-        if args.bbtag_direction:
+        if args.morphing_direction == "btag":
             sub_regions["sig_bkg_preW"] = "boosted_control_region_C"
             sub_regions["sig_bkg_postW"] = "boosted_control_region_C_postW"
             sub_regions["control"] = "boosted_signal_sideband_region_B"

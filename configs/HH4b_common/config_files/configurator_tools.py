@@ -10,6 +10,7 @@ import configs.VBF_HH4b.custom_cuts as vbf_cuts
 from configs.HH4b_common.config_files.variables_dict import (
     variables_dict_jets,
     variables_dict_fatjets,
+    variables_dict_boosted_bdt,
     variables_dict_higgs_mass,
     variables_dict_random_pt,
     variables_dict_vbf,
@@ -30,6 +31,7 @@ def get_variables_dict(
     RUN2=False,
     SPANET=True,
     BOOSTED=False,
+    BDT=False,
 ):
     """Function to create the variable dictionary for the PocketCoffea Configurator()."""
     variables_dict = {}
@@ -45,6 +47,8 @@ def get_variables_dict(
         variables_dict.update(variable_dict_bkg_morphing)
     if BOOSTED:
         variables_dict.update(variables_dict_fatjets)
+    if BOOSTED and BDT:
+        variables_dict.update(variables_dict_boosted_bdt)
     if SCORE:
         has_qt = False
 
@@ -315,8 +319,9 @@ def define_single_category(category_name, wide_cr=False, ggf_vbf_threshold=False
                     cut_list.append(cuts.hh4b_boosted_mass_sideband_lower(region_setting, lead_sublead))
             else:
                 cut_list.append(cuts.hh4b_boosted_mass_signal(region_setting, lead_sublead))
-        # With the categories, we have to check, if we maybe need to separate by the reweighted TXbb for the postW.
-        # However, "postW" is not a good factor, as the region B still can use the normal TXbb. So Actually I need the "boosted_control" name. I will never morph D, so that is not an issue.
+        # The signal categories cut on the subleading TXbb. In the control regions (A, B) the TXbb is below the
+        # signal threshold by construction, so there the categories cut on the morphed TXbb (`btagBBTXbb_morph`)
+        # instead. The signal regions (C, D) always use the nominal TXbb.
         if "cat1" in category_name:
             cut_list.append(cuts.hh4b_boosted_category_1(txbb_morph="boosted_control" in category_name, region_setting=region_setting, optimised_cuts=optimised_cuts))
         elif "catvbf" in category_name:

@@ -1,0 +1,936 @@
+{
+    "schema_version": 2,
+    "description": "AK8 bbtag scale factors for globalParT3_XbbVsQCD",
+    "corrections": [
+        {
+            "name": "globalParT3_XbbVsQCD_b_wp_values",
+            "description": "Extract working point values (lower limits) for the bb-jet discrimination for globalParT3_XbbVsQCD. Working points included: VLP, LP, MP, HP, VHP.",
+            "version": 1,
+            "inputs": [
+                {
+                    "name": "working_point",
+                    "type": "string",
+                    "description": "Working points or purity regions used for discrimination"
+                }
+            ],
+            "output": {
+                "name": "value",
+                "type": "real",
+                "description": "Lower edge of the score window for the given working point."
+            },
+            "data": {
+                "nodetype": "category",
+                "input": "working_point",
+                "content": [
+                    {
+                        "key": "VLP",
+                        "value": 0.65
+                    },
+                    {
+                        "key": "LP",
+                        "value": 0.8
+                    },
+                    {
+                        "key": "MP",
+                        "value": 0.95
+                    },
+                    {
+                        "key": "HP",
+                        "value": 0.975
+                    },
+                    {
+                        "key": "VHP",
+                        "value": 0.99
+                    }
+                ],
+                "default": 0.0
+            }
+        },
+        {
+            "name": "globalParT3_XbbVsQCD_b_multi_purities_2pt_bins_5purities",
+            "version": 1,
+            "inputs": [
+                {
+                    "name": "systematic",
+                    "type": "string",
+                    "description": "'central' for nominal SF. 'up/down' for total SF variation (reweight #oplus internalised). Other 'up/down_X' for additional uncertainty breakdown."
+                },
+                {
+                    "name": "working_point",
+                    "type": "string",
+                    "description": "VLP/LP/MP/HP/VHP"
+                },
+                {
+                    "name": "pt",
+                    "type": "real",
+                    "description": "FatJet pT"
+                }
+            ],
+            "output": {
+                "name": "weight",
+                "type": "real"
+            },
+            "data": {
+                "nodetype": "category",
+                "input": "systematic",
+                "content": [
+                    {
+                        "key": "central",
+                        "value": {
+                            "nodetype": "category",
+                            "input": "working_point",
+                            "content": [
+                                {
+                                    "key": "VLP",
+                                    "value": {
+                                        "nodetype": "binning",
+                                        "input": "pt",
+                                        "edges": [
+                                            250.0,
+                                            400.0,
+                                            9999.0
+                                        ],
+                                        "content": [
+                                            1.103671026854185,
+                                            1.0453703233054208
+                                        ],
+                                        "flow": 1.0
+                                    }
+                                },
+                                {
+                                    "key": "LP",
+                                    "value": {
+                                        "nodetype": "binning",
+                                        "input": "pt",
+                                        "edges": [
+                                            250.0,
+                                            400.0,
+                                            9999.0
+                                        ],
+                                        "content": [
+                                            1.0361963208388736,
+                                            1.0109328311509327
+                                        ],
+                                        "flow": 1.0
+                                    }
+                                },
+                                {
+                                    "key": "MP",
+                                    "value": {
+                                        "nodetype": "binning",
+                                        "input": "pt",
+                                        "edges": [
+                                            250.0,
+                                            400.0,
+                                            9999.0
+                                        ],
+                                        "content": [
+                                            1.0137757200113413,
+                                            0.9575521627726254
+                                        ],
+                                        "flow": 1.0
+                                    }
+                                },
+                                {
+                                    "key": "HP",
+                                    "value": {
+                                        "nodetype": "binning",
+                                        "input": "pt",
+                                        "edges": [
+                                            250.0,
+                                            400.0,
+                                            9999.0
+                                        ],
+                                        "content": [
+                                            1.132076564416887,
+                                            1.1046921796782199
+                                        ],
+                                        "flow": 1.0
+                                    }
+                                },
+                                {
+                                    "key": "VHP",
+                                    "value": {
+                                        "nodetype": "binning",
+                                        "input": "pt",
+                                        "edges": [
+                                            250.0,
+                                            400.0,
+                                            9999.0
+                                        ],
+                                        "content": [
+                                            1.244407845481505,
+                                            1.2291783368904088
+                                        ],
+                                        "flow": 1.0
+                                    }
+                                }
+                            ],
+                            "default": 1.0
+                        }
+                    },
+                    {
+                        "key": "up",
+                        "value": {
+                            "nodetype": "category",
+                            "input": "working_point",
+                            "content": [
+                                {
+                                    "key": "VLP",
+                                    "value": {
+                                        "nodetype": "binning",
+                                        "input": "pt",
+                                        "edges": [
+                                            250.0,
+                                            400.0,
+                                            9999.0
+                                        ],
+                                        "content": [
+                                            1.1199232047625494,
+                                            1.0628599917403698
+                                        ],
+                                        "flow": 1.15
+                                    }
+                                },
+                                {
+                                    "key": "LP",
+                                    "value": {
+                                        "nodetype": "binning",
+                                        "input": "pt",
+                                        "edges": [
+                                            250.0,
+                                            400.0,
+                                            9999.0
+                                        ],
+                                        "content": [
+                                            1.0509140267666297,
+                                            1.0392627329145607
+                                        ],
+                                        "flow": 1.15
+                                    }
+                                },
+                                {
+                                    "key": "MP",
+                                    "value": {
+                                        "nodetype": "binning",
+                                        "input": "pt",
+                                        "edges": [
+                                            250.0,
+                                            400.0,
+                                            9999.0
+                                        ],
+                                        "content": [
+                                            1.0402264789293991,
+                                            0.9922793753168804
+                                        ],
+                                        "flow": 1.15
+                                    }
+                                },
+                                {
+                                    "key": "HP",
+                                    "value": {
+                                        "nodetype": "binning",
+                                        "input": "pt",
+                                        "edges": [
+                                            250.0,
+                                            400.0,
+                                            9999.0
+                                        ],
+                                        "content": [
+                                            1.173872076989958,
+                                            1.1577902600238155
+                                        ],
+                                        "flow": 1.15
+                                    }
+                                },
+                                {
+                                    "key": "VHP",
+                                    "value": {
+                                        "nodetype": "binning",
+                                        "input": "pt",
+                                        "edges": [
+                                            250.0,
+                                            400.0,
+                                            9999.0
+                                        ],
+                                        "content": [
+                                            1.3458384031378494,
+                                            1.2962440731813953
+                                        ],
+                                        "flow": 1.15
+                                    }
+                                }
+                            ],
+                            "default": 1.15
+                        }
+                    },
+                    {
+                        "key": "down",
+                        "value": {
+                            "nodetype": "category",
+                            "input": "working_point",
+                            "content": [
+                                {
+                                    "key": "VLP",
+                                    "value": {
+                                        "nodetype": "binning",
+                                        "input": "pt",
+                                        "edges": [
+                                            250.0,
+                                            400.0,
+                                            9999.0
+                                        ],
+                                        "content": [
+                                            1.0877498645748223,
+                                            1.0280162430244593
+                                        ],
+                                        "flow": 0.85
+                                    }
+                                },
+                                {
+                                    "key": "LP",
+                                    "value": {
+                                        "nodetype": "binning",
+                                        "input": "pt",
+                                        "edges": [
+                                            250.0,
+                                            400.0,
+                                            9999.0
+                                        ],
+                                        "content": [
+                                            1.0215870181331577,
+                                            0.9826473098825095
+                                        ],
+                                        "flow": 0.85
+                                    }
+                                },
+                                {
+                                    "key": "MP",
+                                    "value": {
+                                        "nodetype": "binning",
+                                        "input": "pt",
+                                        "edges": [
+                                            250.0,
+                                            400.0,
+                                            9999.0
+                                        ],
+                                        "content": [
+                                            0.9882264747544686,
+                                            0.923283412794125
+                                        ],
+                                        "flow": 0.85
+                                    }
+                                },
+                                {
+                                    "key": "HP",
+                                    "value": {
+                                        "nodetype": "binning",
+                                        "input": "pt",
+                                        "edges": [
+                                            250.0,
+                                            400.0,
+                                            9999.0
+                                        ],
+                                        "content": [
+                                            1.0921033201910793,
+                                            1.0524065503410858
+                                        ],
+                                        "flow": 0.85
+                                    }
+                                },
+                                {
+                                    "key": "VHP",
+                                    "value": {
+                                        "nodetype": "binning",
+                                        "input": "pt",
+                                        "edges": [
+                                            250.0,
+                                            400.0,
+                                            9999.0
+                                        ],
+                                        "content": [
+                                            1.1486397888474018,
+                                            1.1641882431672206
+                                        ],
+                                        "flow": 0.85
+                                    }
+                                }
+                            ],
+                            "default": 0.85
+                        }
+                    },
+                    {
+                        "key": "up_rew",
+                        "value": {
+                            "nodetype": "category",
+                            "input": "working_point",
+                            "content": [
+                                {
+                                    "key": "VLP",
+                                    "value": {
+                                        "nodetype": "binning",
+                                        "input": "pt",
+                                        "edges": [
+                                            250.0,
+                                            400.0,
+                                            9999.0
+                                        ],
+                                        "content": [
+                                            1.1090816523589837,
+                                            1.0570619577690352
+                                        ],
+                                        "flow": 1.15
+                                    }
+                                },
+                                {
+                                    "key": "LP",
+                                    "value": {
+                                        "nodetype": "binning",
+                                        "input": "pt",
+                                        "edges": [
+                                            250.0,
+                                            400.0,
+                                            9999.0
+                                        ],
+                                        "content": [
+                                            1.0456177573212628,
+                                            1.037152211640763
+                                        ],
+                                        "flow": 1.15
+                                    }
+                                },
+                                {
+                                    "key": "MP",
+                                    "value": {
+                                        "nodetype": "binning",
+                                        "input": "pt",
+                                        "edges": [
+                                            250.0,
+                                            400.0,
+                                            9999.0
+                                        ],
+                                        "content": [
+                                            1.0206541930289308,
+                                            0.9823396127449481
+                                        ],
+                                        "flow": 1.15
+                                    }
+                                },
+                                {
+                                    "key": "HP",
+                                    "value": {
+                                        "nodetype": "binning",
+                                        "input": "pt",
+                                        "edges": [
+                                            250.0,
+                                            400.0,
+                                            9999.0
+                                        ],
+                                        "content": [
+                                            1.140070505504982,
+                                            1.1419380771919854
+                                        ],
+                                        "flow": 1.15
+                                    }
+                                },
+                                {
+                                    "key": "VHP",
+                                    "value": {
+                                        "nodetype": "binning",
+                                        "input": "pt",
+                                        "edges": [
+                                            250.0,
+                                            400.0,
+                                            9999.0
+                                        ],
+                                        "content": [
+                                            1.2802609654098633,
+                                            1.2551170111245398
+                                        ],
+                                        "flow": 1.15
+                                    }
+                                }
+                            ],
+                            "default": 1.15
+                        }
+                    },
+                    {
+                        "key": "down_rew",
+                        "value": {
+                            "nodetype": "category",
+                            "input": "working_point",
+                            "content": [
+                                {
+                                    "key": "VLP",
+                                    "value": {
+                                        "nodetype": "binning",
+                                        "input": "pt",
+                                        "edges": [
+                                            250.0,
+                                            400.0,
+                                            9999.0
+                                        ],
+                                        "content": [
+                                            1.0982604013493862,
+                                            1.0336786888418064
+                                        ],
+                                        "flow": 0.85
+                                    }
+                                },
+                                {
+                                    "key": "LP",
+                                    "value": {
+                                        "nodetype": "binning",
+                                        "input": "pt",
+                                        "edges": [
+                                            250.0,
+                                            400.0,
+                                            9999.0
+                                        ],
+                                        "content": [
+                                            1.0267748843564843,
+                                            0.9847134506611024
+                                        ],
+                                        "flow": 0.85
+                                    }
+                                },
+                                {
+                                    "key": "MP",
+                                    "value": {
+                                        "nodetype": "binning",
+                                        "input": "pt",
+                                        "edges": [
+                                            250.0,
+                                            400.0,
+                                            9999.0
+                                        ],
+                                        "content": [
+                                            1.0068972469937518,
+                                            0.9327647128003028
+                                        ],
+                                        "flow": 0.85
+                                    }
+                                },
+                                {
+                                    "key": "HP",
+                                    "value": {
+                                        "nodetype": "binning",
+                                        "input": "pt",
+                                        "edges": [
+                                            250.0,
+                                            400.0,
+                                            9999.0
+                                        ],
+                                        "content": [
+                                            1.1240826233287922,
+                                            1.0674462821644544
+                                        ],
+                                        "flow": 0.85
+                                    }
+                                },
+                                {
+                                    "key": "VHP",
+                                    "value": {
+                                        "nodetype": "binning",
+                                        "input": "pt",
+                                        "edges": [
+                                            250.0,
+                                            400.0,
+                                            9999.0
+                                        ],
+                                        "content": [
+                                            1.2085547255531468,
+                                            1.2032396626562778
+                                        ],
+                                        "flow": 0.85
+                                    }
+                                }
+                            ],
+                            "default": 0.85
+                        }
+                    },
+                    {
+                        "key": "up_tau21",
+                        "value": {
+                            "nodetype": "category",
+                            "input": "working_point",
+                            "content": [
+                                {
+                                    "key": "VLP",
+                                    "value": {
+                                        "nodetype": "binning",
+                                        "input": "pt",
+                                        "edges": [
+                                            250.0,
+                                            400.0,
+                                            9999.0
+                                        ],
+                                        "content": [
+                                            1.103671026854185,
+                                            1.0453703233054208
+                                        ],
+                                        "flow": 1.15
+                                    }
+                                },
+                                {
+                                    "key": "LP",
+                                    "value": {
+                                        "nodetype": "binning",
+                                        "input": "pt",
+                                        "edges": [
+                                            250.0,
+                                            400.0,
+                                            9999.0
+                                        ],
+                                        "content": [
+                                            1.0361963208388736,
+                                            1.0109328311509327
+                                        ],
+                                        "flow": 1.15
+                                    }
+                                },
+                                {
+                                    "key": "MP",
+                                    "value": {
+                                        "nodetype": "binning",
+                                        "input": "pt",
+                                        "edges": [
+                                            250.0,
+                                            400.0,
+                                            9999.0
+                                        ],
+                                        "content": [
+                                            1.0137757200113413,
+                                            0.9575521627726254
+                                        ],
+                                        "flow": 1.15
+                                    }
+                                },
+                                {
+                                    "key": "HP",
+                                    "value": {
+                                        "nodetype": "binning",
+                                        "input": "pt",
+                                        "edges": [
+                                            250.0,
+                                            400.0,
+                                            9999.0
+                                        ],
+                                        "content": [
+                                            1.132076564416887,
+                                            1.1046921796782199
+                                        ],
+                                        "flow": 1.15
+                                    }
+                                },
+                                {
+                                    "key": "VHP",
+                                    "value": {
+                                        "nodetype": "binning",
+                                        "input": "pt",
+                                        "edges": [
+                                            250.0,
+                                            400.0,
+                                            9999.0
+                                        ],
+                                        "content": [
+                                            1.244407845481505,
+                                            1.2291783368904088
+                                        ],
+                                        "flow": 1.15
+                                    }
+                                }
+                            ],
+                            "default": 1.15
+                        }
+                    },
+                    {
+                        "key": "down_tau21",
+                        "value": {
+                            "nodetype": "category",
+                            "input": "working_point",
+                            "content": [
+                                {
+                                    "key": "VLP",
+                                    "value": {
+                                        "nodetype": "binning",
+                                        "input": "pt",
+                                        "edges": [
+                                            250.0,
+                                            400.0,
+                                            9999.0
+                                        ],
+                                        "content": [
+                                            1.103671026854185,
+                                            1.0453703233054208
+                                        ],
+                                        "flow": 0.85
+                                    }
+                                },
+                                {
+                                    "key": "LP",
+                                    "value": {
+                                        "nodetype": "binning",
+                                        "input": "pt",
+                                        "edges": [
+                                            250.0,
+                                            400.0,
+                                            9999.0
+                                        ],
+                                        "content": [
+                                            1.0361963208388736,
+                                            1.0109328311509327
+                                        ],
+                                        "flow": 0.85
+                                    }
+                                },
+                                {
+                                    "key": "MP",
+                                    "value": {
+                                        "nodetype": "binning",
+                                        "input": "pt",
+                                        "edges": [
+                                            250.0,
+                                            400.0,
+                                            9999.0
+                                        ],
+                                        "content": [
+                                            1.0137757200113413,
+                                            0.9575521627726254
+                                        ],
+                                        "flow": 0.85
+                                    }
+                                },
+                                {
+                                    "key": "HP",
+                                    "value": {
+                                        "nodetype": "binning",
+                                        "input": "pt",
+                                        "edges": [
+                                            250.0,
+                                            400.0,
+                                            9999.0
+                                        ],
+                                        "content": [
+                                            1.132076564416887,
+                                            1.1046921796782199
+                                        ],
+                                        "flow": 0.85
+                                    }
+                                },
+                                {
+                                    "key": "VHP",
+                                    "value": {
+                                        "nodetype": "binning",
+                                        "input": "pt",
+                                        "edges": [
+                                            250.0,
+                                            400.0,
+                                            9999.0
+                                        ],
+                                        "content": [
+                                            1.244407845481505,
+                                            1.2291783368904088
+                                        ],
+                                        "flow": 0.85
+                                    }
+                                }
+                            ],
+                            "default": 0.85
+                        }
+                    },
+                    {
+                        "key": "up_internalised",
+                        "value": {
+                            "nodetype": "category",
+                            "input": "working_point",
+                            "content": [
+                                {
+                                    "key": "VLP",
+                                    "value": {
+                                        "nodetype": "binning",
+                                        "input": "pt",
+                                        "edges": [
+                                            250.0,
+                                            400.0,
+                                            9999.0
+                                        ],
+                                        "content": [
+                                            1.103671026854185,
+                                            1.0453703233054208
+                                        ],
+                                        "flow": 1.15
+                                    }
+                                },
+                                {
+                                    "key": "LP",
+                                    "value": {
+                                        "nodetype": "binning",
+                                        "input": "pt",
+                                        "edges": [
+                                            250.0,
+                                            400.0,
+                                            9999.0
+                                        ],
+                                        "content": [
+                                            1.0361963208388736,
+                                            1.0109328311509327
+                                        ],
+                                        "flow": 1.15
+                                    }
+                                },
+                                {
+                                    "key": "MP",
+                                    "value": {
+                                        "nodetype": "binning",
+                                        "input": "pt",
+                                        "edges": [
+                                            250.0,
+                                            400.0,
+                                            9999.0
+                                        ],
+                                        "content": [
+                                            1.0137757200113413,
+                                            0.9575521627726254
+                                        ],
+                                        "flow": 1.15
+                                    }
+                                },
+                                {
+                                    "key": "HP",
+                                    "value": {
+                                        "nodetype": "binning",
+                                        "input": "pt",
+                                        "edges": [
+                                            250.0,
+                                            400.0,
+                                            9999.0
+                                        ],
+                                        "content": [
+                                            1.132076564416887,
+                                            1.1046921796782199
+                                        ],
+                                        "flow": 1.15
+                                    }
+                                },
+                                {
+                                    "key": "VHP",
+                                    "value": {
+                                        "nodetype": "binning",
+                                        "input": "pt",
+                                        "edges": [
+                                            250.0,
+                                            400.0,
+                                            9999.0
+                                        ],
+                                        "content": [
+                                            1.244407845481505,
+                                            1.2291783368904088
+                                        ],
+                                        "flow": 1.15
+                                    }
+                                }
+                            ],
+                            "default": 1.15
+                        }
+                    },
+                    {
+                        "key": "down_internalised",
+                        "value": {
+                            "nodetype": "category",
+                            "input": "working_point",
+                            "content": [
+                                {
+                                    "key": "VLP",
+                                    "value": {
+                                        "nodetype": "binning",
+                                        "input": "pt",
+                                        "edges": [
+                                            250.0,
+                                            400.0,
+                                            9999.0
+                                        ],
+                                        "content": [
+                                            1.103671026854185,
+                                            1.0453703233054208
+                                        ],
+                                        "flow": 0.85
+                                    }
+                                },
+                                {
+                                    "key": "LP",
+                                    "value": {
+                                        "nodetype": "binning",
+                                        "input": "pt",
+                                        "edges": [
+                                            250.0,
+                                            400.0,
+                                            9999.0
+                                        ],
+                                        "content": [
+                                            1.0361963208388736,
+                                            1.0109328311509327
+                                        ],
+                                        "flow": 0.85
+                                    }
+                                },
+                                {
+                                    "key": "MP",
+                                    "value": {
+                                        "nodetype": "binning",
+                                        "input": "pt",
+                                        "edges": [
+                                            250.0,
+                                            400.0,
+                                            9999.0
+                                        ],
+                                        "content": [
+                                            1.0137757200113413,
+                                            0.9575521627726254
+                                        ],
+                                        "flow": 0.85
+                                    }
+                                },
+                                {
+                                    "key": "HP",
+                                    "value": {
+                                        "nodetype": "binning",
+                                        "input": "pt",
+                                        "edges": [
+                                            250.0,
+                                            400.0,
+                                            9999.0
+                                        ],
+                                        "content": [
+                                            1.132076564416887,
+                                            1.1046921796782199
+                                        ],
+                                        "flow": 0.85
+                                    }
+                                },
+                                {
+                                    "key": "VHP",
+                                    "value": {
+                                        "nodetype": "binning",
+                                        "input": "pt",
+                                        "edges": [
+                                            250.0,
+                                            400.0,
+                                            9999.0
+                                        ],
+                                        "content": [
+                                            1.244407845481505,
+                                            1.2291783368904088
+                                        ],
+                                        "flow": 0.85
+                                    }
+                                }
+                            ],
+                            "default": 0.85
+                        }
+                    }
+                ]
+            }
+        }
+    ]
+}

@@ -189,6 +189,7 @@ The pT-regressed collections are `JetPtRegressed` and
 | `vr1` | `False` | Use the VR1 validation regions (Higgs mass planes centred at $(185, 180)$ GeV) instead of the nominal signal/control regions. |
 | `expandCR` | `False` | Use the wide control region ($30 < R_{HH} < 80$ instead of $30 < R_{HH} < 55$) for the morphing `preW`/`postW` categories. |
 | `blind` | `False` | Add the blinded copies of the signal regions, keeping only the events with `sig_bkg_dnn_score` below the blinding threshold (0.9). |
+| `bkg_morphing_direction` | `"btag"` | Boosted only: direction of the background morphing in the ABCD plane. `"btag"`: trained from A to C along the subleading TXbb and applied to B (`boosted_control_region_B_postW`). `"mass"`: trained from A to B along the Higgs mass and applied to C (`boosted_signal_sideband_region_C_postW`). See the [boosted README](../VBF_HH4b_boosted/README.md#abcd-regions-and-morphing-direction). |
 | `split_qcd` | `True` | Boosted only: split the QCD control region into the `qcd_A`/`qcd_B`/`qcd_C` sub-regions instead of defining a single `qcd` region. Ignored when `boosted` is `False`. |
 | `qt_postEE` | `None` | Path to the pickled quantile transformer used to define variable-width bins of `sig_bkg_dnn_score` (constant SM signal yield per bin) for the 2022_postEE datacards. `None` (or `""`) falls back to the uniform binning. See [Quantile transformer to obtain constant signal binning](#quantile-transformer-to-obtain-constant-signal-binning). |
 | `qt_preEE` | `None` | Same as `qt_postEE`, for the 2022_preEE datacards. |
@@ -212,7 +213,7 @@ The pT-regressed collections are `JetPtRegressed` and
 
 | Option | Default | Description |
 | --- | --- | --- |
-| `bdt_model` | `""` | Path to the XGBoost model of the other-group boosted analysis. It produces `boosted_bdt_score` and `boosted_bdt_vbf_score`. An empty string disables it. |
+| `bdt_model` | `""` | Path to the XGBoost model of the other-group boosted analysis. It produces `boosted_bdt_score` and `boosted_bdt_vbf_score`. An empty string disables it: the BDT is not evaluated, its columns and its histograms (`BDTggFScore`, `BDTVBFScore`) are not saved, and, without `optimised_signal_cuts`, the BDT-based signal categories (`cat1`, `cat2`, `cat3`, `catvbf`) are not defined. See the [boosted README](../VBF_HH4b_boosted/README.md#categories). |
 
 ### Keys added by the config templates
 
@@ -234,6 +235,13 @@ The full analysis workflow is composed by multiple steps, which are spread in di
   - <https://github.com/matteomalucchi/HH4b_SPANet>
 - DNN training
   - <https://github.com/matteomalucchi/ML_pytorch>
+
+> [!NOTE]
+> The steps below describe the **resolved** analysis. The boosted analysis
+> ([`VBF_HH4b_boosted_config.py`](../VBF_HH4b_boosted/VBF_HH4b_boosted_config.py)) shares the dataset building and the
+> skimming, but needs no SPANet step and uses a multiclass morphing DNN, optimised signal categories and its own
+> plotting and datacard options. Its full workflow is in the
+> [boosted README](../VBF_HH4b_boosted/README.md).
 
 ### Build datasets
 

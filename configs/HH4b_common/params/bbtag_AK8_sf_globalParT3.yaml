@@ -1,0 +1,8 @@
+# B-tagging algorithms and working points
+jet_scale_factors:
+  bbtagSF:
+    '2024':
+      bbtag_file: 
+        globalParT3: "${config_dir:}/../HH4b_common/params/bbtag_AK8_scale_factors_for_globalParT3_XbbVsQCD_multi_purities_2pt_bins_5purities_internalised.json"
+      fixed_wp_name_map:
+        globalParT3: "globalParT3"
