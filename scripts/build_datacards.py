@@ -6,6 +6,7 @@ import os
 import numpy as np
 import re
 import yaml
+from collections import defaultdict
 from pathlib import Path
 
 import hist
@@ -19,6 +20,11 @@ from pocket_coffea.utils.stat import (
     Systematics,
     SystematicUncertainty,
 )
+from pocket_coffea.utils.stat.shape_manipulation import (
+    add_envelope_variation,
+    add_quadrature_variation,
+)
+from pocket_coffea.utils.histogram import rebin_hist
 
 logging.basicConfig(format='%(asctime)s,%(msecs)03d %(name)s %(levelname)s %(message)s',
                     datefmt='%Y-%m-%d %H:%M:%S',
@@ -114,12 +120,23 @@ lumi_sys_values = lumi_cfg["lumi_systematics"]
 # https://gitlab.cern.ch/cms-analysis/hig/HIG-24-010/datacards/-/blob/master/AN-23-184/merged_channel/vbf/combined.txt?ref_type=heads
 # Recommendations in case of update:
 # https://twiki.cern.ch/twiki/bin/view/LHCPhysics/LHCHWGHHRecommendations
+# Asymmetric lnN values are written to the datacard as value[0]/value[1], which combine reads as
+# kappa(-1 sigma)/kappa(+1 sigma): give them in the order (down, up).
 BR_HBB = (0.975, 1.025)  # <-- not found
 PDF_HIGGS_QQHH = 1.021  # <-- not found
 PDF_HIGGS_GGHH = 1.030  # 1.0192
 ALPHAS_GGHH = 1.021  # 1.0149
-SCALE_GGHH = (1.021, 0.951)  # (1.0207, 0.9515)
-MTOP_GGHH = (1.04, 0.82)  # (1.05, 0.84)
+SCALE_GGHH = (0.951, 1.021)  # (0.9515, 1.0207)
+MTOP_GGHH = (0.82, 1.04)  # (0.84, 1.05)
+SCALE_QQHH = (0.9996, 1.0003)  # TODO: check value, LHCHWG HH recommendations (VBF HH: +0.03% / -0.04%)
+# ttbar inclusive cross section (TOP PAG NNLO+NNLL reference), only needed as long as ttbar has no rateParam
+SCALE_TTBAR = (0.964, 1.024)  # TODO: check value
+PDF_GG = 1.025  # TODO: check value (PDF + alpha_s)
+
+# Theory acceptance uncertainties, built from the lhe_scale / lhe_pdf weight variations
+# (normalised to the inclusive cross section, so they do not overlap with the lnN above)
+LHE_SCALE_VARIATIONS = [f"lhe_scale_{var}{shift}" for var in ("muR", "muF", "muRmuF") for shift in ("Up", "Down")]
+LHE_PDF_EIGENVECTORS = [f"lhe_pdf_eigenvector{i}Up" for i in range(1, 101)]
 
 input_dir = os.path.dirname(f"{args.input_data[0]}/")
 
@@ -219,18 +236,32 @@ def get_year(pocketcoffea_year, year_type=0):
         raise ValueError(f"Wrong values for either input year: {pocketcoffea_year} or year_type: {year_type}")
 
 
-def get_uncertainty_name(pocketcoffea_name, year, jettype=None):
+# Jet types (prefix of the PocketCoffea jet variations, e.g. "AK8PFPuppi_JES_Total") reported as
+# the AK4 / AK8 jet uncertainties. Any other jet type (e.g. the jets of the MET type-1 correction)
+# keeps its own name, so that two different variations never get the same datacard name.
+JET_TYPE_TAGS = {"AK4Jet": "AK4", "AK4PFPuppi": "AK4", "AK4PFchs": "AK4", "AK8PFPuppi": "AK8"}
+
+
+def get_uncertainty_name(pocketcoffea_name, year):
     """Get conventional datacard name for systematic uncertainties"""
-    # Try to remove unnecessary things in front (e.g. "AK4PFPuppi", "AK8PFPuppi")
-    if "Puppi" in pocketcoffea_name or "AK" in pocketcoffea_name:
-        pocketcoffea_name = pocketcoffea_name.split("_", 1)[-1]
-    if jettype:  # In the boosted case, we have AK4 and AK8. This is not seen in datacards of HIG 24-010, so I am not sure how to handle it otherwise.
-        jettype = f"{jettype}_"
+    year_tag = get_year(year, year_type=0)
+    # Jet variations: "<jet type>_JES_Total" / "<jet type>_JER"
+    jet_type, _, jet_variation = pocketcoffea_name.partition("_")
+    if jet_type.startswith("AK") and jet_variation in ("JES_Total", "JER"):
+        jet_tag = JET_TYPE_TAGS.get(jet_type, jet_type)
+        # In the boosted analysis AK4 and AK8 jets are varied separately (not seen in the
+        # datacards of HIG-24-010); the resolved analysis keeps the plain names for AK4 jets
+        jet_prefix = "" if (not args.boosted and jet_tag == "AK4") else f"{jet_tag}_"
+        if jet_variation == "JES_Total":
+            return f"CMS_scale_j_{jet_prefix}{year_tag}"
+        return f"CMS_res_j_{jet_prefix}{year_tag}"
+
+    energy = "13p6TeV" if str(year).startswith("202") else "13TeV"
     unc_map = {
-        "JES_Total": f"CMS_scale_j_{jettype}{get_year(year, year_type=0)}",
-        "JER": f"CMS_res_j_{jettype}{get_year(year, year_type=0)}",
-        "pileup": f"CMS_pileup_{get_year(year, year_type=0)}",
-        "luminosity": f"lumi_13TeV_{get_year(year, year_type=1)}",
+        "pileup": f"CMS_pileup_{year_tag}",
+        "sf_partonshower_isr": "ps_isr",
+        "sf_partonshower_fsr": "ps_fsr",
+        "lumi": f"lumi_{energy}_{get_year(year, year_type=1)}",
         }
     if pocketcoffea_name in unc_map.keys():
         return unc_map[pocketcoffea_name]
@@ -464,6 +495,35 @@ def duplicate_category(histo, src_label, new_label, axis=0, scale=None):
     return fold_flow(new_histo)
 
 
+def add_theory_acceptance_variations(histograms, processes_by_production, meta_dict):
+    """Add the QCD scale envelope and the PDF quadrature sum as shape variations
+    `CMS_bbbb_hadronic_QCDScaleacc_{production}` / `CMS_bbbb_hadronic_PDFacc_{production}`.
+
+    Must be called on the histograms in their final binning (envelope and quadrature sum are
+    not additive over bins). Productions whose histograms lack the lhe_scale / lhe_pdf variations
+    (i.e. processed without these weights) are skipped with a warning.
+    Returns the new histograms and a dict {variation name: processes} for the shape systematics.
+    """
+    theory_shapes = {}
+    for production, processes in processes_by_production.items():
+        datasets = [d for p in processes for d in sig_bkg_dict["signal"][p]]
+        if not datasets:
+            continue
+        samples = sorted({meta_dict[d]["sample"] for d in datasets})
+        for variation_name, source_variations, combine in (
+            (f"CMS_bbbb_hadronic_QCDScaleacc_{production}", LHE_SCALE_VARIATIONS, add_envelope_variation),
+            (f"CMS_bbbb_hadronic_PDFacc_{production}", LHE_PDF_EIGENVECTORS, add_quadrature_variation),
+        ):
+            missing = [d for d in datasets
+                       if not set(source_variations) <= set(histograms[meta_dict[d]["sample"]][d].axes["variation"])]
+            if missing:
+                logger.warning(f"No LHE variations for {missing}: {variation_name} not added")
+                continue
+            histograms = combine(histograms, variation_name, samples, source_variations, datasets=datasets)
+            theory_shapes[variation_name] = processes
+    return histograms, theory_shapes
+
+
 def create_new_region(coffea_file, cat_name, sig_region_name, bkg_region_name, fit_variable, sig_control_region_name, bkg_control_region_name):
     """Create a new region in the coffea file, that contains all the regions we need for the analysis."""
 
@@ -633,59 +693,73 @@ if __name__ == "__main__":
         #     "JES_Total_AK4PFPuppi", "JER_AK4PFPuppi"
         # ]
 
-        # Trying to make this generic. Ideally, we want exactly one single set of variations at the moment because we are using MC only for signal. This has to be improved in some shape or form.
-        # Essentially, right now, all MC sets belong to "GluGluHHto4b"
+        signal_processes = list(sig_bkg_dict["signal"])
+        signal_processes_by_production = {
+            "ggHH": [p for p in signal_processes if p.startswith("ggHH")],
+            "qqHH": [p for p in signal_processes if p.startswith("qqHH")],
+        }
         for hist_cat, sob_hist in histograms_dict.items():
-            # Get to the variation infos in the histograms for MC signal:
+            # The final binning is fixed before the theory variations are built, as the
+            # envelope and the quadrature sum are not additive over bins.
+            bins_edges = None
+            if args.max_bkg_unc is not None or args.min_bkg_yield is not None:
+                bkg_datasets = [d for datasets in sig_bkg_dict["background"].values() for d in datasets]
+                bins_edges = compute_min_stat_edges(sob_hist, region_name, bkg_datasets, meta_dict,
+                                                    max_rel_unc=args.max_bkg_unc, min_yield=args.min_bkg_yield)
+                os.makedirs(f"{args.output}/{hist_cat}", exist_ok=True)
+                with open(f"{args.output}/{hist_cat}/bin_edges_{region_name}.json", "w") as f:
+                    json.dump({"edges": bins_edges.tolist(), "max_bkg_unc": args.max_bkg_unc,
+                               "min_bkg_yield": args.min_bkg_yield}, f, indent=2)
+                sob_hist = rebin_hist(bins_edges, sob_hist)
+            sob_hist, theory_shapes = add_theory_acceptance_variations(sob_hist, signal_processes_by_production, meta_dict)
+
             systematics_list = []
-            # Iterate through different signal types
-            card_year = meta_dict[datasets[0]]['year']
-            for sig_type, datasets in sig_bkg_dict["signal"].items():
-                # Iterate through the datasets in a particular signal type (often a signle one)
-                variations_updown = list(sob_hist[meta_dict[datasets[0]]["sample"]][datasets[0]].axes['variation'])
-                for var in variations_updown:
-                    sliced = sob_hist[meta_dict[datasets[0]]["sample"]][datasets[0]][{"variation": var, "cat": region_name}]
-                    print(f"Variation: {var}")
-                    print(sliced.values())
-                variations = {re.sub(r'(Up|Down)$', '', var) for var in variations_updown}
-                try:
-                    variations.remove("nominal")
-                except:
-                    raise ValueError(f"Variations list {variations} does not contain 'nominal'.")
-                logger.info(f"Found variations: {variations}")
-                for syst in variations:
-                    if args.boosted: 
-                        if "AK4" in syst:
-                            systematics_list.append(SystematicUncertainty(name=syst, datacard_name=get_uncertainty_name(syst, card_year, jettype="AK4"), typ="shape", processes=list(sig_bkg_dict["signal"].keys()), years=[card_year], value=1.0))
-                        if "AK8" in syst:
-                            systematics_list.append(SystematicUncertainty(name=syst, datacard_name=get_uncertainty_name(syst, card_year, jettype="AK8"), typ="shape", processes=list(sig_bkg_dict["signal"].keys()), years=[card_year], value=1.0))
-                    systematics_list.append(SystematicUncertainty(name=syst, datacard_name=get_uncertainty_name(syst, card_year), typ="shape", processes=list(sig_bkg_dict["signal"].keys()), years=[card_year], value=1.0))
-            # At some point we will have a variation for the reweighting uncertainty, but right now, we only want variations on the MC processes
+            card_year = meta_dict[sig_bkg_dict["data"]["data_obs"][0]]["year"]
+            # MC backgrounds (ttbar); the data-driven background has no variations (at the moment)
             bg_mc = {k: v for k, v in sig_bkg_dict["background"].items() if "DATA" not in v[0]}
-            for sig_type, datasets in bg_mc.items():
-                # Iterate through the datasets in a particular background type (often a signle one)
-                variations_updown = list(sob_hist[meta_dict[datasets[0]]["sample"]][datasets[0]].axes['variation'])
-                for var in variations_updown:
-                    sliced = sob_hist[meta_dict[datasets[0]]["sample"]][datasets[0]][{"variation": var, "cat": region_name}]
-                    print(f"Variation: {var}")
-                    print(sliced.values())
-                variations = {re.sub(r'(Up|Down)$', '', var) for var in variations_updown}
-                try:
-                    variations.remove("nominal")
-                except:
-                    raise ValueError(f"Variations list {variations} does not contain 'nominal'.")
-                logger.info(f"Found variations: {variations}")
-                for syst in variations:
-                    systematics_list.append(SystematicUncertainty(name=syst, datacard_name=get_uncertainty_name(syst, card_year), typ="shape", processes=list(bg_mc.keys()), years=[card_year], value=1.0))
-            
+
+            # Shape systematics from the histogram variations (JES, JER, pileup, PS, ...):
+            # one nuisance per variation, on every MC process (signal and MC background)
+            # whose histograms carry it, so that e.g. JES is correlated between signal and ttbar.
+            processes_by_variation = defaultdict(set)
+            for process, datasets in {**sig_bkg_dict["signal"], **bg_mc}.items():
+                for dataset in datasets:
+                    variations_updown = sob_hist[meta_dict[dataset]["sample"]][dataset].axes["variation"]
+                    if "nominal" not in variations_updown:
+                        raise ValueError(f"Variations of {dataset} do not contain 'nominal': {list(variations_updown)}")
+                    for variation in {re.sub(r"(Up|Down)$", "", v) for v in variations_updown}:
+                        # The raw LHE variations only enter through the combined theory shapes
+                        if variation == "nominal" or variation.startswith("lhe_") or variation in theory_shapes:
+                            continue
+                        processes_by_variation[variation].add(process)
+            for variation, processes in sorted(processes_by_variation.items()):
+                logger.info(f"Shape variation {variation} on processes {sorted(processes)}")
+                systematics_list.append(SystematicUncertainty(name=variation, datacard_name=get_uncertainty_name(variation, card_year), typ="shape", processes=sorted(processes), years=[card_year], value=1.0))
+
             # ====== Other systematics / basically theory =======
             systematics_list.append(SystematicUncertainty(name="lumi", datacard_name=get_uncertainty_name("lumi", card_year), typ="lnN", processes=list(bg_mc.keys()) + list(sig_bkg_dict["signal"].keys()), value=lumi_sys_values[card_year], years=[card_year]))
-            systematics_list.append(SystematicUncertainty(name="BR_hbb", datacard_name="BR_hbb", typ="lnN", processes=list(sig_bkg_dict["signal"].keys()), value=BR_HBB, years=[card_year]))
-            systematics_list.append(SystematicUncertainty(name="pdf_Higgs_ggHH", datacard_name="pdf_Higgs_ggHH", typ="lnN", processes=list(sig_bkg_dict["signal"].keys()), value=PDF_HIGGS_GGHH, years=[card_year]))
-            systematics_list.append(SystematicUncertainty(name="pdf_Higgs_qqHH", datacard_name="pdf_Higgs_qqHH", typ="lnN", processes=list(sig_bkg_dict["signal"].keys()), value=PDF_HIGGS_QQHH, years=[card_year]))
-            systematics_list.append(SystematicUncertainty(name="alphaS_ggHH", datacard_name="alphaS_ggHH", typ="lnN", processes=list(sig_bkg_dict["signal"].keys()), value=ALPHAS_GGHH, years=[card_year]))
-            systematics_list.append(SystematicUncertainty(name="Scale_ggHH", datacard_name="Scale_ggHH", typ="lnN", processes=list(sig_bkg_dict["signal"].keys()), value=SCALE_GGHH, years=[card_year]))
-            systematics_list.append(SystematicUncertainty(name="mtop_ggHH", datacard_name="mtop_ggHH", typ="lnN", processes=list(sig_bkg_dict["signal"].keys()), value=MTOP_GGHH, years=[card_year]))
+            # Inclusive cross-section uncertainties, each only on the processes it belongs to
+            ggHH_processes = signal_processes_by_production["ggHH"]
+            qqHH_processes = signal_processes_by_production["qqHH"]
+            ttbar_processes = list(bg_mc.keys())
+            lnN_uncertainties = [
+                ("BR_hbb", signal_processes, BR_HBB),
+                ("pdf_Higgs_ggHH", ggHH_processes, PDF_HIGGS_GGHH),
+                ("alphaS_ggHH", ggHH_processes, ALPHAS_GGHH),
+                ("QCDscale_ggHH", ggHH_processes, SCALE_GGHH),
+                ("mtop_ggHH", ggHH_processes, MTOP_GGHH),
+                ("pdf_Higgs_qqHH", qqHH_processes, PDF_HIGGS_QQHH),
+                ("QCDscale_qqHH", qqHH_processes, SCALE_QQHH),
+                ("QCDscale_ttbar", ttbar_processes, SCALE_TTBAR),
+                ("pdf_gg", ttbar_processes, PDF_GG),
+            ]
+            for name, processes, value in lnN_uncertainties:
+                if processes:
+                    systematics_list.append(SystematicUncertainty(name=name, datacard_name=name, typ="lnN", processes=processes, value=value, years=[card_year]))
+
+            # Theory acceptance uncertainties (shape), built in add_theory_acceptance_variations
+            for name, processes in theory_shapes.items():
+                systematics_list.append(SystematicUncertainty(name=name, datacard_name=name, typ="shape", processes=processes, years=[card_year], value=1.0))
 
 
 
@@ -701,16 +775,6 @@ if __name__ == "__main__":
                 "include_signal": 0,
                 "hist_mode": 1,
             }
-
-            bins_edges = None
-            if args.max_bkg_unc is not None or args.min_bkg_yield is not None:
-                bkg_datasets = [d for datasets in sig_bkg_dict["background"].values() for d in datasets]
-                bins_edges = compute_min_stat_edges(sob_hist, region_name, bkg_datasets, meta_dict,
-                                                    max_rel_unc=args.max_bkg_unc, min_yield=args.min_bkg_yield)
-                os.makedirs(f"{args.output}/{hist_cat}", exist_ok=True)
-                with open(f"{args.output}/{hist_cat}/bin_edges_{region_name}.json", "w") as f:
-                    json.dump({"edges": bins_edges.tolist(), "max_bkg_unc": args.max_bkg_unc,
-                               "min_bkg_yield": args.min_bkg_yield}, f, indent=2)
 
             datacard = Datacard(
                     histograms=sob_hist,
