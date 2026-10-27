@@ -30,6 +30,7 @@ config_options_dict |= {
     "pad_value": -999.0,
     "add_jet_spanet": False,
     "boosted": True,
+    "bkg_morphing_direction": "mass",
     "boosted_presel": True,
     "split_qcd": True,
     "approach": "boosted",

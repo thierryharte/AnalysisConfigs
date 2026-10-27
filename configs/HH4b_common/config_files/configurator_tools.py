@@ -393,41 +393,55 @@ def define_categories(
     full_sideband=False,
     lead_sublead="sublead",
     region_setting="40GeV",
-    optimised_cuts=False
+    optimised_cuts=False,
+    bdt_model="",
+    morphing_direction="btag",
 ):
     """Define the categories for the analysis."""
     categories_dict = {}
 
     if boosted:
+        if morphing_direction not in ("btag", "mass"):
+            raise ValueError(f"Unknown bkg_morphing_direction '{morphing_direction}', expected 'btag' or 'mass'")
         # All ABCD regions must share the same region definition, otherwise the regions are inconsistent
         region_kwargs = dict(full_sideband=full_sideband, region_setting=region_setting, lead_sublead=lead_sublead, optimised_cuts=optimised_cuts)
-        # For reweighting, the different categories are all covered by the signal_region_A.
-        # We split into 4 regions depending on:
-        #     - Jet2 TXbb score (below 0.8 is control region)
-        #     - JEt2 Mass (signal region defined as 110 < m_j2 < 150 GeV)
-        # We train the reweighting from low TXbb score to hight TXbb score in the mass sideband (from from D -> B)
-        # And then we apply it to the mass signal region (C -> A)
+        # The signal categories cut on the DNN scores (optimised cuts) or, without optimised cuts, on the BDT scores.
+        # If neither is available, only the ABCD regions are defined.
+        signal_categories = bool(optimised_cuts) or bool(bdt_model)
+        # The ABCD plane is defined by (thresholds depend on `region_setting`, "40GeV" / "50GeV"):
+        #     - the subleading Higgs TXbb: above 0.8 / 0.65 are the signal regions (C, D), below the control regions (A, B)
+        #     - the mass of the Higgs chosen by `lead_sublead`: inside 110-155 / 100-150 GeV are the mass signal
+        #       regions (B, D), in the sideband (40 / 50 GeV below the window, or on both sides with `full_sideband`)
+        #       the sideband regions (A, C)
+        #
+        #                  mass sideband   mass window
+        #     high TXbb          C              D       <- signal region
+        #     low TXbb           A              B
+        #
+        # The morphing is trained from A to the neighbouring region and applied to the region next to D:
+        #     - "btag": trained A -> C (along TXbb), applied to B -> boosted_control_region_B_postW
+        #     - "mass": trained A -> B (along mass), applied to C -> boosted_signal_sideband_region_C_postW
         categories_dict |= define_single_category("boosted_signal_region_D", **region_kwargs)
         categories_dict |= define_single_category("boosted_signal_sideband_region_C", **region_kwargs)
         categories_dict |= define_single_category("boosted_control_region_B", **region_kwargs)
         categories_dict |= define_single_category("boosted_control_sideband_region_A", **region_kwargs)
         if bkg_morphing_dnn:
             categories_dict |= define_single_category("boosted_control_sideband_region_A_postW", **region_kwargs)
-            if optimised_cuts:
+            if signal_categories:
                 categories_dict |= define_single_category("boosted_signal_region_D_cat1", **region_kwargs)
                 categories_dict |= define_single_category("boosted_signal_region_D_cat2", **region_kwargs)
                 categories_dict |= define_single_category("boosted_signal_region_D_cat3", **region_kwargs)
                 categories_dict |= define_single_category("boosted_signal_region_D_catvbf", **region_kwargs)
-            if "mass" in bkg_morphing_dnn:
+            if morphing_direction == "mass":
                 categories_dict |= define_single_category("boosted_signal_sideband_region_C_postW", **region_kwargs)
-                if optimised_cuts:
+                if signal_categories:
                     categories_dict |= define_single_category("boosted_signal_sideband_region_C_cat1_postW", **region_kwargs)
                     categories_dict |= define_single_category("boosted_signal_sideband_region_C_cat2_postW", **region_kwargs)
                     categories_dict |= define_single_category("boosted_signal_sideband_region_C_cat3_postW", **region_kwargs)
                     categories_dict |= define_single_category("boosted_signal_sideband_region_C_catvbf_postW", **region_kwargs)
-            elif "btag" in bkg_morphing_dnn:
+            elif morphing_direction == "btag":
                 categories_dict |= define_single_category("boosted_control_region_B_postW", **region_kwargs)
-                if optimised_cuts:
+                if signal_categories:
                     categories_dict |= define_single_category("boosted_control_region_B_cat1_postW", **region_kwargs)
                     categories_dict |= define_single_category("boosted_control_region_B_cat2_postW", **region_kwargs)
                     categories_dict |= define_single_category("boosted_control_region_B_cat3_postW", **region_kwargs)

@@ -78,6 +78,7 @@ variables_dict = get_variables_dict(
     RUN2=config_options_dict["run2"],
     SPANET=bool(config_options_dict["spanet"]),
     BOOSTED=config_options_dict["boosted"],
+    BDT=bool(config_options_dict["bdt_model"]),
 )
 # variables_dict = {}
 # ====== NEEDED WITH SYSTEMATICS, OTHERWISE, O(200) VARIATIONS ARE SAVED FOR EVERY HISTOGRAM
@@ -198,6 +199,8 @@ categories_dict = define_categories(
     region_setting=config_options_dict["region_setting"],
     lead_sublead=config_options_dict["lead_sublead"],
     optimised_cuts=config_options_dict["optimised_signal_cuts"],
+    bdt_model=config_options_dict["bdt_model"],
+    morphing_direction=config_options_dict["bkg_morphing_direction"],
 )
 
 if BASELINE:
@@ -261,7 +264,7 @@ else:
                 # "JetGoodVBF": ["pt", "eta", "phi", "mass"],
                 # "JetGoodCloseToFatJet": ["pt", "eta", "phi", "mass"],
                 "JetGoodVBFGood": ["pt", "eta", "phi", "mass"],
-                "events": ["HT_jetJetGoodVBF", "HT_jetJetGood", "nJetGood", "event", "boosted_bdt_score", "boosted_bdt_vbf_score", "mjjJetGoodVBFGood", "detaJetGoodVBFGood", "HiggsLeadingByHiggsSubLeadingPt", "era", "nJetGoodVBFGood"],
+                "events": ["HT_jetJetGoodVBF", "HT_jetJetGood", "nJetGood", "event", "mjjJetGoodVBFGood", "detaJetGoodVBFGood", "HiggsLeadingByHiggsSubLeadingPt", "era", "nJetGoodVBFGood"],
                 # "JetGoodVBFNearHiggsLeading": ["pt", "eta", "phi", "mass"],
                 # "JetGoodVBFNearHiggsSubLeading": ["pt", "eta", "phi", "mass"],
                 # "FatJetGoodSelected": ["pt", "eta", "phi", "msoftdrop", "mass_orig", "mass", "btagBBTXbb"],
@@ -273,6 +276,11 @@ else:
             },
             not config_options_dict["save_chunk"],
         )
+        if config_options_dict["bdt_model"]:
+            column_list += get_columns_list(
+                {"events": ["boosted_bdt_score", "boosted_bdt_vbf_score"]},
+                not config_options_dict["save_chunk"],
+            )
         if config_options_dict["sig_bkg_dnn"]:
             column_list += get_columns_list(
                     {

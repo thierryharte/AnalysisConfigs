@@ -11,7 +11,7 @@ onnx_model_dict  |= {
     "bkg_morphing_dnn": "/work/tharte/datasets/ML_pytorch_matteo/out/bkg_reweighting/boosted_vbf/1e-3_e20drop95_minDelta1em5_boosted_reweighting_btagging_reweight_50GeV_lower_band_wps/best_models/average_model_from_onnx.onnx",
     # "bkg_morphing_dnn": "/work/tharte/datasets/ML_pytorch_matteo/out/bkg_reweighting/boosted_vbf/1e-4_e20drop95_minDelta1em5_unskimmed_boosted_multiclass_oversample_split_looser_cuts_novbf_cuts/best_models/average_model_from_onnx_multiclass.onnx",
     # "bkg_morphing_spread_dnn": "/work/tharte/datasets/ML_pytorch/out/bkg_reweighting/DHH_method_20_runs_postEE/best_models/ratio/all_ratios_model_onnx.onnx", # --> training on postEE
-    "sig_bkg_dnn": "/work/tharte/datasets/ML_pytorch_matteo/out/sig_bkg_classifier/boosted/1e-3_e20drop95_minDelta1em5_boosted_signal_background_classifier_50GeV_noH2WP/state_dict/model_best_epoch_11.onnx",
+    # "sig_bkg_dnn": "/work/tharte/datasets/ML_pytorch_matteo/out/sig_bkg_classifier/boosted/1e-3_e20drop95_minDelta1em5_boosted_signal_background_classifier_50GeV_noH2WP/state_dict/model_best_epoch_11.onnx",
 }
 
 
@@ -41,6 +41,6 @@ config_options_dict |= {
     "region_setting": "50GeV",  # This defines the size of the signal and control regions in the boosted topology
     "lead_sublead": "lead",
     "optimised_signal_cuts": False,
-    "bdt_model": "/work/tharte/datasets/bdts/boosted/bdt_trainings_run3/ABCD_26Oct01_v15_2225_kf20median_abcd_smvbf_bal_xbb/trained_bdt.model",
+    # "bdt_model": "/work/tharte/datasets/bdts/boosted/bdt_trainings_run3/ABCD_26Oct01_v15_2225_kf20median_abcd_smvbf_bal_xbb/trained_bdt.model",
     "save_chunk": "root://t3dcachedb03.psi.ch:1094//pnfs/psi.ch/cms/trivcat/store/user/tharte/HH4b/spanet_1_16_9_boosted_other_group_50GeV_lower_sideband_leading_higgs_region_btagging_dnn",
 } | onnx_model_dict
