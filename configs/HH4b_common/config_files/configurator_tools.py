@@ -318,13 +318,13 @@ def define_single_category(category_name, wide_cr=False, ggf_vbf_threshold=False
         # With the categories, we have to check, if we maybe need to separate by the reweighted TXbb for the postW.
         # However, "postW" is not a good factor, as the region B still can use the normal TXbb. So Actually I need the "boosted_control" name. I will never morph D, so that is not an issue.
         if "cat1" in category_name:
-            cut_list.append(cuts.hh4b_boosted_category_1(txbb_morph="boosted_control" in category_name, region_setting=region_setting))
+            cut_list.append(cuts.hh4b_boosted_category_1(txbb_morph="boosted_control" in category_name, region_setting=region_setting, optimised_cuts=optimised_cuts))
         elif "catvbf" in category_name:
-            cut_list.append(cuts.hh4b_boosted_category_vbf(txbb_morph="boosted_control" in category_name, region_setting=region_setting))
+            cut_list.append(cuts.hh4b_boosted_category_vbf(txbb_morph="boosted_control" in category_name, region_setting=region_setting, optimised_cuts=optimised_cuts))
         elif "cat2" in category_name:
-            cut_list.append(cuts.hh4b_boosted_category_2(txbb_morph="boosted_control" in category_name, region_setting=region_setting))
+            cut_list.append(cuts.hh4b_boosted_category_2(txbb_morph="boosted_control" in category_name, region_setting=region_setting, optimised_cuts=optimised_cuts))
         elif "cat3" in category_name:
-            cut_list.append(cuts.hh4b_boosted_category_3(txbb_morph="boosted_control" in category_name, region_setting=region_setting))
+            cut_list.append(cuts.hh4b_boosted_category_3(txbb_morph="boosted_control" in category_name, region_setting=region_setting, optimised_cuts=optimised_cuts))
 
     # mass cuts
     elif "VR1" not in category_name:

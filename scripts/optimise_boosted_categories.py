@@ -78,7 +78,7 @@ args = parser.parse_args()
 
 CATEGORIES = ["none", "cat1", "catvbf", "cat2", "cat3"]
 # Parameter names follow _get_params in configs/HH4b_common/custom_cuts_common.py
-PARAMS = ["txbb_c1", "ggf_c1", "txbb_vbf", "vbf", "txbb_c2a", "ggf_c2b", "ggf_bkg"]
+PARAMS = ["txbb_c1", "bdt_ggf_c1", "txbb_vbf", "bdt_vbf", "txbb_c2a", "bdt_ggf_c2b", "ggf_bkg"]
 # Which grid axis each parameter lives on
 PARAM_AXIS = {"txbb_c1": "t", "txbb_vbf": "t", "txbb_c2a": "t", "ggf_c1": "g", "ggf_c2b": "g", "ggf_bkg": "g", "vbf": "v"}
 # Mapping onto the BDT keys in _get_params
@@ -183,12 +183,12 @@ def assign_categories(t, g, v, cuts):
     """Category index (see CATEGORIES) for each entry. Works on values with value cuts, or on grid indices
     with cuts = index - 0.5 (then x > cut <=> index >= k)."""
     cat1 = (t > cuts["txbb_c1"]) & (g > cuts["ggf_c1"])
-    catvbf = ~cat1 & (t > cuts["txbb_vbf"]) & (v > cuts["vbf"])
+    catvbf = ~cat1 & (t > cuts["txbb_vbf"]) & (v > cuts["bdt_vbf"])
     cat2 = ~cat1 & ~catvbf & (
-        ((t > cuts["txbb_c2a"]) & (t < cuts["txbb_c1"]) & (g > cuts["ggf_c1"]))
-        | ((t > cuts["txbb_c1"]) & (g > cuts["ggf_c2b"]) & (g < cuts["ggf_c1"]))
+        ((t > cuts["txbb_c2a"]) & (t < cuts["txbb_c1"]) & (g > cuts["bdt_ggf_c1"]))
+        | ((t > cuts["txbb_c1"]) & (g > cuts["bdt_ggf_c2b"]) & (g < cuts["bdt_ggf_c1"]))
     )
-    cat3 = ~cat1 & ~catvbf & ~cat2 & (t > cuts["txbb_c2a"]) & (g > cuts["ggf_bkg"])
+    cat3 = ~cat1 & ~catvbf & ~cat2 & (t > cuts["txbb_c2a"]) & (g > cuts["bdt_ggf_bkg"])
     category = np.zeros(np.shape(t), dtype=np.int64)
     for i, mask in enumerate([cat1, catvbf, cat2, cat3], start=1):
         category[mask] = i
@@ -360,8 +360,8 @@ def initial_cuts(grids, processes):
     def at_eff(axis, signal, eff):
         return weighted_quantile(processes[signal][axis], [1 - eff], weights=processes[signal]["w"])[0]
     return {
-        "txbb_c1": 0.95, "ggf_c1": at_eff("g", "ggF", 0.3), "txbb_vbf": 0.85, "vbf": at_eff("v", "VBF", 0.3),
-        "txbb_c2a": 0.85, "ggf_c2b": at_eff("g", "ggF", 0.6), "ggf_bkg": grids["g"][0],
+        "txbb_c1": 0.95, "bdt_ggf_c1": at_eff("g", "ggF", 0.3), "txbb_vbf": 0.85, "bdt_vbf": at_eff("v", "VBF", 0.3),
+        "txbb_c2a": 0.85, "bdt_ggf_c2b": at_eff("g", "ggF", 0.6), "bdt_ggf_bkg": grids["g"][0],
     }
 
 
@@ -379,7 +379,7 @@ def valid(indices):
 
 
 def optimise(binned, grids, start):
-    pairs = [("txbb_c1", "ggf_c1"), ("txbb_vbf", "vbf"), ("txbb_c2a", "ggf_c2b")]
+    pairs = [("txbb_c1", "ggf_c1"), ("txbb_vbf", "bdt_vbf"), ("txbb_c2a", "ggf_c2b")]
     if args.scan_cat3:
         pairs.append(("ggf_bkg",))
     best = dict(start)
