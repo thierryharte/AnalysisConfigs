@@ -40,7 +40,7 @@ config_options_dict |= {
     "boosted_full_sideband": False,
     "region_setting": "50GeV",  # This defines the size of the signal and control regions in the boosted topology
     "lead_sublead": "lead",
-    "optimised_signal_cuts": False,
+    "optimised_signal_cuts": {"txbb_c1": 0.875, "bdt_ggf_c1": 0.9904, "txbb_vbf": 0.875, "bdt_vbf": 0.98883, "txbb_c2a": 0.715, "bdt_ggf_c2b": 0.92265, "bdt_ggf_bkg": 0.053765},
     "bdt_model": "/work/tharte/datasets/bdts/boosted/bdt_trainings_run3/ABCD_26Oct01_v15_2225_kf20median_abcd_smvbf_bal_xbb/trained_bdt.model",
     "save_chunk": "root://t3dcachedb03.psi.ch:1094//pnfs/psi.ch/cms/trivcat/store/user/tharte/HH4b/spanet_1_16_9_boosted_other_group_50GeV_lower_sideband_leading_higgs_region_btagging_dnn",
 } | onnx_model_dict

@@ -32,7 +32,9 @@ from configs.HH4b_common.config_files.configurator_tools import (
 from configs.HH4b_common.custom_weights import (
     bkg_morphing_dnn_weight,
 )
+from configs.HH4b_common.params.CustomWeights import SF_TXbb_fixed_multiple_wp
 from configs.VBF_HH4b_boosted.workflow import VBFHH4bProcessor
+from configs.HH4b_common.params.CustomWeights import SF_btag_fixed_multiple_wp, SF_TXbb_fixed_multiple_wp
 
 BASELINE = False
 
@@ -51,6 +53,7 @@ parameters = defaults.merge_parameters_from_files(
     f"{localdir}/../HH4b_common/params/object_preselection_{config_options_dict['approach']}_approach.yaml",
     f"{localdir}/../HH4b_common/params/triggers_boosted.yaml",
     f"{localdir}/../HH4b_common/params/variations.yaml",
+    f"{localdir}/../HH4b_common/params/bbtag_AK8_sf_globalParT3.yaml",
     f"{localdir}/../HH4b_common/params/btagging_multipleWP.yaml",
     f"{localdir}/../HH4b_common/params/btagging_sampleGroups.yaml",
     f"{localdir}/../HH4b_common/params/jets_calibration_regression_json.yaml",
@@ -58,6 +61,7 @@ parameters = defaults.merge_parameters_from_files(
     update=True,
 )
 
+config_options_dict["columns_exclude_weight_variations"] = ["lhe_scale", "lhe_pdf"]
 if config_options_dict["save_chunk"]:
     config_options_dict["dump_columns_as_arrays_per_chunk"] = config_options_dict[
         "save_chunk"
@@ -76,6 +80,22 @@ variables_dict = get_variables_dict(
     BOOSTED=config_options_dict["boosted"],
 )
 # variables_dict = {}
+# ====== NEEDED WITH SYSTEMATICS, OTHERWISE, O(200) VARIATIONS ARE SAVED FOR EVERY HISTOGRAM
+FIT_VARIABLES = [
+    "sig_bkg_dnn_score_VBFvsBKG",
+    "sig_bkg_dnn_score_ggFvsBKG",
+    "HiggsSubLeading_mass"
+]
+# Every other variable: experimental variations only, no lhe_scale / lhe_pdf
+NON_THEORY_VARIATIONS = [
+    "jet_calibration",
+    "pileup",
+    "sf_partonshower_isr",
+    "sf_partonshower_fsr",
+]
+for variable_name, hist_conf in variables_dict.items():
+    if variable_name not in FIT_VARIABLES:
+        hist_conf.only_variations = NON_THEORY_VARIATIONS
 
 # Define the preselection to apply
 preselection = define_preselection(config_options_dict)
@@ -340,7 +360,7 @@ cfg = Configurator(
     preselections=[eventFlags, cuts.hh4b_JetVetoMap, cuts.hh4b_boosted_2fatjets, cuts.hh4b_boosted_lepton_veto],  # preselection,
     categories=categories_dict,
     weights_classes=common_weights
-    + [bkg_morphing_dnn_weight],
+    + [bkg_morphing_dnn_weight, SF_TXbb_fixed_multiple_wp],
     weights={
         "common": {
             "inclusive": [
@@ -350,8 +370,10 @@ cfg = Configurator(
                 "pileup",
                 "sf_partonshower_isr",
                 "sf_partonshower_fsr",
+                "lhe_scale",
+                "lhe_pdf",
+                "sf_txbb_fixed_multiple_wp"  # <-- only for signal (and ttbar)
                 # "sf_trigger_prescale" / "trigger_scale_factor"
-                # "TXbb_scale_factor"
             ],
             "bycategory": {},
         },
@@ -368,9 +390,11 @@ cfg = Configurator(
                     # "XS",
                     # "pileup",
                     # "sf_partonshower_isr",
-                    # "sf_partonshower_fsr"
+                    # "sf_partonshower_fsr",
+                    # "lhe_scale",
+                    # "lhe_pdf",
+                    # "sf_txbb_fixed_multiple_wp",
                     # "trigger_scale_factor"
-                    # "TXbb_scale_factor"
                 ],
                 "bycategory": {},
                     # "reweighting uncertainties"

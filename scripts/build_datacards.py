@@ -123,15 +123,16 @@ lumi_sys_values = lumi_cfg["lumi_systematics"]
 # Asymmetric lnN values are written to the datacard as value[0]/value[1], which combine reads as
 # kappa(-1 sigma)/kappa(+1 sigma): give them in the order (down, up).
 BR_HBB = (0.975, 1.025)  # <-- not found
-PDF_HIGGS_QQHH = 1.021  # <-- not found
-PDF_HIGGS_GGHH = 1.030  # 1.0192
+PDF_HIGGS_QQHH = 1.027  # 1.027<-- not found
+PDF_HIGGS_GGHH = 1.021  # 1.0192
 ALPHAS_GGHH = 1.021  # 1.0149
+ALPHAS_QQHH = 1.021  # <-- not found
 SCALE_GGHH = (0.951, 1.021)  # (0.9515, 1.0207)
 MTOP_GGHH = (0.82, 1.04)  # (0.84, 1.05)
-SCALE_QQHH = (0.9996, 1.0003)  # TODO: check value, LHCHWG HH recommendations (VBF HH: +0.03% / -0.04%)
+SCALE_QQHH = (0.9997, 1.0005)  # TODO: check value, LHCHWG HH recommendations (VBF HH: +0.03% / -0.04%)
 # ttbar inclusive cross section (TOP PAG NNLO+NNLL reference), only needed as long as ttbar has no rateParam
 SCALE_TTBAR = (0.964, 1.024)  # TODO: check value
-PDF_GG = 1.025  # TODO: check value (PDF + alpha_s)
+PDF_GG = 1.03  # TODO: check value (PDF + alpha_s) <-- Do I need one for VBF too?
 
 # Theory acceptance uncertainties, built from the lhe_scale / lhe_pdf weight variations
 # (normalised to the inclusive cross section, so they do not overlap with the lnN above)
@@ -511,8 +512,8 @@ def add_theory_acceptance_variations(histograms, processes_by_production, meta_d
             continue
         samples = sorted({meta_dict[d]["sample"] for d in datasets})
         for variation_name, source_variations, combine in (
-            (f"CMS_bbbb_hadronic_QCDScaleacc_{production}", LHE_SCALE_VARIATIONS, add_envelope_variation),
-            (f"CMS_bbbb_hadronic_PDFacc_{production}", LHE_PDF_EIGENVECTORS, add_quadrature_variation),
+            (f"QCDscale_{production}_ACCEPT", LHE_SCALE_VARIATIONS, add_envelope_variation),
+            (f"pdf_Higgs_{production}_ACCEPT", LHE_PDF_EIGENVECTORS, add_quadrature_variation),
         ):
             missing = [d for d in datasets
                        if not set(source_variations) <= set(histograms[meta_dict[d]["sample"]][d].axes["variation"])]
@@ -602,11 +603,6 @@ if __name__ == "__main__":
         coffea_file = create_new_region(coffea_file,
                                         cat_name=region_name,
                                         **value
-                                        # sig_region_name=value["sig_region_name"],
-                                        # bkg_region_name=value["bkg_region_name"],
-                                        # fit_variable=value["fit_variable"],
-                                        # sig_control_region_name=value["sig_control_region_name"],
-                                        # bkg_control_region_name=value["sig_control_region_name"],
                                         )
 
         # -- Histograms --
@@ -744,11 +740,12 @@ if __name__ == "__main__":
             ttbar_processes = list(bg_mc.keys())
             lnN_uncertainties = [
                 ("BR_hbb", signal_processes, BR_HBB),
-                ("pdf_Higgs_ggHH", ggHH_processes, PDF_HIGGS_GGHH),
-                ("alphaS_ggHH", ggHH_processes, ALPHAS_GGHH),
+                ("pdf_alphas_ggHH", ggHH_processes, ALPHAS_GGHH),
+                ("pdf_alphas_qqHH", qqHH_processes, ALPHAS_QQHH),
                 ("QCDscale_ggHH", ggHH_processes, SCALE_GGHH),
                 ("mtop_ggHH", ggHH_processes, MTOP_GGHH),
                 ("pdf_Higgs_qqHH", qqHH_processes, PDF_HIGGS_QQHH),
+                ("pdf_Higgs_ggHH", ggHH_processes, PDF_HIGGS_GGHH),
                 ("QCDscale_qqHH", qqHH_processes, SCALE_QQHH),
                 ("QCDscale_ttbar", ttbar_processes, SCALE_TTBAR),
                 ("pdf_gg", ttbar_processes, PDF_GG),

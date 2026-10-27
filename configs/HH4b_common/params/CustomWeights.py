@@ -5,8 +5,67 @@ import correctionlib
 import numpy as np
 import copy
 from pocket_coffea.lib.weights.weights import WeightData, WeightDataMultiVariation, WeightLambda, WeightWrapper
+from functools import lru_cache
 
 from utils_configs.jet_algorithms import get_btag_algorithm, get_btag_working_points
+
+
+class SF_TXbb_fixed_multiple_wp(WeightWrapper):
+    name = "sf_txbb_fixed_multiple_wp"
+    has_variations = True
+    WP_NAMES = np.array(["NVLP", "VLP", "LP", "MP", "HP", "VHP"])
+
+
+    def __init__(self, params, metadata):
+        super().__init__(params, metadata)
+        self.params = params
+        self.metadata = metadata
+
+    @staticmethod
+    @lru_cache(maxsize=None)
+    def _load_cset(path):
+        return correctionlib.CorrectionSet.from_file(path)
+
+    def compute(self, events, size, shape_variation):
+        txbb_sf_file = self.params["jet_scale_factors"]["bbtagSF"][self.metadata["year"]]["bbtag_file"]["globalParT3"]
+        cset = self._load_cset(txbb_sf_file)
+        corr = cset["globalParT3_XbbVsQCD_b_multi_purities_2pt_bins_5purities"]
+        wp_thresholds = [cset["globalParT3_XbbVsQCD_b_wp_values"].evaluate(wp) for wp in self.WP_NAMES[1:]]
+        # SF only on the two selected Higgs candidates (FatJetGood holds all FatJets)
+        fatjets = events.FatJetGoodSelected
+        n_jets = ak.num(fatjets, axis=1)
+        jetpt = ak.to_numpy(ak.flatten(fatjets["pt"]))
+        # Raw TXbb score -> WP index (0 = NVLP, ..., 5 = VHP). Ignoring the morphed score, because that one is for data, we are only scaling MC
+        # NaN (Xbb+QCD == 0) would land in the last bin (VHP) -> treat as NVLP
+        btag_score = np.nan_to_num(ak.to_numpy(ak.flatten(fatjets["btagBBTXbb"])), nan=0.0)
+        wp_index = np.digitize(btag_score, wp_thresholds, right=True)
+        sf_nom = np.ones_like(jetpt, dtype=np.float64)
+        sf_up = np.ones_like(jetpt, dtype=np.float64)
+        sf_down = np.ones_like(jetpt, dtype=np.float64)
+
+        for i, wp in enumerate(self.WP_NAMES):
+            mask = wp_index == i
+            if not mask.any() or wp == "NVLP":
+                continue
+            sf_nom[mask] = corr.evaluate("central", wp, jetpt[mask])
+            sf_up[mask] = corr.evaluate("up", wp, jetpt[mask])
+            sf_down[mask] = corr.evaluate("down", wp, jetpt[mask])
+        # Per-jet SFs -> per-event weight
+        sf_nom = ak.to_numpy(ak.prod(ak.unflatten(sf_nom, n_jets), axis=1))
+        sf_up = ak.to_numpy(ak.prod(ak.unflatten(sf_up, n_jets), axis=1))
+        sf_down = ak.to_numpy(ak.prod(ak.unflatten(sf_down, n_jets), axis=1))
+        if shape_variation == "nominal":
+            return WeightData(
+                name=self.name,
+                nominal=sf_nom,
+                up=sf_up,
+                down=sf_down,
+            )
+        else:
+            return WeightData(
+                name=self.name,
+                nominal=sf_nom,
+            )
 
 
 class SF_btag_fixed_multiple_wp(WeightWrapper):
