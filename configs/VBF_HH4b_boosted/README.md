@@ -263,6 +263,10 @@ Put it in the `sig_bkg_dnn` entry of the `onnx_model_dict` of the config, togeth
 > [!TIP]
 > @Tier-3/AnalysisConfigs
 
+> [!DANGER]
+> This is very much work in progress and has to be updated.
+
+
 [`optimise_boosted_categories.py`](../../scripts/optimise_boosted_categories.py) optimises the cuts that define
 `cat1`, `catvbf`, `cat2` and `cat3` on the ggF and VBF DNN discriminants and on the subleading TXbb, using the expected
 limit from the Asimov significance as figure of merit. Run it in the output folder of the run with the
@@ -333,6 +337,11 @@ python /work/tharte/datasets/AnalysisConfigs_bossted_dev/scripts/plot_boosted_si
 > [!TIP]
 > @Tier-3/AnalysisConfigs
 
+Merge the outputs into a single file (watch out, that if you do this, you need to be sure, that there is not already an `input_all.coffea` in the folder. Otherwise, you might duplicate events)
+```bash
+pocket-coffea merge-outputs -o output_all.coffea output_*.coffea -f
+```
+
 Build the datacards from the merged output with [`build_datacards.py`](../../scripts/build_datacards.py) in boosted
 mode (`-b`). The binning options depend on the fit variable and are worth tuning:
 
@@ -345,8 +354,7 @@ python /work/tharte/datasets/AnalysisConfigs_bossted_dev/scripts/build_datacards
 - `-my`: also require at least this total background yield per bin
 - `-nb`, `-sb`, `-fr`: fixed rebinning, single bin, fit range (see `--help`)
 
-The output has one folder per fit variable (e.g. `SubLeadingHiggsMass/`), each with a datacard (`VBFHH_run3.txt`) and
-its shapes file.
+The output has one folder per fit variable (e.g. `SubLeadingHiggsMass/`), each with 4 datacards with the different regions along with the shapes in root files. We will have to merge them, but first we need combine for that.
 
 ## 9. Limits with Combine
 
@@ -379,6 +387,12 @@ cmsenv
 # back to the folder with the datacard
 cd <output_dir>/datacards/<fit_variable>
 ```
+
+### Merge the datacards
+```bash
+combineCards.py catvbf=HH4b_merged_catvbf_run3.txt cat1=HH4b_merged_cat1_run3.txt cat2=HH4b_merged_cat2_run3.txt cat3=HH4b_merged_cat3_run3.txt > datacard_combined_HH4b_merged.txt
+```
+
 
 ### Build the workspace
 
