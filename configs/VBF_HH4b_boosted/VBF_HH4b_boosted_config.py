@@ -380,7 +380,7 @@ cfg = Configurator(
                 "sf_partonshower_fsr",
                 "lhe_scale",
                 "lhe_pdf",
-                "sf_txbb_fixed_multiple_wp"  # <-- only for signal (and ttbar)
+                # "sf_txbb_fixed_multiple_wp"
                 # "sf_trigger_prescale" / "trigger_scale_factor"
             ],
             "bycategory": {},
@@ -393,14 +393,14 @@ cfg = Configurator(
         "weights": {
             "common": {
                 "inclusive": [
-                    # "genWeight",
-                    # "lumi",
-                    # "XS",
-                    # "pileup",
-                    # "sf_partonshower_isr",
-                    # "sf_partonshower_fsr",
-                    # "lhe_scale",
-                    # "lhe_pdf",
+                    "genWeight",
+                    "lumi",
+                    "XS",
+                    "pileup",
+                    "sf_partonshower_isr",
+                    "sf_partonshower_fsr",
+                    "lhe_scale",
+                    "lhe_pdf",
                     # "sf_txbb_fixed_multiple_wp",
                     # "trigger_scale_factor"
                 ],

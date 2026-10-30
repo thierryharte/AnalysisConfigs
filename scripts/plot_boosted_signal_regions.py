@@ -1,5 +1,6 @@
 """Plot the boosted background prediction (reweighted QCD estimate + ttbar MC)
-in each boosted signal-region category (catvbf, cat1, cat2, cat3).
+in each boosted signal-region category (catvbf, cat1, cat2, cat3) and, as an additional comparison,
+in the full (inclusive) signal region D (category "full").
 
 The QCD estimate is the reweighted data of boosted_control_region_B_<cat>_postW,
 scaled with one global factor such that QCD estimate + ttbar MC matches the data in C:
@@ -23,10 +24,14 @@ from utils_configs.plot.get_columns_from_files import get_columns_from_files
 from utils_configs.plot.HEPPlotter import HEPPlotter
 
 
+# Pseudo-category for the full (inclusive) signal region D / control region B
+FULL_SR = "full"
+
 parser = argparse.ArgumentParser(description="Plot boosted background prediction in the signal-region categories")
 parser.add_argument("-i", "--input-dir", type=str, required=True, help="Directory with the coffea output files")
 parser.add_argument("-o", "--output", type=str, default="plots_boosted_SR", help="Output directory")
-parser.add_argument("-c", "--categories", type=str, nargs="+", default=["catvbf", "cat1", "cat2", "cat3"], help="Signal-region categories to plot")
+parser.add_argument("-c", "--categories", type=str, nargs="+", default=["catvbf", "cat1", "cat2", "cat3", FULL_SR],
+                    help=f"Signal-region categories to plot ('{FULL_SR}' = inclusive signal region D)")
 parser.add_argument("-u", "--unblind", type=str, nargs="*", default=["cat3"], help="Categories in which data is shown")
 parser.add_argument("-w", "--workers", type=int, default=8, help="Number of workers")
 parser.add_argument("-l", "--linear", action="store_true", help="Linear y scale", default=False)
@@ -39,8 +44,8 @@ args = parser.parse_args()
 NUMBER_OF_BINS = 20
 PAD_VALUE = -999
 
-SIG_REGION = "boosted_signal_region_D_{}"
-BKG_REGION = "boosted_control_region_B_{}_postW"
+SIG_REGION_FULL = "boosted_signal_region_D"
+BKG_REGION_FULL = "boosted_control_region_B_postW"
 NORM_NUM_REGION = "boosted_signal_sideband_region_C"
 NORM_DEN_REGION = "boosted_control_sideband_region_A_postW"
 
@@ -49,6 +54,15 @@ COLOR_QCD = ("red", "salmon")
 COLOR_TT = ("darkorange", "navajowhite")
 
 SKIP_VARS = ("weight", "events_event", "year")
+
+
+def sig_region(category):
+    return SIG_REGION_FULL if category == FULL_SR else f"{SIG_REGION_FULL}_{category}"
+
+
+def bkg_region(category):
+    return BKG_REGION_FULL if category == FULL_SR else f"boosted_control_region_B_{category}_postW"
+
 
 outputdir = args.output
 os.makedirs(outputdir, exist_ok=True)
@@ -71,9 +85,9 @@ def _list_files(selector):
 
 
 data_categories = {NORM_NUM_REGION, NORM_DEN_REGION}
-data_categories |= {BKG_REGION.format(c) for c in args.categories}
-data_categories |= {SIG_REGION.format(c) for c in args.categories if c in args.unblind}
-tt_categories = {NORM_NUM_REGION} | {SIG_REGION.format(c) for c in args.categories}
+data_categories |= {bkg_region(c) for c in args.categories}
+data_categories |= {sig_region(c) for c in args.categories if c in args.unblind}
+tt_categories = {NORM_NUM_REGION} | {sig_region(c) for c in args.categories}
 
 print(f"Loading data categories: {sorted(data_categories)}")
 cat_col_data, total_datasets_list = get_columns_from_files(
@@ -134,8 +148,8 @@ def get_column(cat_col, masks, region, var):
 
 
 def plot_single_var(category, var, lumi, era_string):
-    col_qcd, w_qcd = get_column(cat_col_data, masks_data, BKG_REGION.format(category), var)
-    col_tt, w_tt = get_column(cat_col_tt, masks_tt, SIG_REGION.format(category), var)
+    col_qcd, w_qcd = get_column(cat_col_data, masks_data, bkg_region(category), var)
+    col_tt, w_tt = get_column(cat_col_tt, masks_tt, sig_region(category), var)
     w_qcd = w_qcd * NORM_FACTOR
     show_data = category in args.unblind
 
@@ -150,7 +164,7 @@ def plot_single_var(category, var, lumi, era_string):
 
     hist_1d_dict = {}
     if show_data:
-        col_data, w_data = get_column(cat_col_data, masks_data, SIG_REGION.format(category), var)
+        col_data, w_data = get_column(cat_col_data, masks_data, sig_region(category), var)
         hist_1d_dict["Data"] = {
             "data": make_hist(col_data, w_data, bins, var),
             "style": {
@@ -195,7 +209,7 @@ def plot_single_var(category, var, lumi, era_string):
 def print_yields():
     print(f"\n{'category':<10} {'QCD (rew.)':>14} {'TT':>12} {'total':>14} {'data':>10}")
     for category in args.categories:
-        bkg_reg, sig_reg = BKG_REGION.format(category), SIG_REGION.format(category)
+        bkg_reg, sig_reg = bkg_region(category), sig_region(category)
         y_qcd = cat_col_data[bkg_reg]["weight"][masks_data[bkg_reg]].sum() * NORM_FACTOR
         y_tt = cat_col_tt[sig_reg]["weight"][masks_tt[sig_reg]].sum()
         y_data = (
@@ -211,7 +225,7 @@ if __name__ == "__main__":
 
     missing = [
         c for c in args.categories
-        if BKG_REGION.format(c) not in cat_col_data or SIG_REGION.format(c) not in cat_col_tt
+        if bkg_region(c) not in cat_col_data or sig_region(c) not in cat_col_tt
     ]
     if missing:
         raise KeyError(f"Missing background or ttbar columns for categories {missing}")
@@ -220,8 +234,8 @@ if __name__ == "__main__":
 
     jobs = []
     for category in args.categories:
-        vars_bkg = set(cat_col_data[BKG_REGION.format(category)].keys())
-        vars_tt = set(cat_col_tt[SIG_REGION.format(category)].keys())
+        vars_bkg = set(cat_col_data[bkg_region(category)].keys())
+        vars_tt = set(cat_col_tt[sig_region(category)].keys())
         variables = sorted(
             v for v in vars_bkg & vars_tt
             if not any(s in v for s in SKIP_VARS) and not v.endswith("_N")

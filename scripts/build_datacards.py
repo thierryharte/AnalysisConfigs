@@ -104,6 +104,14 @@ parser.add_argument(
          "Applied before --nbins and the minimum-statistics rebinning.",
     default=None,
 )
+parser.add_argument(
+    "-qu",
+    "--qcd-norm-unc",
+    type=float,
+    help="Additional flat normalisation uncertainty (lnN, e.g. 0.1 for 10%%) on the data-driven background, "
+         "uncorrelated between categories (e.g. for the non-closure of the background estimate)",
+    default=None,
+)
 
 args = parser.parse_args()
 if args.fit_range is not None and args.fit_range[0] >= args.fit_range[1]:
@@ -111,7 +119,7 @@ if args.fit_range is not None and args.fit_range[0] >= args.fit_range[1]:
 if args.single_bin:
     args.nbins = 1
 
-LUMI_YAML = Path(__file__).parent / "configs" / "HH4b_common" / "params" / "lumi_systematics.yaml"
+LUMI_YAML = Path(__file__).parent.parent / "configs" / "HH4b_common" / "params" / "lumi_systematics.yaml"
 with open(LUMI_YAML) as f:
     lumi_cfg = yaml.safe_load(f)
 lumi_sys_values = lumi_cfg["lumi_systematics"]
@@ -238,9 +246,16 @@ def get_year(pocketcoffea_year, year_type=0):
 
 
 # Jet types (prefix of the PocketCoffea jet variations, e.g. "AK8PFPuppi_JES_Total") reported as
-# the AK4 / AK8 jet uncertainties. Any other jet type (e.g. the jets of the MET type-1 correction)
-# keeps its own name, so that two different variations never get the same datacard name.
-JET_TYPE_TAGS = {"AK4Jet": "AK4", "AK4PFPuppi": "AK4", "AK4PFchs": "AK4", "AK8PFPuppi": "AK8"}
+# the AK4 / AK8 jet uncertainties. Variations of any other jet type (e.g. the merged "AK4Jet"
+# collections) are not used in the datacards, so that two different variations never get the
+# same datacard name.
+JET_TYPE_TAGS = {"AK4PFPuppi": "AK4", "AK4PFchs": "AK4", "AK8PFPuppi": "AK8"}
+
+
+def is_unused_jet_variation(pocketcoffea_name):
+    """True for JES/JER variations of a jet type not listed in JET_TYPE_TAGS"""
+    jet_type, _, jet_variation = pocketcoffea_name.partition("_")
+    return jet_type.startswith("AK") and jet_variation in ("JES_Total", "JER") and jet_type not in JET_TYPE_TAGS
 
 
 def get_uncertainty_name(pocketcoffea_name, year):
@@ -249,7 +264,7 @@ def get_uncertainty_name(pocketcoffea_name, year):
     # Jet variations: "<jet type>_JES_Total" / "<jet type>_JER"
     jet_type, _, jet_variation = pocketcoffea_name.partition("_")
     if jet_type.startswith("AK") and jet_variation in ("JES_Total", "JER"):
-        jet_tag = JET_TYPE_TAGS.get(jet_type, jet_type)
+        jet_tag = JET_TYPE_TAGS[jet_type]
         # In the boosted analysis AK4 and AK8 jets are varied separately (not seen in the
         # datacards of HIG-24-010); the resolved analysis keeps the plain names for AK4 jets
         jet_prefix = "" if (not args.boosted and jet_tag == "AK4") else f"{jet_tag}_"
@@ -407,6 +422,16 @@ def compute_min_stat_edges(histograms, category, bkg_datasets, meta_dict, max_re
     return new_edges
 
 
+def process_yield(histograms, datasets, category, variation, meta_dict):
+    """Total yield of a process (summed over its datasets) in `category` for a single variation"""
+    total = 0.0
+    for dataset in datasets:
+        histogram = histograms[meta_dict[dataset]["sample"]][dataset]
+        # Flow bins were already folded in create_new_region and are not read by the Datacard
+        total += histogram[{"cat": category, "variation": variation}].values(flow=False).sum()
+    return total
+
+
 def compute_norm_factor(histograms, num_label, denom_label, mc_bkg_datasets=()):
     """Global normalisation factor (sum(data, num_label) - sum(MC bkg, num_label)) / sum(data, denom_label).
 
@@ -415,27 +440,40 @@ def compute_norm_factor(histograms, num_label, denom_label, mc_bkg_datasets=()):
 
     :param histograms: histograms of a single variable, layout {sample: {dataset: hist}}
     :param mc_bkg_datasets: MC background datasets subtracted from the data in num_label
+
+    Returns the factor and its relative statistical uncertainty (from the data in both regions
+    and the MC background statistics, added in quadrature).
     """
-    sum_num = 0.0
-    sum_mc = 0.0
-    sum_denom = 0.0
+    sum_num = var_num = 0.0
+    sum_mc = var_mc = 0.0
+    sum_denom = var_denom = 0.0
     for datasets in histograms.values():
         for dataset, histogram in datasets.items():
             if dataset in mc_bkg_datasets:
                 selection = {"cat": num_label}
                 if "variation" in histogram.axes.name:
                     selection["variation"] = "nominal"
-                sum_mc += histogram[selection].sum(flow=True).value
+                total = histogram[selection].sum(flow=True)
+                sum_mc += total.value
+                var_mc += total.variance
                 continue
             if "DATA" not in dataset or dataset.endswith("_background"):
                 continue
-            sum_num += histogram[{"cat": num_label}].sum(flow=True).value
-            sum_denom += histogram[{"cat": denom_label}].sum(flow=True).value
+            total_num = histogram[{"cat": num_label}].sum(flow=True)
+            total_denom = histogram[{"cat": denom_label}].sum(flow=True)
+            sum_num += total_num.value
+            var_num += total_num.variance
+            sum_denom += total_denom.value
+            var_denom += total_denom.variance
     if sum_denom == 0:
         raise ValueError(f"No data events in normalisation region {denom_label!r}")
+    if sum_num - sum_mc <= 0:
+        raise ValueError(f"Non-positive data - MC bkg in normalisation region {num_label!r}: {sum_num} - {sum_mc}")
     factor = (sum_num - sum_mc) / sum_denom
-    logger.info(f"Normalisation factor ({num_label} - MC bkg) / {denom_label} = ({sum_num} - {sum_mc}) / {sum_denom} = {factor:.5f}")
-    return factor
+    rel_unc = np.sqrt((var_num + var_mc) / (sum_num - sum_mc)**2 + var_denom / sum_denom**2)
+    logger.info(f"Normalisation factor ({num_label} - MC bkg) / {denom_label} = ({sum_num} - {sum_mc}) / {sum_denom} = {factor:.5f} "
+                f"+- {rel_unc:.2%} (stat.)")
+    return factor, rel_unc
 
 
 def duplicate_category(histo, src_label, new_label, axis=0, scale=None):
@@ -546,9 +584,9 @@ def create_new_region(coffea_file, cat_name, sig_region_name, bkg_region_name, f
     # One global factor (from the fit variable, flow included) for all eras and variables
     mc_bkg_datasets = [d for datasets in sig_bkg_dict["background"].values() for d in datasets if "DATA" not in d]
     if args.separate_normalisation:
-        norm_factor = compute_norm_factor(coffea_file["variables"][fit_variable], sig_region_name, bkg_region_name, mc_bkg_datasets)
+        norm_factor, norm_rel_unc = compute_norm_factor(coffea_file["variables"][fit_variable], sig_region_name, bkg_region_name, mc_bkg_datasets)
     else:
-        norm_factor = compute_norm_factor(coffea_file["variables"][fit_variable], sig_control_region_name, bkg_control_region_name, mc_bkg_datasets)
+        norm_factor, norm_rel_unc = compute_norm_factor(coffea_file["variables"][fit_variable], sig_control_region_name, bkg_control_region_name, mc_bkg_datasets)
     for column in coffea_file["variables"].keys():
         sample_list = [s for s in coffea_file["variables"][column] if not s.endswith("_background")]
         for sample in sample_list:
@@ -575,7 +613,7 @@ def create_new_region(coffea_file, cat_name, sig_region_name, bkg_region_name, f
             temp_dset["sample"] = f"{temp_dset['sample']}_background"
             temp_dset["primaryDataset"] = f"{temp_dset['primaryDataset']}_background"
             coffea_file["datasets_metadata"]["by_dataset"][f"{dataset}_background"] = temp_dset
-    return coffea_file
+    return coffea_file, norm_rel_unc
 
 
 
@@ -600,7 +638,7 @@ if __name__ == "__main__":
         sig_bkg_dict["background"][name] = [f"{d}_background" if "DATA" in d else d for d in datasets]
 
     for region_name, value in region_definitions.items():
-        coffea_file = create_new_region(coffea_file,
+        coffea_file, norm_rel_unc = create_new_region(coffea_file,
                                         cat_name=region_name,
                                         **value
                                         )
@@ -727,8 +765,27 @@ if __name__ == "__main__":
                         # The raw LHE variations only enter through the combined theory shapes
                         if variation == "nominal" or variation.startswith("lhe_") or variation in theory_shapes:
                             continue
+                        if is_unused_jet_variation(variation):
+                            continue
                         processes_by_variation[variation].add(process)
             for variation, processes in sorted(processes_by_variation.items()):
+                # combine cannot handle a non-positive Up/Down yield for a process with a positive nominal
+                # yield ("Bogus norm", kappa <= 0). This happens for low-stat MC, where all events migrate
+                # out of the category under the variation: drop the systematic for that process here.
+                all_process_datasets = {**sig_bkg_dict["signal"], **bg_mc}
+                for process in sorted(processes):
+                    datasets = all_process_datasets[process]
+                    nominal = process_yield(sob_hist, datasets, region_name, "nominal", meta_dict)
+                    if nominal <= 0:
+                        continue
+                    shifted = {shift: process_yield(sob_hist, datasets, region_name, f"{variation}{shift}", meta_dict)
+                               for shift in ("Up", "Down")}
+                    if min(shifted.values()) <= 0:
+                        logger.warning(f"Dropping shape variation {variation} for process {process} in {region_name}: "
+                                       f"non-positive yield (nominal {nominal:.4g}, Up {shifted['Up']:.4g}, Down {shifted['Down']:.4g})")
+                        processes.discard(process)
+                if not processes:
+                    continue
                 logger.info(f"Shape variation {variation} on processes {sorted(processes)}")
                 systematics_list.append(SystematicUncertainty(name=variation, datacard_name=get_uncertainty_name(variation, card_year), typ="shape", processes=sorted(processes), years=[card_year], value=1.0))
 
@@ -753,6 +810,20 @@ if __name__ == "__main__":
             for name, processes, value in lnN_uncertainties:
                 if processes:
                     systematics_list.append(SystematicUncertainty(name=name, datacard_name=name, typ="lnN", processes=processes, value=value, years=[card_year]))
+
+            # ====== Data-driven background normalisation =======
+            # Statistical uncertainty of the normalisation factor. The factor of the control regions is shared
+            # by all categories (correlated), with --separate-normalisation each category has its own factor.
+            # The per-bin statistics of the template are covered by autoMCStats.
+            data_driven_processes = [k for k, v in sig_bkg_dict["background"].items() if "DATA" in v[0]]
+            analysis_tag = "boosted" if args.boosted else "resolved"
+            norm_stat_name = f"CMS_bbbb_{analysis_tag}_QCD_norm_stat"
+            if args.separate_normalisation:
+                norm_stat_name += f"_{region_name}"
+            systematics_list.append(SystematicUncertainty(name=norm_stat_name, datacard_name=norm_stat_name, typ="lnN", processes=data_driven_processes, value=round(1 + norm_rel_unc, 4), years=[card_year]))
+            if args.qcd_norm_unc is not None:
+                norm_name = f"CMS_bbbb_{analysis_tag}_QCD_norm_{region_name}"
+                systematics_list.append(SystematicUncertainty(name=norm_name, datacard_name=norm_name, typ="lnN", processes=data_driven_processes, value=1 + args.qcd_norm_unc, years=[card_year]))
 
             # Theory acceptance uncertainties (shape), built in add_theory_acceptance_variations
             for name, processes in theory_shapes.items():
