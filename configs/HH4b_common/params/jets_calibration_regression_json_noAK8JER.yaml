@@ -793,9 +793,9 @@ jets_calibration:
       AK4PFPuppiPNetRegressionPlusNeutrino: True
       AK8PFPuppi: False
     "2024": 
-      AK4PFPuppi: True
-      AK4PFPuppiUParTRegression: True
-      AK4PFPuppiUParTRegressionPlusNeutrino: True
+      AK4PFPuppi: False
+      AK4PFPuppiUParTRegression: False
+      AK4PFPuppiUParTRegressionPlusNeutrino: False
       AK8PFPuppi: False
     "2025": 
       AK4PFPuppi: True

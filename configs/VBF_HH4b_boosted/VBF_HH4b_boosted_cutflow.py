@@ -139,7 +139,8 @@ sample_list = (
         # "TTto2L2Nu",
         # "TTto4Q",
         # "DATA_ParkingHH",
-        # "DATA_JetMET0_HH4bBoosted"
+        "DATA_JetMET0_HH4bBoosted"
+        # "DATA_JetMET1_HH4bBoosted"
     ]
     + sample_ggF_list
     + sample_VBF_list
@@ -269,10 +270,10 @@ column_list = get_columns_list(
         # "JetGoodCloseToFatJet": ["pt_regressed", "pt_default", "pt", "eta", "phi", "mass"],
         # "Jet": ["pt_regressed", "pt_default", "eta"],
         # "JetGoodVBFGood": ["pt", "eta", "phi", "mass"],
-        "Jet": ["pt", "eta", "phi", "mass", "pt_raw", "mass_raw", "pt_gen"],
-        "FatJet": ["pt", "eta", "phi", "msoftdrop", "mass_orig", "mass", "btagBBTXbb", "pt_raw", "mass_raw", "pt_gen", "msoftdrop_raw"],
-        "JetGood": ["pt", "eta", "phi", "mass", "pt_raw", "mass_raw", "pt_gen"],
-        "FatJetGood": ["pt", "eta", "phi", "msoftdrop", "mass_orig", "mass", "btagBBTXbb", "pt_raw", "mass_raw", "pt_gen", "msoftdrop_raw"],
+        "Jet": ["pt", "eta", "phi", "mass", "pt_raw", "mass_raw"],
+        "FatJet": ["pt", "eta", "phi", "msoftdrop", "mass_orig", "mass", "btagBBTXbb", "pt_raw", "mass_raw", "msoftdrop_raw"],
+        "JetGood": ["pt", "eta", "phi", "mass", "pt_raw", "mass_raw"],
+        "FatJetGood": ["pt", "eta", "phi", "msoftdrop", "mass_orig", "mass", "btagBBTXbb", "pt_raw", "mass_raw", "msoftdrop_raw"],
         "events": ["HT_jetJetGood", "nJetGood", "HT_jetJet", "nJet", "nFatJet", "nFatJetGood", "event"],
         # "events": ["HT_jetJetGoodVBF", "HT_jetJetGood", "nJetGood", "nFatJetGoodSelected", "event", "boosted_bdt_score", "boosted_bdt_vbf_score", "mjjJetGoodVBFGood", "mjjJetGoodVBF", "mjjJetGoodVBF", "detaJetGoodVBF", "detaJetGoodVBFGood", "HiggsLeadingByHiggsSubLeadingPt"],
         # "JetGoodVBFNearHiggsLeading": ["pt", "eta", "phi", "mass"],
@@ -284,6 +285,25 @@ column_list = get_columns_list(
         "PFMET": ["pt"],
     }
 )
+# Columns only available in MC (e.g. generator-level matching)
+mc_only_column_list = get_columns_list(
+    {
+        "Jet": ["pt_gen"],
+        "FatJet": ["pt_gen"],
+        "JetGood": ["pt_gen"],
+        "FatJetGood": ["pt_gen"],
+    }
+)
+
+bysample_bycategory_column_dict = {}
+for sample in sample_list:
+    bysample_bycategory_column_dict[sample] = {
+        "inclusive": [],
+        "bycategory": {
+            "passthrough": column_list
+            + (mc_only_column_list if "DATA" not in sample else []),
+        },
+    }
 
 cfg = Configurator(
     parameters=parameters,
@@ -354,11 +374,9 @@ cfg = Configurator(
     columns={
         "common": {
             "inclusive": [],
-            "bycategory": {
-                "passthrough": column_list,
-                },
+            "bycategory": {},
         },
-        "bysample": {},
+        "bysample": bysample_bycategory_column_dict,
     },
 )
 cloudpickle.register_pickle_by_value(quantile_transformer)
