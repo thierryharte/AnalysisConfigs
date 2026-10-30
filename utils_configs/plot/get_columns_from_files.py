@@ -350,9 +350,14 @@ def get_columns_from_parquet(
 
         if arr.dtype == object:
             if len(arr) == 0:
-                # No events in this file/variation - nothing to split, no
-                # way to know the intended number of objects.
-                return {column: arr}
+                # No events in this file/variation: still emit the same
+                # "{column}_{idx}" keys as the non-empty units, otherwise a
+                # stray 0-length "{column}" key survives the merge next to a
+                # non-empty "weight" and breaks masking downstream.
+                return {
+                    f"{column}_{idx}": np.empty(0, dtype=np.float64)
+                    for idx in range(ragged_pad_length)
+                }
 
             # Ragged array of lists/arrays per event: pad/truncate every row
             # to the same fixed length.
