@@ -263,13 +263,35 @@ def hh4b_boosted_mass_sideband_lower(region_setting, lead_sublead):
         function=cuts_f.hh4b_boosted_mass,
 )
 
+def boosted_mass_window(region_setting):
+    """Mass window of the boosted signal region and size of the mass sidebands (in GeV)."""
+    if region_setting == "40GeV":
+        return {"lower": 110, "upper": 155, "sideband_size": 40}
+    return {"lower": 100, "upper": 150, "sideband_size": 50}
+
+
+def hh4b_boosted_mass_ttbar(region_setting):
+    """ttbar sideband: both Higgs candidate masses in [upper, upper + sideband_size] (150-200 GeV for 50GeV)."""
+    return Cut(
+        name="hh4b_boosted_mass_ttbar",
+        params=boosted_mass_window(region_setting),
+        function=cuts_f.hh4b_boosted_mass_ttbar,
+    )
+
+
 def _get_params(region_setting="50GeV"):
     if region_setting == "50GeV":
         return {"txbb_c1": 0.96, "bdt_ggf_c1": 0.965, "txbb_vbf": 0.855, "bdt_vbf": 0.9825, "txbb_c2a": 0.85, "bdt_ggf_c2b": 0.88, "bdt_ggf_bkg": 0.03}
     else:
         return {"txbb_c1": 0.945, "bdt_ggf_c1": 0.94, "txbb_vbf": 0.8, "bdt_vbf": 0.9825, "txbb_c2a": 0.85, "bdt_ggf_c2b": 0.755, "bdt_ggf_bkg": 0.03}
 
-def hh4b_boosted_category_1(txbb_morph=True, region_setting="50GeV", optimised_cuts=False):
+
+def _category_params(txbb_morph, region_setting, optimised_cuts, score_suffix):
+    """Parameters of the boosted categories.
+
+    `score_suffix` selects the DNN/BDT scores evaluated with shifted Higgs masses (e.g. "_qcdsb", "_ttsb"),
+    which are used to define the categories in the mass sidebands. "" uses the nominal scores.
+    """
     if optimised_cuts:
         cuts = dict(optimised_cuts)
         cuts["score_ggf"] = "sig_bkg_dnn_score_ggFvsBKG"
@@ -278,90 +300,51 @@ def hh4b_boosted_category_1(txbb_morph=True, region_setting="50GeV", optimised_c
         cuts = _get_params(region_setting)
         cuts["score_ggf"] = "boosted_bdt_score"
         cuts["score_vbf"] = "boosted_bdt_vbf_score"
+    cuts["score_ggf"] += score_suffix
+    cuts["score_vbf"] += score_suffix
     cuts["txbb_morph"] = txbb_morph
+    return cuts
+
+
+def hh4b_boosted_category_1(txbb_morph=True, region_setting="50GeV", optimised_cuts=False, score_suffix=""):
     return Cut(
-        name="hh4b_boosted_category_1",
-        params=cuts,
+        name="hh4b_boosted_category_1" + score_suffix,
+        params=_category_params(txbb_morph, region_setting, optimised_cuts, score_suffix),
         function=cuts_f.hh4b_boosted_category_1,
     )
 
-def hh4b_boosted_category_vbf(txbb_morph=True, region_setting="50GeV", optimised_cuts=False):
-    if optimised_cuts:
-        cuts = dict(optimised_cuts)
-        cuts["score_ggf"] = "sig_bkg_dnn_score_ggFvsBKG"
-        cuts["score_vbf"] = "sig_bkg_dnn_score_VBFvsBKG"
-    else:
-        cuts = _get_params(region_setting)
-        cuts["score_ggf"] = "boosted_bdt_score"
-        cuts["score_vbf"] = "boosted_bdt_vbf_score"
-    cuts["txbb_morph"] = txbb_morph
+def hh4b_boosted_category_vbf(txbb_morph=True, region_setting="50GeV", optimised_cuts=False, score_suffix=""):
     return Cut(
-        name="hh4b_boosted_category_vbf",
-        params=cuts,
+        name="hh4b_boosted_category_vbf" + score_suffix,
+        params=_category_params(txbb_morph, region_setting, optimised_cuts, score_suffix),
         function=cuts_f.hh4b_boosted_category_vbf,
     )
 
-def hh4b_boosted_category_2(txbb_morph=True, region_setting="50GeV", optimised_cuts=False):
-    if optimised_cuts:
-        cuts = dict(optimised_cuts)
-        cuts["score_ggf"] = "sig_bkg_dnn_score_ggFvsBKG"
-        cuts["score_vbf"] = "sig_bkg_dnn_score_VBFvsBKG"
-    else:
-        cuts = _get_params(region_setting)
-        cuts["score_ggf"] = "boosted_bdt_score"
-        cuts["score_vbf"] = "boosted_bdt_vbf_score"
-    cuts["txbb_morph"] = txbb_morph
+def hh4b_boosted_category_2(txbb_morph=True, region_setting="50GeV", optimised_cuts=False, score_suffix=""):
     return Cut(
-        name="hh4b_boosted_category_2",
-        params=cuts,
+        name="hh4b_boosted_category_2" + score_suffix,
+        params=_category_params(txbb_morph, region_setting, optimised_cuts, score_suffix),
         function=cuts_f.hh4b_boosted_category_2,
     )
 
-def hh4b_boosted_category_3(txbb_morph=True, region_setting="50GeV", optimised_cuts=False):
-    if optimised_cuts:
-        cuts = dict(optimised_cuts)
-        cuts["score_ggf"] = "sig_bkg_dnn_score_ggFvsBKG"
-        cuts["score_vbf"] = "sig_bkg_dnn_score_VBFvsBKG"
-    else:
-        cuts = _get_params(region_setting)
-        cuts["score_ggf"] = "boosted_bdt_score"
-        cuts["score_vbf"] = "boosted_bdt_vbf_score"
-    cuts["txbb_morph"] = txbb_morph
+def hh4b_boosted_category_3(txbb_morph=True, region_setting="50GeV", optimised_cuts=False, score_suffix=""):
     return Cut(
-        name="hh4b_boosted_category_3",
-        params=cuts,
+        name="hh4b_boosted_category_3" + score_suffix,
+        params=_category_params(txbb_morph, region_setting, optimised_cuts, score_suffix),
         function=cuts_f.hh4b_boosted_category_3,
     )
 
-def hh4b_boosted_background_vbf(txbb_morph=True, region_setting="50GeV", optimised_cuts=False):
-    if optimised_cuts:
-        cuts = dict(optimised_cuts)
-        cuts["score_ggf"] = "sig_bkg_dnn_score_ggFvsBKG"
-        cuts["score_vbf"] = "sig_bkg_dnn_score_VBFvsBKG"
-    else:
-        cuts = _get_params(region_setting)
-        cuts["score_ggf"] = "boosted_bdt_score"
-        cuts["score_vbf"] = "boosted_bdt_vbf_score"
-    cuts["txbb_morph"] = txbb_morph
+def hh4b_boosted_background_vbf(txbb_morph=True, region_setting="50GeV", optimised_cuts=False, score_suffix=""):
     return Cut(
-        name="hh4b_boosted_background_vbf",
-        params=cuts,
+        name="hh4b_boosted_background_vbf" + score_suffix,
+        params=_category_params(txbb_morph, region_setting, optimised_cuts, score_suffix),
         function=cuts_f.hh4b_boosted_background_vbf,
     )
 
-def hh4b_boosted_background_ggf(txbb_morph=True, region_setting="50GeV", optimised_cuts=False):
-    if optimised_cuts:
-        cuts = dict(optimised_cuts)
-        cuts["score_ggf"] = "sig_bkg_dnn_score_ggFvsBKG"
-        cuts["score_vbf"] = "sig_bkg_dnn_score_VBFvsBKG"
-    else:
-        cuts = _get_params(region_setting)
-        cuts["score_ggf"] = "boosted_bdt_score"
-        cuts["score_vbf"] = "boosted_bdt_vbf_score"
-    cuts["txbb_morph"] = txbb_morph
+def hh4b_boosted_background_ggf(txbb_morph=True, region_setting="50GeV", optimised_cuts=False, score_suffix=""):
     return Cut(
-        name="hh4b_boosted_background_ggf",
-        params=cuts,
+        name="hh4b_boosted_background_ggf" + score_suffix,
+        params=_category_params(txbb_morph, region_setting, optimised_cuts, score_suffix),
         function=cuts_f.hh4b_boosted_background_ggf,
     )
 

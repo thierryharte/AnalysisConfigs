@@ -285,12 +285,15 @@ def create_DNN_columns_list(run2, flatten, columns_dict, btag=True):
     return column_list
 
 
-def define_single_category(category_name, wide_cr=False, ggf_vbf_threshold=False, full_sideband=False, region_setting="40GeV", lead_sublead="sublead", optimised_cuts=False):
+def define_single_category(category_name, wide_cr=False, ggf_vbf_threshold=False, full_sideband=False, region_setting="40GeV", lead_sublead="sublead", optimised_cuts=False, score_suffix=""):
     """
     Define a single category for the analysis.
 
     If `vbf_discriminator` is defined, we MUST have a `ggf_vbf_threshold`. Otherwise the scan will crash.
     But the workflow should be designed in a way, that we never call this function without a threshold if one is needed.
+
+    `score_suffix` selects the DNN/BDT scores used for the boosted categories (e.g. "_qcdsb" or "_ttsb" for the
+    scores evaluated with shifted Higgs masses in the fit sidebands, see `VBFHH4bProcessor.eval_sideband_scores`).
     """
     cut_list = []
     # number of b jets
@@ -301,7 +304,14 @@ def define_single_category(category_name, wide_cr=False, ggf_vbf_threshold=False
 
     elif "boosted" in category_name: # Elif mainly because I only want one region for the moment for testing.
         cut_list.append(cuts.hh4b_boosted_baseline(region_setting))
-        if "boosted_signal" in category_name:
+        if "ttbar" in category_name:
+            # ttbar sideband (both Higgs masses above the signal window), high (E) or low (F) TXbb
+            if "boosted_signal" in category_name:
+                cut_list.append(cuts.hh4b_boosted_TXbb_signal(region_setting))
+            else:
+                cut_list.append(cuts.hh4b_boosted_TXbb_control(region_setting))
+            cut_list.append(cuts.hh4b_boosted_mass_ttbar(region_setting))
+        elif "boosted_signal" in category_name:
             cut_list.append(cuts.hh4b_boosted_TXbb_signal(region_setting))
             if "sideband" in category_name:
                 if full_sideband:
@@ -323,13 +333,13 @@ def define_single_category(category_name, wide_cr=False, ggf_vbf_threshold=False
         # signal threshold by construction, so there the categories cut on the morphed TXbb (`btagBBTXbb_morph`)
         # instead. The signal regions (C, D) always use the nominal TXbb.
         if "cat1" in category_name:
-            cut_list.append(cuts.hh4b_boosted_category_1(txbb_morph="boosted_control" in category_name, region_setting=region_setting, optimised_cuts=optimised_cuts))
+            cut_list.append(cuts.hh4b_boosted_category_1(txbb_morph="boosted_control" in category_name, region_setting=region_setting, optimised_cuts=optimised_cuts, score_suffix=score_suffix))
         elif "catvbf" in category_name:
-            cut_list.append(cuts.hh4b_boosted_category_vbf(txbb_morph="boosted_control" in category_name, region_setting=region_setting, optimised_cuts=optimised_cuts))
+            cut_list.append(cuts.hh4b_boosted_category_vbf(txbb_morph="boosted_control" in category_name, region_setting=region_setting, optimised_cuts=optimised_cuts, score_suffix=score_suffix))
         elif "cat2" in category_name:
-            cut_list.append(cuts.hh4b_boosted_category_2(txbb_morph="boosted_control" in category_name, region_setting=region_setting, optimised_cuts=optimised_cuts))
+            cut_list.append(cuts.hh4b_boosted_category_2(txbb_morph="boosted_control" in category_name, region_setting=region_setting, optimised_cuts=optimised_cuts, score_suffix=score_suffix))
         elif "cat3" in category_name:
-            cut_list.append(cuts.hh4b_boosted_category_3(txbb_morph="boosted_control" in category_name, region_setting=region_setting, optimised_cuts=optimised_cuts))
+            cut_list.append(cuts.hh4b_boosted_category_3(txbb_morph="boosted_control" in category_name, region_setting=region_setting, optimised_cuts=optimised_cuts, score_suffix=score_suffix))
 
     # mass cuts
     elif "VR1" not in category_name:
@@ -401,6 +411,7 @@ def define_categories(
     optimised_cuts=False,
     bdt_model="",
     morphing_direction="btag",
+    fit_sidebands=False,
 ):
     """Define the categories for the analysis."""
     categories_dict = {}
@@ -451,6 +462,31 @@ def define_categories(
                     categories_dict |= define_single_category("boosted_control_region_B_cat2_postW", **region_kwargs)
                     categories_dict |= define_single_category("boosted_control_region_B_cat3_postW", **region_kwargs)
                     categories_dict |= define_single_category("boosted_control_region_B_catvbf_postW", **region_kwargs)
+
+        if fit_sidebands:
+            # Sidebands used in the fit to constrain the QCD and ttbar normalisation in every category.
+            #     - QCD sideband: mass sideband of the ABCD plane, i.e. region C (high TXbb), predicted from the
+            #       reweighted A. The categories use the scores evaluated with the ABCD Higgs mass shifted into the
+            #       signal window ("_qcdsb").
+            #     - ttbar sideband: both Higgs masses above the signal window (150-200 GeV for "50GeV"),
+            #       E (high TXbb) and its low-TXbb counterpart F, from which the QCD in E is predicted with the
+            #       same morphing as B -> D. The categories use the scores evaluated with both Higgs masses shifted
+            #       down by the sideband size ("_ttsb").
+            if morphing_direction != "btag":
+                raise ValueError("The fit sidebands are only implemented for bkg_morphing_direction 'btag'")
+            if full_sideband:
+                raise ValueError("The fit sidebands need the lower mass sideband: with `full_sideband` region C "
+                                 "overlaps with the ttbar sideband")
+            categories_dict |= define_single_category("boosted_signal_ttbar_region_E", **region_kwargs)
+            if bkg_morphing_dnn:
+                categories_dict |= define_single_category("boosted_control_ttbar_region_F_postW", **region_kwargs)
+            if signal_categories:
+                for cat in ("cat1", "cat2", "cat3", "catvbf"):
+                    categories_dict |= define_single_category(f"boosted_signal_sideband_region_C_{cat}", score_suffix="_qcdsb", **region_kwargs)
+                    categories_dict |= define_single_category(f"boosted_signal_ttbar_region_E_{cat}", score_suffix="_ttsb", **region_kwargs)
+                    if bkg_morphing_dnn:
+                        categories_dict |= define_single_category(f"boosted_control_sideband_region_A_{cat}_postW", score_suffix="_qcdsb", **region_kwargs)
+                        categories_dict |= define_single_category(f"boosted_control_ttbar_region_F_{cat}_postW", score_suffix="_ttsb", **region_kwargs)
 
 
         # elif not vbf_discriminator:

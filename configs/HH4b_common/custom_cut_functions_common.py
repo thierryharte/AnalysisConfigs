@@ -329,6 +329,17 @@ def hh4b_boosted_mass(events, params, **kwargs):
         return ~cat_mask & cat_mask_outer
 
 
+def hh4b_boosted_mass_ttbar(events, params, **kwargs):
+    """ttbar-enriched sideband: both Higgs candidate masses in [upper, upper + sideband_size]."""
+    low = params["upper"]
+    high = params["upper"] + params["sideband_size"]
+    mask = ak.ones_like(events["HiggsLeading"]["mass"], dtype=bool)
+    for higgs in ("HiggsLeading", "HiggsSubLeading"):
+        mass = events[higgs]["mass"]
+        mask = mask & (mass > low) & (mass < high)
+    return ak.fill_none(mask, False)
+
+
 def hh4b_boosted_category_1(events, params, **kwargs):
     if not params["txbb_morph"]:
         txbb = events["HiggsSubLeading"]["btagBBTXbb"]
