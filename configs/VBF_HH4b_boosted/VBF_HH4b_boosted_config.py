@@ -202,6 +202,7 @@ categories_dict = define_categories(
     bdt_model=config_options_dict["bdt_model"],
     morphing_direction=config_options_dict["bkg_morphing_direction"],
     fit_sidebands=config_options_dict["boosted_fit_sidebands"],
+    no_dnn_ggf_cat_cut=config_options_dict["boosted_no_ggf_cat_cut"],
 )
 
 if BASELINE:

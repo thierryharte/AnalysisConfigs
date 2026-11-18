@@ -396,6 +396,40 @@ def hh4b_boosted_category_3(events, params, **kwargs):
     return cat_mask
 
 
+def hh4b_boosted_category_09vbf(events, params, **kwargs):
+    bdt_vbf = events[params["score_vbf"]]
+    mjj = events["mjjJetGoodVBFGood"]
+    deta = events["detaJetGoodVBFGood"]
+    cat_mask = (
+            mjj > 400 & deta > 3.5 & bdt_vbf > 0.9
+            )
+    return cat_mask
+
+
+def hh4b_boosted_category_95(events, params, **kwargs):
+    if not params["txbb_morph"]:
+        txbb = events["HiggsSubLeading"]["btagBBTXbb"]
+    else:
+        txbb = events["HiggsSubLeading"]["btagBBTXbb_morph"]
+    return ~hh4b_boosted_category_09vbf(events, params) & txbb > 0.95
+
+
+def hh4b_boosted_category_8(events, params, **kwargs):
+    if not params["txbb_morph"]:
+        txbb = events["HiggsSubLeading"]["btagBBTXbb"]
+    else:
+        txbb = events["HiggsSubLeading"]["btagBBTXbb_morph"]
+    return ~hh4b_boosted_category_09vbf(events, params) & txbb > 0.80
+
+
+def hh4b_boosted_category_65(events, params, **kwargs):
+    if not params["txbb_morph"]:
+        txbb = events["HiggsSubLeading"]["btagBBTXbb"]
+    else:
+        txbb = events["HiggsSubLeading"]["btagBBTXbb_morph"]
+    return ~hh4b_boosted_category_09vbf(events, params) & txbb > 0.65
+
+
 def hh4b_boosted_background(events, params, **kwargs):
     if not params["txbb_morph"]:
         txbb = events["HiggsSubLeading"]["btagBBTXbb"]

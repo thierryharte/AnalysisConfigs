@@ -341,4 +341,5 @@ default_config_options_dict = {
     # The categories in the sidebands use the DNN/BDT scores evaluated with the Higgs masses shifted into the
     # signal window (`*_qcdsb` and `*_ttsb` scores). Only for bkg_morphing_direction "btag" and the lower sideband.
     "boosted_fit_sidebands": False,
+    "boosted_no_ggf_cat_cut": False,
 } | default_onnx_model_dict

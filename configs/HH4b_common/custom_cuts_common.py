@@ -341,6 +341,34 @@ def hh4b_boosted_background(txbb_morph=True, region_setting="50GeV", optimised_c
         function=cuts_f.hh4b_boosted_background,
     )
 
+def hh4b_boosted_category_95(txbb_morph=True, region_setting="50GeV", optimised_cuts=False, score_suffix=""):
+    return Cut(
+        name="hh4b_boosted_category_95" + score_suffix,
+        params=_category_params(txbb_morph, region_setting, optimised_cuts, score_suffix),
+        function=cuts_f.hh4b_boosted_category_95,
+    )
+
+def hh4b_boosted_category_80(txbb_morph=True, region_setting="50GeV", optimised_cuts=False, score_suffix=""):
+    return Cut(
+        name="hh4b_boosted_category_80" + score_suffix,
+        params=_category_params(txbb_morph, region_setting, optimised_cuts, score_suffix),
+        function=cuts_f.hh4b_boosted_category_80,
+    )
+
+def hh4b_boosted_category_65(txbb_morph=True, region_setting="50GeV", optimised_cuts=False, score_suffix=""):
+    return Cut(
+        name="hh4b_boosted_category_65" + score_suffix,
+        params=_category_params(txbb_morph, region_setting, optimised_cuts, score_suffix),
+        function=cuts_f.hh4b_boosted_category_65,
+    )
+
+def hh4b_boosted_category_09vbf(txbb_morph=True, region_setting="50GeV", optimised_cuts=False, score_suffix=""):
+    return Cut(
+        name="hh4b_boosted_category_09vbf" + score_suffix,
+        params=_category_params(txbb_morph, region_setting, optimised_cuts, score_suffix),
+        function=cuts_f.hh4b_boosted_category_09vbf,
+    )
+
 
 hh4b_boosted_signal_region = Cut(
     name="hh4b_boosted_signal_region",
